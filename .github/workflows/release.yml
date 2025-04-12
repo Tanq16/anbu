@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.new_version }}
+      release_created: ${{ steps.create_release.outputs.release_created }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,11 +48,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Create Release
+        id: create_release
         run: |
           gh release create "${{ steps.version.outputs.new_version }}" \
             --title "Release ${{ steps.version.outputs.new_version }}" --draft \
             --notes "Anbu - Latest (Version: ${{ steps.version.outputs.new_version }})" \
             --target ${{ github.sha }}
+          echo "release_created=true" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -78,8 +81,7 @@ jobs:
 
       - name: Upload Release Asset
         run: |
-          gh release upload "${{ needs.process-commit.outputs.version }}" \
-            "anbu-${{ matrix.os }}-${{ matrix.arch }}.zip" --clobber
+          gh release upload "${{ needs.process-commit.outputs.version }}" "anbu-${{ matrix.os }}-${{ matrix.arch }}.zip" --clobber
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -92,5 +94,17 @@ jobs:
       - name: Publish Release
         run: |
           gh release edit "${{ needs.process-commit.outputs.version }}" --draft=false
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  cleanup-on-failure:
+    needs: [process-commit, build, publish]
+    if: failure() && needs.process-commit.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Draft Release
+        run: |
+          echo "Cleaning up draft release due to workflow failure"
+          gh release delete "${{ needs.process-commit.outputs.version }}" --yes
         env:
           GH_TOKEN: ${{ github.token }}
