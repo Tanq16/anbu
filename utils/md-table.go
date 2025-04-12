@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -84,23 +85,25 @@ func getTerminalWidth() int {
 		}
 	}
 	// using syscall on unix systems
-	type windowSize struct {
-		rows    uint16
-		cols    uint16
-		xpixels uint16
-		ypixels uint16
-	}
-	ws := &windowSize{}
-	if isTerm := isatty.IsTerminal(os.Stdout.Fd()); isTerm {
-		if _, _, err := syscall.Syscall(syscall.SYS_IOCTL,
-			os.Stdout.Fd(),
-			uintptr(syscall.TIOCGWINSZ),
-			uintptr(unsafe.Pointer(ws))); err == 0 {
-			return int(ws.cols)
+	if runtime.GOOS != "windows" {
+		type windowSize struct {
+			rows    uint16
+			cols    uint16
+			xpixels uint16
+			ypixels uint16
+		}
+		ws := &windowSize{}
+		if isTerm := isatty.IsTerminal(os.Stdout.Fd()); isTerm {
+			if _, _, err := syscall.Syscall(syscall.SYS_IOCTL,
+				os.Stdout.Fd(),
+				uintptr(syscall.TIOCGWINSZ),
+				uintptr(unsafe.Pointer(ws))); err == 0 {
+				return int(ws.cols)
+			}
 		}
 	}
-	// Fallback to a 80 default
-	return 80
+	// Fallback to a default
+	return 120
 }
 
 func wrapText(text string, width int) []string {
