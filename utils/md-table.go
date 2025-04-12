@@ -68,8 +68,8 @@ func (table MarkdownTable) OutMDFile(outputPath string) error {
 }
 
 // OutMDPrint prints a markdown table to console
-func (table MarkdownTable) OutMDPrint() error {
-	formatted, err := formatTerminalTable(table)
+func (table MarkdownTable) OutMDPrint(innerDivide bool) error {
+	formatted, err := formatTerminalTable(table, innerDivide)
 	if err != nil {
 		return fmt.Errorf("error formatting table: %w", err)
 	}
@@ -141,7 +141,7 @@ func wrapText(text string, width int) []string {
 	return lines
 }
 
-func formatTerminalTable(table MarkdownTable) (string, error) {
+func formatTerminalTable(table MarkdownTable, innerDivide bool) (string, error) {
 	var output strings.Builder
 	termWidth := getTerminalWidth()
 	if table.Caption != "" {
@@ -261,7 +261,7 @@ func formatTerminalTable(table MarkdownTable) (string, error) {
 			output.WriteString(boxChars["vertical"] + "\n")
 		}
 		// Print row divider
-		if r < len(table.Rows)-1 {
+		if r < len(table.Rows)-1 && innerDivide {
 			output.WriteString(boxChars["leftT"])
 			for i, width := range colWidths {
 				output.WriteString(strings.Repeat(boxChars["horizontal"], width+2))

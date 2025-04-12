@@ -21,7 +21,7 @@ var tableTestCmd = &cobra.Command{
 				{"Cache", "Inactive", "Redis 8.0.1", "2025-01-30"},
 			},
 		}
-		err := table.OutMDPrint()
+		err := table.OutMDPrint(true)
 		if err != nil {
 			utils.OutError("Failed to print table: " + err.Error())
 		} else {
