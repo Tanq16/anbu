@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"github.com/tanq16/anbu/utils"
 )
 
@@ -45,6 +44,7 @@ func printTimeTable(concern time.Time) error {
 }
 
 func printTimeTablePurple(concern time.Time) error {
+	logger := utils.GetLogger("time")
 	utcTime := concern.UTC()
 	table := utils.MarkdownTable{
 		Headers: []string{"Item", "Value"},
@@ -61,7 +61,7 @@ func printTimeTablePurple(concern time.Time) error {
 	}
 	ipAddr, err := getPublicIP()
 	if err != nil {
-		log.Warn().Err(err).Msg("could not get public IP address")
+		logger.Warn().Err(err).Msg("could not get public IP address")
 	} else {
 		table.Rows = append(table.Rows, []string{"Public IP", ipAddr})
 	}
@@ -167,16 +167,18 @@ func Parse(timeStr string, printType string) error {
 }
 
 func Current() {
+	logger := utils.GetLogger("time")
 	currentTime := time.Now()
 	if err := printTimeTable(currentTime); err != nil {
-		log.Error().Err(err).Msg("could not print table")
+		logger.Error().Err(err).Msg("could not print table")
 	}
 }
 
 func Purple() {
+	logger := utils.GetLogger("time")
 	currentTime := time.Now()
 	if err := printTimeTablePurple(currentTime); err != nil {
-		log.Error().Err(err).Msg("could not print table")
+		logger.Error().Err(err).Msg("could not print table")
 	}
 }
 
@@ -194,16 +196,16 @@ func EpochDiff(epochs []int64) error {
 	t2 := time.Unix(epoch2, 0)
 	diff := t2.Sub(t1)
 	// Show difference in multiple units
-	fmt.Printf("Time difference:\n")
-	fmt.Printf("  Seconds:  %d\n", int64(diff.Seconds()))
-	fmt.Printf("  Minutes:  %.1f\n", diff.Minutes())
-	fmt.Printf("  Hours:    %.1f\n", diff.Hours())
-	fmt.Printf("  Days:     %.1f\n", diff.Hours()/24)
+	fmt.Println(utils.OutDetail("Time difference:"))
+	fmt.Printf("  %s  %d\n", utils.OutSuccess("Seconds:"), int64(diff.Seconds()))
+	fmt.Printf("  %s  %.1f\n", utils.OutSuccess("Minutes:"), diff.Minutes())
+	fmt.Printf("  %s  %.1f\n", utils.OutSuccess("Hours:"), diff.Hours())
+	fmt.Printf("  %s  %.1f\n", utils.OutSuccess("Days:"), diff.Hours()/24)
 	// Add human readable description
 	if diff > 0 {
-		fmt.Printf("\nTime 2 is %s after Time 1\n", formatDuration(diff))
+		fmt.Printf("\n%s is %s after %s\n", utils.OutInfo("Time 2"), utils.OutSuccess(formatDuration(diff)), utils.OutInfo("Time 1"))
 	} else {
-		fmt.Printf("\nTime 2 is %s before Time 1\n", formatDuration(-diff))
+		fmt.Printf("\n%s is %s before %s\n", utils.OutInfo("Time 2"), utils.OutSuccess(formatDuration(-diff)), utils.OutInfo("Time 1"))
 	}
 	return nil
 }

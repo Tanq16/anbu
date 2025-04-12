@@ -52,22 +52,26 @@ func OutClearLines(n int) {
 	fmt.Printf("\033[%dA", n)
 }
 
-func OutSuccess(msg string) {
-	fmt.Printf("%s%s%s\n", OutColors["blue"], msg, OutColors["reset"])
+func OutSuccess(msg string) string {
+	return fmt.Sprintf("%s%s%s", OutColors["blue"], msg, OutColors["reset"])
 }
 
-func OutError(msg string) {
-	fmt.Printf("%s%s%s\n", OutColors["red"], msg, OutColors["reset"])
+func OutError(msg string) string {
+	return fmt.Sprintf("%s%s%s", OutColors["red"], msg, OutColors["reset"])
 }
 
-func OutWarning(msg string) {
-	fmt.Printf("%s%s%s\n", OutColors["yellow"], msg, OutColors["reset"])
+func OutWarning(msg string) string {
+	return fmt.Sprintf("%s%s%s", OutColors["yellow"], msg, OutColors["reset"])
 }
 
-func OutInfo(msg string) {
-	fmt.Printf("%s%s%s\n", OutColors["green"], msg, OutColors["reset"])
+func OutInfo(msg string) string {
+	return fmt.Sprintf("%s%s%s", OutColors["green"], msg, OutColors["reset"])
 }
 
-func OutDebug(msg string) {
-	fmt.Printf("%s%s%s\n", OutColors["grey"], msg, OutColors["reset"])
+func OutDetail(msg string) string {
+	return fmt.Sprintf("%s%s%s", OutColors["purple"], msg, OutColors["reset"])
+}
+
+func OutDebug(msg string) string {
+	return fmt.Sprintf("%s%s%s", OutColors["grey"], msg, OutColors["reset"])
 }

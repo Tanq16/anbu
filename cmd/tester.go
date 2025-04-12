@@ -34,11 +34,11 @@ var tableTestCmd = &cobra.Command{
 		// 	utils.OutSuccess("Table written to test.md")
 		// }
 
-		utils.OutWarning("Warning: This is a test warning message")
-		utils.OutError("Error: This is a test error message")
-		utils.OutSuccess("Success: This is a test success message")
-		utils.OutInfo("Info: This is a test info message")
-		utils.OutDebug("Debug: This is a test debug message")
+		fmt.Println(utils.OutWarning("Warning: This is a test warning message"))
+		fmt.Println(utils.OutError("Error: This is a test error message"))
+		fmt.Println(utils.OutSuccess("Success: This is a test success message"))
+		fmt.Println(utils.OutInfo("Info: This is a test info message"))
+		fmt.Println(utils.OutDebug("Debug: This is a test debug message"))
 		fmt.Println("Test message with no color")
 		fmt.Println("Test message with no color")
 		fmt.Println("Test message with no color")
