@@ -20,10 +20,6 @@ var rootCmd = &cobra.Command{
 		utils.InitLogger(debug)
 		log.Debug().Msg("Debug logging enabled")
 	},
-	Args: cobra.ArbitraryArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
-	},
 }
 
 func Execute() {
