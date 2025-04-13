@@ -6,6 +6,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
+	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
 	"github.com/tanq16/anbu/utils"
 )
 
@@ -34,4 +36,12 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug logging")
+	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+
+	rootCmd.AddCommand(genericsCmd.LoopCmd)
+	rootCmd.AddCommand(genericsCmd.StringCmd)
+	rootCmd.AddCommand(genericsCmd.TimeCmd)
+
+	rootCmd.AddCommand(cryptoCmd.FileCryptoCmd)
+	rootCmd.AddCommand(cryptoCmd.KeyPairCmd)
 }

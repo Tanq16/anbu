@@ -1,11 +1,11 @@
-package cmd
+package cryptoCmd
 
 import (
 	"fmt"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	anbuKeypair "github.com/tanq16/anbu/internal/keypair"
+	anbuCrypto "github.com/tanq16/anbu/internal/crypto"
 	"github.com/tanq16/anbu/utils"
 )
 
@@ -16,7 +16,7 @@ var keyPairFlags struct {
 	sshFormat  bool
 }
 
-var keyPairCmd = &cobra.Command{
+var KeyPairCmd = &cobra.Command{
 	Use:   "key-pair",
 	Short: "Generate RSA key pairs for encryption",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -26,7 +26,7 @@ var keyPairCmd = &cobra.Command{
 
 		var err error
 		if keyPairFlags.sshFormat {
-			err = anbuKeypair.GenerateSSHKeyPair(keyDir, keyName, keyPairFlags.keySize)
+			err = anbuCrypto.GenerateSSHKeyPair(keyDir, keyName, keyPairFlags.keySize)
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate SSH key pair")
 			}
@@ -36,7 +36,7 @@ var keyPairCmd = &cobra.Command{
 			fmt.Println(utils.OutSuccess("Public key: ") + utils.OutInfo(pubKeyPath))
 			fmt.Println(utils.OutSuccess("Private key: ") + utils.OutInfo(privKeyPath))
 		} else {
-			err = anbuKeypair.GenerateKeyPair(keyDir, keyName, keyPairFlags.keySize)
+			err = anbuCrypto.GenerateKeyPair(keyDir, keyName, keyPairFlags.keySize)
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate key pair")
 			}
@@ -50,9 +50,7 @@ var keyPairCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(keyPairCmd)
-
-	keyPairCmd.Flags().StringVarP(&keyPairFlags.outputPath, "output-path", "o", "./anbu-key", "Output path for key files")
-	keyPairCmd.Flags().IntVarP(&keyPairFlags.keySize, "key-size", "k", 2048, "RSA key size (2048, 3072, or 4096)")
-	keyPairCmd.Flags().BoolVar(&keyPairFlags.sshFormat, "ssh", false, "Generate keys in SSH format instead of PEM")
+	KeyPairCmd.Flags().StringVarP(&keyPairFlags.outputPath, "output-path", "o", "./anbu-key", "Output path for key files")
+	KeyPairCmd.Flags().IntVarP(&keyPairFlags.keySize, "key-size", "k", 2048, "RSA key size (2048, 3072, or 4096)")
+	KeyPairCmd.Flags().BoolVar(&keyPairFlags.sshFormat, "ssh", false, "Generate keys in SSH format instead of PEM")
 }

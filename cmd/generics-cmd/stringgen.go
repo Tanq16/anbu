@@ -1,23 +1,23 @@
-package cmd
+package genericsCmd
 
 import (
 	"fmt"
 	"strconv"
 
 	"github.com/spf13/cobra"
-	anbuStringGen "github.com/tanq16/anbu/internal/stringgen"
+	anbuGenerics "github.com/tanq16/anbu/internal/generics"
 	"github.com/tanq16/anbu/utils"
 )
 
-var stringCmd = &cobra.Command{
-	Use:   "sgen",
+var StringCmd = &cobra.Command{
+	Use:   "string",
 	Short: "generate a random string, a uuid, a shorter uuid, a sequence, or a repetition",
 	Args:  cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := utils.GetLogger("string")
 		// No args
 		if len(args) == 0 {
-			randomStr, err := anbuStringGen.GenerateRandomString(0)
+			randomStr, err := anbuGenerics.GenerateRandomString(0)
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate random string")
 			}
@@ -26,7 +26,7 @@ var stringCmd = &cobra.Command{
 		}
 		// Length arg
 		if len, err := strconv.Atoi(args[0]); err == nil {
-			randomStr, err := anbuStringGen.GenerateRandomString(len)
+			randomStr, err := anbuGenerics.GenerateRandomString(len)
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate random string")
 			}
@@ -42,7 +42,7 @@ var stringCmd = &cobra.Command{
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Not a valid length")
 			}
-			sequence, err := anbuStringGen.GenerateSequence(length)
+			sequence, err := anbuGenerics.GenerateSequence(length)
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate sequence")
 			}
@@ -58,7 +58,7 @@ var stringCmd = &cobra.Command{
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Not a valid count")
 			}
-			repeated, err := anbuStringGen.GenerateRepetition(count, args[2])
+			repeated, err := anbuGenerics.GenerateRepetition(count, args[2])
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate repetition")
 			}
@@ -66,7 +66,7 @@ var stringCmd = &cobra.Command{
 			return
 		}
 		if args[0] == "uuid" {
-			uuid, err := anbuStringGen.GenerateUUID()
+			uuid, err := anbuGenerics.GenerateUUID()
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate UUID")
 			}
@@ -77,7 +77,7 @@ var stringCmd = &cobra.Command{
 			if len(args) < 2 {
 				logger.Fatal().Msg("Missing length for RUID command")
 			}
-			ruid, err := anbuStringGen.GenerateRUID(args[1])
+			ruid, err := anbuGenerics.GenerateRUID(args[1])
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate RUID")
 			}
@@ -88,8 +88,4 @@ var stringCmd = &cobra.Command{
 		logger.Fatal().Msg("Unknown command")
 		cmd.Help()
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(stringCmd)
 }

@@ -1,4 +1,4 @@
-package anbuIP
+package anbuNetwork
 
 import (
 	"encoding/json"

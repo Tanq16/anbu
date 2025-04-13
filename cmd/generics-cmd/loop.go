@@ -1,10 +1,10 @@
-package cmd
+package genericsCmd
 
 import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	anbuLoopCmd "github.com/tanq16/anbu/internal/loopcmd"
+	anbuGenerics "github.com/tanq16/anbu/internal/generics"
 	"github.com/tanq16/anbu/utils"
 )
 
@@ -12,7 +12,7 @@ var loopCmdFlagPadding int
 var loopCmdFlagCommand string
 var loopCmdFlagRange []int
 
-var loopCmd = &cobra.Command{
+var LoopCmd = &cobra.Command{
 	Use:   "loop",
 	Short: "execute a command for each number range in a range",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -21,13 +21,13 @@ var loopCmd = &cobra.Command{
 			logger.Fatal().Msg("Missing count or command")
 		} else {
 			var err error
-			loopCmdFlagRange, err = anbuLoopCmd.ProcessRange(args[0])
+			loopCmdFlagRange, err = anbuGenerics.ProcessRange(args[0])
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Not a valid count")
 			}
 			loopCmdFlagCommand = args[1]
 		}
-		err := anbuLoopCmd.ProcessCommands(loopCmdFlagRange, loopCmdFlagCommand, loopCmdFlagPadding)
+		err := anbuGenerics.ProcessCommands(loopCmdFlagRange, loopCmdFlagCommand, loopCmdFlagPadding)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Failed to execute linear operation")
 		}
@@ -36,6 +36,5 @@ var loopCmd = &cobra.Command{
 }
 
 func init() {
-	loopCmd.Flags().IntVarP(&loopCmdFlagPadding, "padding", "p", 0, "padding for the number")
-	rootCmd.AddCommand(loopCmd)
+	LoopCmd.Flags().IntVarP(&loopCmdFlagPadding, "padding", "p", 0, "padding for the number")
 }

@@ -1,4 +1,4 @@
-package anbuTime
+package anbuGenerics
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	anbuIP "github.com/tanq16/anbu/internal/ip"
+	anbuNetwork "github.com/tanq16/anbu/internal/network"
 	"github.com/tanq16/anbu/utils"
 )
 
@@ -57,7 +57,7 @@ func printTimeTablePurple(concern time.Time) error {
 	for _, format := range formats {
 		table.Rows = append(table.Rows, []string{format.Format, format.Value})
 	}
-	ipAddr, err := anbuIP.GetPublicIP()
+	ipAddr, err := anbuNetwork.GetPublicIP()
 	if err != nil {
 		logger.Warn().Err(err).Msg("could not get public IP address")
 	} else {

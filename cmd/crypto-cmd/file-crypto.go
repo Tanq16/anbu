@@ -1,10 +1,10 @@
-package cmd
+package cryptoCmd
 
 import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	anbuFileCrypto "github.com/tanq16/anbu/internal/filecrypto"
+	anbuCrypto "github.com/tanq16/anbu/internal/crypto"
 	"github.com/tanq16/anbu/utils"
 )
 
@@ -18,7 +18,7 @@ var fileCryptoFlags struct {
 	passphrase    string
 }
 
-var fileCryptoCmd = &cobra.Command{
+var FileCryptoCmd = &cobra.Command{
 	Use:   "filecrypt",
 	Short: "Encryption/decryption on files using AES-256-GCM symmetric encryption",
 }
@@ -36,7 +36,7 @@ var fileCryptoEncryptSymmCmd = &cobra.Command{
 		if fileCryptoFlags.password == "" {
 			logger.Fatal().Msg("No password specified")
 		}
-		err := anbuFileCrypto.EncryptSymmetric(fileCryptoFlags.file, fileCryptoFlags.password)
+		err := anbuCrypto.EncryptSymmetric(fileCryptoFlags.file, fileCryptoFlags.password)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Failed to encrypt file")
 		}
@@ -57,7 +57,7 @@ var fileCryptoDecryptSymmCmd = &cobra.Command{
 		if fileCryptoFlags.password == "" {
 			logger.Fatal().Msg("No password specified")
 		}
-		err := anbuFileCrypto.DecryptSymmetric(fileCryptoFlags.file, fileCryptoFlags.password)
+		err := anbuCrypto.DecryptSymmetric(fileCryptoFlags.file, fileCryptoFlags.password)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Failed to decrypt file")
 		}
@@ -70,10 +70,8 @@ var fileCryptoDecryptSymmCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(fileCryptoCmd)
-
-	fileCryptoCmd.AddCommand(fileCryptoEncryptSymmCmd)
-	fileCryptoCmd.AddCommand(fileCryptoDecryptSymmCmd)
+	FileCryptoCmd.AddCommand(fileCryptoEncryptSymmCmd)
+	FileCryptoCmd.AddCommand(fileCryptoDecryptSymmCmd)
 
 	fileCryptoEncryptSymmCmd.Flags().StringVarP(&fileCryptoFlags.password, "password", "p", "", "Encryption password")
 	fileCryptoDecryptSymmCmd.Flags().StringVarP(&fileCryptoFlags.password, "password", "p", "", "Decryption password")

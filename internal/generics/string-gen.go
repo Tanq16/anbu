@@ -1,4 +1,4 @@
-package anbuStringGen
+package anbuGenerics
 
 import (
 	"crypto/rand"

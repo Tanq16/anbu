@@ -1,4 +1,4 @@
-package anbuKeypair
+package anbuCrypto
 
 import (
 	"crypto/rand"

@@ -1,4 +1,4 @@
-package anbuLoopCmd
+package anbuGenerics
 
 import (
 	"bytes"

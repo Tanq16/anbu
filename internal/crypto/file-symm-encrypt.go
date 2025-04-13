@@ -1,4 +1,4 @@
-package anbuFileCrypto
+package anbuCrypto
 
 import (
 	"crypto/aes"
