@@ -13,6 +13,7 @@ var keyPairFlags struct {
 	outputPath string
 	pass       string
 	keySize    int
+	sshFormat  bool
 }
 
 var keyPairCmd = &cobra.Command{
@@ -23,16 +24,28 @@ var keyPairCmd = &cobra.Command{
 		keyName := filepath.Base(keyPairFlags.outputPath)
 		keyDir := filepath.Dir(keyPairFlags.outputPath)
 
-		err := anbuKeypair.GenerateKeyPair(keyDir, keyName, keyPairFlags.keySize)
-		if err != nil {
-			logger.Fatal().Err(err).Msg("Failed to generate key pair")
+		var err error
+		if keyPairFlags.sshFormat {
+			err = anbuKeypair.GenerateSSHKeyPair(keyDir, keyName, keyPairFlags.keySize)
+			if err != nil {
+				logger.Fatal().Err(err).Msg("Failed to generate SSH key pair")
+			}
+			pubKeyPath := fmt.Sprintf("%s/%s.pub", keyDir, keyName)
+			privKeyPath := fmt.Sprintf("%s/%s", keyDir, keyName)
+			fmt.Println(utils.OutDetail(fmt.Sprintf("SSH key pair (%d bits) generated", keyPairFlags.keySize)))
+			fmt.Println(utils.OutSuccess("Public key: ") + utils.OutInfo(pubKeyPath))
+			fmt.Println(utils.OutSuccess("Private key: ") + utils.OutInfo(privKeyPath))
+		} else {
+			err = anbuKeypair.GenerateKeyPair(keyDir, keyName, keyPairFlags.keySize)
+			if err != nil {
+				logger.Fatal().Err(err).Msg("Failed to generate key pair")
+			}
+			pubKeyPath := fmt.Sprintf("%s/%s.public.pem", keyDir, keyName)
+			privKeyPath := fmt.Sprintf("%s/%s.private.pem", keyDir, keyName)
+			fmt.Println(utils.OutDetail(fmt.Sprintf("RSA key pair (%d bits) generated", keyPairFlags.keySize)))
+			fmt.Println(utils.OutSuccess("Public key: ") + utils.OutInfo(pubKeyPath))
+			fmt.Println(utils.OutSuccess("Private key: ") + utils.OutInfo(privKeyPath))
 		}
-
-		pubKeyPath := fmt.Sprintf("%s/%s.public.pem", keyDir, keyName)
-		privKeyPath := fmt.Sprintf("%s/%s.private.pem", keyDir, keyName)
-		fmt.Println(utils.OutDetail(fmt.Sprintf("RSA key pair (%d bits) generated", keyPairFlags.keySize)))
-		fmt.Println(utils.OutSuccess("Public key: ") + utils.OutInfo(pubKeyPath))
-		fmt.Println(utils.OutSuccess("Private key: ") + utils.OutInfo(privKeyPath))
 	},
 }
 
@@ -41,4 +54,5 @@ func init() {
 
 	keyPairCmd.Flags().StringVarP(&keyPairFlags.outputPath, "output-path", "o", "./anbu-key", "Output path for key files")
 	keyPairCmd.Flags().IntVarP(&keyPairFlags.keySize, "key-size", "k", 2048, "RSA key size (2048, 3072, or 4096)")
+	keyPairCmd.Flags().BoolVar(&keyPairFlags.sshFormat, "ssh", false, "Generate keys in SSH format instead of PEM")
 }
