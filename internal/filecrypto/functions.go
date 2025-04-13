@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -115,4 +116,9 @@ func DecryptSymmetric(inputPath string, password string) error {
 
 	logger.Debug().Str("input", inputPath).Str("output", outputPath).Msg("file decrypted with AES-GCM")
 	return nil
+}
+
+func deriveKey(password string) []byte {
+	hash := sha256.Sum256([]byte(password))
+	return hash[:]
 }
