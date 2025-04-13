@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
+	networkCmd "github.com/tanq16/anbu/cmd/network-cmd"
 	"github.com/tanq16/anbu/utils"
 )
 
@@ -44,4 +45,6 @@ func init() {
 
 	rootCmd.AddCommand(cryptoCmd.FileCryptoCmd)
 	rootCmd.AddCommand(cryptoCmd.KeyPairCmd)
+
+	rootCmd.AddCommand(networkCmd.TunnelCmd)
 }
