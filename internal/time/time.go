@@ -1,14 +1,12 @@
 package anbuTime
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	anbuIP "github.com/tanq16/anbu/internal/ip"
 	"github.com/tanq16/anbu/utils"
 )
 
@@ -59,7 +57,7 @@ func printTimeTablePurple(concern time.Time) error {
 	for _, format := range formats {
 		table.Rows = append(table.Rows, []string{format.Format, format.Value})
 	}
-	ipAddr, err := getPublicIP()
+	ipAddr, err := anbuIP.GetPublicIP()
 	if err != nil {
 		logger.Warn().Err(err).Msg("could not get public IP address")
 	} else {
@@ -96,30 +94,6 @@ func formatDuration(d time.Duration) string {
 		}
 	}
 	return strings.Join(parts, ", ")
-}
-
-func getPublicIP() (string, error) {
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-	resp, err := client.Get("https://ipinfo.io")
-	if err != nil {
-		return "", fmt.Errorf("failed to connect to ipinfo.io: %w", err)
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response body: %w", err)
-	}
-	var data utils.Dictionary
-	if err := json.Unmarshal(body, &data); err != nil {
-		return "", fmt.Errorf("failed to parse JSON response: %w", err)
-	}
-	ip := data.UnwindString("ip")
-	if ip == "" {
-		return "", fmt.Errorf("no IP address found in the response")
-	}
-	return ip, nil
 }
 
 func Parse(timeStr string, printType string) error {

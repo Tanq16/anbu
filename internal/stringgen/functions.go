@@ -1,10 +1,13 @@
-package anbuString
+package anbuStringGen
 
 import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 // generates a random string of specified length
@@ -55,4 +58,31 @@ func GenerateRepetition(count int, str string) (string, error) {
 		result.WriteString(str)
 	}
 	return result.String(), nil
+}
+
+// generates a UUID string
+func GenerateUUID() (string, error) {
+	// use google/uuid package to generate a UUID
+	uuid, err := uuid.NewRandom()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate UUID: %w", err)
+	}
+	return uuid.String(), nil
+}
+
+// generates shorter UUID string
+func GenerateRUID(len string) (string, error) {
+	length, err := strconv.Atoi(len)
+	if err != nil {
+		return "", fmt.Errorf("not a valid length: %w", err)
+	}
+	if length <= 0 || length > 32 {
+		return "", fmt.Errorf("length must be between 1 and 32")
+	}
+	uuid, err := uuid.NewRandom()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate UUID: %w", err)
+	}
+	shortUUID := strings.ReplaceAll(uuid.String(), "-", "")[:length]
+	return shortUUID, nil
 }

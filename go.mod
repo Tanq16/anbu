@@ -3,6 +3,7 @@ module github.com/tanq16/anbu
 go 1.24.1
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/mattn/go-isatty v0.0.19
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1

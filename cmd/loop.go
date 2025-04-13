@@ -13,7 +13,7 @@ var loopCmdFlagCommand string
 var loopCmdFlagRange []int
 
 var loopCmd = &cobra.Command{
-	Use:   "loopcmd",
+	Use:   "loop",
 	Short: "execute a command for each number range in a range",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := utils.GetLogger("loopcmd")
