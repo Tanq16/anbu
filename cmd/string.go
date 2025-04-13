@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
-	anbuString "github.com/tanq16/anbu/internal/string"
+	anbuString "github.com/tanq16/anbu/internal/stringops"
 	"github.com/tanq16/anbu/utils"
 )
 
@@ -14,7 +14,7 @@ var stringCmd = &cobra.Command{
 	Short: "generate a random string, a sequence, or a repetitions",
 	Args:  cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("fileutil")
+		logger := utils.GetLogger("string")
 		// No args
 		if len(args) == 0 {
 			randomStr, err := anbuString.GenerateRandomString(0)

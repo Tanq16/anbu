@@ -16,6 +16,9 @@ var rootCmd = &cobra.Command{
 	Use:     "anbu",
 	Short:   "anbu is a tool for performing various everyday tasks with ease",
 	Version: AnbuVersion,
+	CompletionOptions: cobra.CompletionOptions{
+		HiddenDefaultCmd: true,
+	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.InitLogger(debug)
 		log.Debug().Msg("Debug logging enabled")

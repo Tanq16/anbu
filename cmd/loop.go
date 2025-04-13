@@ -1,53 +1,41 @@
 package cmd
 
-// import (
-// 	"fmt"
-// 	"os"
-// 	"strconv"
+import (
+	"fmt"
 
-// 	"github.com/spf13/cobra"
-// 	"github.com/tanq16/anbu/internal/fileutil"
-// 	"github.com/tanq16/anbu/utils"
-// )
+	"github.com/spf13/cobra"
+	anbuLoopCmd "github.com/tanq16/anbu/internal/loopcmd"
+	"github.com/tanq16/anbu/utils"
+)
 
-// var forLinearCmd = &cobra.Command{
-// 	Use:   "forlinear",
-// 	Short: "Execute a command for each number in a range",
-// 	Run: func(cmd *cobra.Command, args []string) {
-// 		logger := utils.GetLogger("fileutil")
+var loopCmdFlagPadding int
+var loopCmdFlagCommand string
+var loopCmdFlagRange []int
 
-// 		if len(args) < 2 {
-// 			if fileUtilFlags.count == 0 || fileUtilFlags.command == "" {
-// 				logger.Error().Msg("Missing count or command")
-// 				fmt.Println(utils.OutError("Error: provide count and command"))
-// 				cmd.Help()
-// 				os.Exit(1)
-// 			}
-// 		} else {
-// 			// Parse from args if flags not provided
-// 			var err error
-// 			fileUtilFlags.count, err = strconv.Atoi(args[0])
-// 			if err != nil {
-// 				logger.Error().Err(err).Msg("Invalid count")
-// 				fmt.Println(utils.OutError("Error: count must be a number"))
-// 				os.Exit(1)
-// 			}
-// 			fileUtilFlags.command = args[1]
-// 		}
+var loopCmd = &cobra.Command{
+	Use:   "loopcmd",
+	Short: "execute a command for each number range in a range",
+	Run: func(cmd *cobra.Command, args []string) {
+		logger := utils.GetLogger("loopcmd")
+		if len(args) < 2 {
+			logger.Fatal().Msg("Missing count or command")
+		} else {
+			var err error
+			loopCmdFlagRange, err = anbuLoopCmd.ProcessRange(args[0])
+			if err != nil {
+				logger.Fatal().Err(err).Msg("Not a valid count")
+			}
+			loopCmdFlagCommand = args[1]
+		}
+		err := anbuLoopCmd.ProcessCommands(loopCmdFlagRange, loopCmdFlagCommand, loopCmdFlagPadding)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Failed to execute linear operation")
+		}
+		fmt.Println(utils.OutSuccess("Linear operation completed successfully"))
+	},
+}
 
-// 		err := fileutil.ProcessLinearOperation(fileUtilFlags.count, fileUtilFlags.command)
-// 		if err != nil {
-// 			logger.Error().Err(err).Msg("Failed to execute linear operation")
-// 			fmt.Println(utils.OutError("Error: " + err.Error()))
-// 			os.Exit(1)
-// 		}
-
-// 		fmt.Println(utils.OutSuccess("Linear operation completed successfully"))
-// 	},
-// }
-
-// func init() {
-// 	forLinearCmd.Flags().IntVarP(&fileUtilFlags.count, "count", "c", 0, "Count for the loop")
-// 	forLinearCmd.Flags().StringVarP(&fileUtilFlags.command, "command", "x", "", "Command to execute")
-// 	fileUtilCmd.AddCommand(forLinearCmd)
-// }
+func init() {
+	loopCmd.Flags().IntVarP(&loopCmdFlagPadding, "padding", "p", 0, "padding for the number")
+	rootCmd.AddCommand(loopCmd)
+}

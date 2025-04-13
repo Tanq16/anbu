@@ -6,8 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
-	"os/exec"
-	"strconv"
 	"strings"
 
 	"github.com/tanq16/anbu/utils"
@@ -152,41 +150,4 @@ func pkcs7Unpad(data []byte) []byte {
 		return data // Invalid padding
 	}
 	return data[:length-padding]
-}
-
-// ProcessLinearOperation executes a command for each number in the range
-func ProcessLinearOperation(count int, command string) error {
-	logger := utils.GetLogger("fileutil")
-
-	if count < 0 {
-		return fmt.Errorf("count must be non-negative")
-	}
-
-	for i := 0; i <= count; i++ {
-		// Replace $i with the current value in the command
-		cmdToRun := strings.ReplaceAll(command, "$i", strconv.Itoa(i))
-
-		logger.Debug().Str("command", cmdToRun).Msg("executing command")
-
-		// Execute the command using the shell
-		// Note: This is potentially dangerous and should be used with caution
-		// For a production tool, you might want to limit the commands that can be executed
-		// or implement a safer way to achieve the same functionality
-		cmd := exec.Command("sh", "-c", cmdToRun)
-		var stdoutBuf, stderrBuf bytes.Buffer
-		cmd.Stdout = &stdoutBuf
-		cmd.Stderr = &stderrBuf
-
-		err := cmd.Run()
-		if err != nil {
-			logger.Error().Err(err).Str("stderr", stderrBuf.String()).Msg("command execution failed")
-			return fmt.Errorf("command execution failed: %w", err)
-		}
-
-		if stdoutBuf.Len() > 0 {
-			logger.Info().Str("output", stdoutBuf.String()).Msg("command output")
-		}
-	}
-
-	return nil
 }
