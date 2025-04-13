@@ -11,7 +11,7 @@ import (
 
 var stringCmd = &cobra.Command{
 	Use:   "sgen",
-	Short: "generate a random string, a sequence, or a repetitions",
+	Short: "generate a random string, a uuid, a shorter uuid, a sequence, or a repetition",
 	Args:  cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := utils.GetLogger("string")

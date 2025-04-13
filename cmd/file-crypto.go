@@ -19,12 +19,12 @@ var fileCryptoFlags struct {
 }
 
 var fileCryptoCmd = &cobra.Command{
-	Use:   "filecrypto",
-	Short: "Encryption operations on files",
+	Use:   "filecrypt",
+	Short: "Encryption/decryption on files using AES-256-GCM symmetric encryption",
 }
 
 var fileCryptoEncryptSymmCmd = &cobra.Command{
-	Use:   "encrypt-symm",
+	Use:   "encrypt",
 	Short: "Encrypt a file using AES-256-GCM symmetric encryption",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -45,7 +45,7 @@ var fileCryptoEncryptSymmCmd = &cobra.Command{
 }
 
 var fileCryptoDecryptSymmCmd = &cobra.Command{
-	Use:   "decrypt-symm",
+	Use:   "decrypt",
 	Short: "Decrypt a file that was encrypted using AES-256-GCM symmetric encryption",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

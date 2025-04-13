@@ -10,6 +10,110 @@
   <a href="#installation">Installation</a> &bull; <a href="#usage">Usage</a> &bull; <a href="#acknowledgements">Acknowledgements</a><br>
 </div>
 
-## Work In Progress
+## Installation
 
-This project is currently inactive and under active development.
+Download directly from [releases](https://github.com/Tanq16/anbu/releases). Anbu is available for AMD64 and ARM64 for Linux and MacOS only. Determine the version with `anbu -v`.
+
+To build latest commit directly via Go, use:
+
+```bash
+go install github.com/tanq16/anbu@latest
+```
+
+To clone and build locally for development, use:
+
+```bash
+git clone https://github.com/tanq16/anbu.git && cd anbu
+go build .
+```
+
+## Usage
+
+```
+anbu is a tool for performing various everyday tasks with ease
+
+Usage:
+  anbu [command]
+
+Available Commands:
+  filecrypt   Encryption operations on files
+  help        Help about any command
+  key-pair    Generate RSA key pairs for encryption
+  loop        execute a command for each number range in a range
+  sgen        generate a random string, a sequence, or a repetitions
+  time        time related function: use `now`, `purple`, `diff` (calculate epoch diff), `parse` (ingest a time str & print)
+
+Flags:
+      --debug     enable debug logging
+  -h, --help      help for anbu
+  -v, --version   version for anbu
+
+Use "anbu [command] --help" for more information about a command.
+```
+
+Anbu supports a large number of operations across the board. The specific details of each are:
+
+- ***File Encryption/Decryption***
+  - ```bash
+    anbu filecrypt encrypt /path/to/file.zip -p "P@55w0rd"
+    ```
+  - ```bash
+    anbu filecrypt decrypt ./encrypted.enc -p "P@55w0rd"
+    ```
+- ***RSA Key Pair Generation***
+  - ```bash
+    anbu key-pair -o mykey -k 4096
+    # 4096 bit RSA key pair
+    ```
+  - ```bash
+    anbu key-pair --ssh
+    # 2048 bit RSA SSH key pair called anbu-key.*
+    ```
+- ***Loop Command***
+  - ```bash
+    anbu loop 03-112 'echo "$i"' -p 2
+    # run command for index 3 to 112 as 003, 004, ... in command
+    ```
+  - ```bash
+    anbu loop 20 'echo justprintme'
+    # run command 20 times linearly
+    ```
+- ***String Generation***
+  - ```bash
+    anbu sgen 23
+    # generates 23 (100 if not specified) random alphanumeric chars
+    ```
+  - ```bash
+    anbu sgen seq 29 # returns abcdefghijklmnopqrstuvxyzabcd
+    # prints alphabet back to back until desired length
+    ```
+  - ```bash
+    anbu sgen rep 23 stringToRepeat
+    # prints "stringToRepeatstringToRepeatstringToRepeat...23 times"
+    ```
+  - ```bash
+    anbu sgen uuid # generates a uuid
+    anbu sgen ruid 16 # generates a short uuid of length b/w 1-32
+    ```
+- ***Time Operations***
+  - ```bash
+    anbu time # prints time in various formats
+    ```
+  - ```bash
+    anbu time -a purple
+    # print time and public IP for purple teams
+    ```
+  - ```bash
+    anbu time -a diff -e 1744192475 -e 1744497775
+    # print human readable diff between 2 epochs
+    ```
+  - ```bash
+    anbu time -a parse -t "13 Apr 25 16:30 EDT"
+    # read time of particular format and print equivalent in multiple formats
+    ```
+
+## Acknowledgements
+
+Anbu takes inspiration from the following projects:
+
+- [only my brain so far]()

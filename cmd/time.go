@@ -34,7 +34,7 @@ var timeCmd = &cobra.Command{
 func init() {
 	timeCmd.Flags().StringVarP(&timeCmdFlags.action, "action", "a", "", "Action to perform: now, purple, diff, parse")
 	timeCmd.Flags().Int64SliceVarP(&timeCmdFlags.epochs, "epochs", "e", []int64{}, "Epochs to calculate difference between")
-	timeCmd.Flags().StringVarP(&timeCmdFlags.parseAction, "parse-action", "p", "", "Parse action: normal, purple")
+	timeCmd.Flags().StringVarP(&timeCmdFlags.parseAction, "parse-action", "p", "normal", "Parse action: normal, purple")
 	timeCmd.Flags().StringVarP(&timeCmdFlags.timeStr, "time-str", "t", "", "Time string to parse")
 
 	rootCmd.AddCommand(timeCmd)
