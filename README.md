@@ -37,11 +37,11 @@ Usage:
 
 Available Commands:
   filecrypt   Encryption operations on files
-  help        Help about any command
   key-pair    Generate RSA key pairs for encryption
   loop        execute a command for each number range in a range
   sgen        generate a random string, a sequence, or a repetitions
   time        time related function: use `now`, `purple`, `diff` (calculate epoch diff), `parse` (ingest a time str & print)
+  tunnel      Create tunnels between local and remote endpoints
 
 Flags:
       --debug     enable debug logging
@@ -111,9 +111,26 @@ Anbu supports a large number of operations across the board. The specific detail
     anbu time -a parse -t "13 Apr 25 16:30 EDT"
     # read time of particular format and print equivalent in multiple formats
     ```
+- ***Network Tunneling***
+  - ```bash
+    anbu tunnel tcp -l localhost:8000 -r example.com:80
+    # TCP Tunnel: forwards local port 8000 to example.com:80
+    ```
+  - ```bash
+    anbu tunnel tcp -l localhost:8000 -r example.com:443 --tls
+    # TLS TCP Tunnel: forwards local port 8000 to example.com:443 using TLS
+    ```
+  - ```bash
+    anbu tunnel ssh -l localhost:8000 -r internal.example.com:3306 -s ssh.example.com:22 -u username -p password
+    # SSH Tunnel: establishes SSH tunnel from localhost:8000 to internal.example.com:3306 via SSH server
+    ```
+  - ```bash
+    anbu tunnel ssh -l localhost:8000 -r internal.example.com:3306 -s ssh.example.com:22 -u username -k ~/.ssh/id_rsa
+    # SSH Tunnel with Key Authentication: uses SSH key authentication instead of password
+    ```
 
 ## Acknowledgements
 
 Anbu takes inspiration from the following projects:
 
-- [only my brain so far]()
+- [GoST](https://github.com/ginuerzh/gost)
