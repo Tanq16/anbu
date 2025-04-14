@@ -128,9 +128,23 @@ Anbu supports a large number of operations across the board. The specific detail
     anbu tunnel ssh -l localhost:8000 -r internal.example.com:3306 -s ssh.example.com:22 -u username -k ~/.ssh/id_rsa
     # SSH Tunnel with Key Authentication: uses SSH key authentication instead of password
     ```
+- ***Simple HTTP/HTTPS Server***
+  - ```bash
+    anbu httpserver
+    # Serves current directory on http://localhost:8000
+    ```
+  - ```bash
+    anbu httpserver -l 0.0.0.0:8080 -t
+    # Serves HTTPS on all interfaces with an auto-generated self-signed cert
+    ```
+  - ```bash
+    anbu httpserver -u
+    # Enables file upload via PUT requests
+    ```
 
 ## Acknowledgements
 
 Anbu takes inspiration from the following projects:
 
 - [GoST](https://github.com/ginuerzh/gost)
+- [SimpleHTTPServer](https://github.com/projectdiscovery/simplehttpserver)
