@@ -70,7 +70,7 @@ var StringCmd = &cobra.Command{
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate UUID")
 			}
-			fmt.Println(utils.OutSuccess(uuid))
+			fmt.Println(uuid)
 			return
 		}
 		if args[0] == "ruid" {
@@ -81,7 +81,7 @@ var StringCmd = &cobra.Command{
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate RUID")
 			}
-			fmt.Println(utils.OutSuccess(ruid))
+			fmt.Println(ruid)
 			return
 		}
 		// Invalid command
