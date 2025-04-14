@@ -47,4 +47,5 @@ func init() {
 	rootCmd.AddCommand(cryptoCmd.KeyPairCmd)
 
 	rootCmd.AddCommand(networkCmd.TunnelCmd)
+	rootCmd.AddCommand(networkCmd.HTTPServerCmd)
 }
