@@ -11,8 +11,23 @@ import (
 
 var StringCmd = &cobra.Command{
 	Use:   "string",
-	Short: "generate a random string, a uuid, a shorter uuid, a sequence, or a repetition",
-	Args:  cobra.ArbitraryArgs,
+	Short: "generate a random string, a sequence, a repetition, or password/passphrase",
+	Long: `generate a variety of strings with the following
+Examples:
+	anbu string N                      # generate a random string of length N
+	anbu string seq N                  # generate a sequence of length N
+	anbu string rep N hello            # repeat the string hello N times
+	anbu string uuid                   # generate a UUID
+	anbu string ruid [N b/w 1 and 30]  # generate a reduced UUID of length N
+	anbu string suid                   # generate a short UUID of length 18
+	anbu string password               # generate a password of length 12
+	anbu string password N             # generate a password of length N
+	anbu string password N simple      # generate a password of length N w/ only letters
+	anbu string passphrase             # generate a passphrase of 3 words
+	anbu string passphrase N           # generate a passphrase of N words
+	anbu string passphrase N "M"       # generate a passphrase of N words w/ M as separator
+	anbu string passphrase N simple    # generate a passphrase of N words and - as separator`,
+	Args: cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := utils.GetLogger("string")
 		// No args
@@ -82,6 +97,63 @@ var StringCmd = &cobra.Command{
 				logger.Fatal().Err(err).Msg("Failed to generate RUID")
 			}
 			fmt.Println(ruid)
+			return
+		}
+		if args[0] == "suid" {
+			suid, err := anbuGenerics.GenerateRUID("18")
+			if err != nil {
+				logger.Fatal().Err(err).Msg("Failed to generate SUID")
+			}
+			fmt.Println(suid)
+			return
+		}
+		if args[0] == "password" {
+			var password string
+			var err error
+			if len(args) < 2 {
+				password, err = anbuGenerics.GeneratePassword("12", false)
+				if err != nil {
+					logger.Fatal().Err(err).Msg("Failed to generate password")
+				}
+			} else if len(args) == 2 {
+				password, err = anbuGenerics.GeneratePassword(args[1], false)
+				if err != nil {
+					logger.Fatal().Err(err).Msg("Failed to generate password")
+				}
+			} else if len(args) == 3 {
+				password, err = anbuGenerics.GeneratePassword(args[1], true)
+				if err != nil {
+					logger.Fatal().Err(err).Msg("Failed to generate password")
+				}
+			}
+			fmt.Println(password)
+			return
+		}
+		if args[0] == "passphrase" {
+			var passphrase string
+			var err error
+			if len(args) < 2 {
+				passphrase, err = anbuGenerics.GeneratePassPhrase("3", "-", false)
+				if err != nil {
+					logger.Fatal().Err(err).Msg("Failed to generate passphrase")
+				}
+			} else if len(args) == 2 {
+				passphrase, err = anbuGenerics.GeneratePassPhrase(args[1], "-", false)
+				if err != nil {
+					logger.Fatal().Err(err).Msg("Failed to generate passphrase")
+				}
+			} else if len(args) == 3 {
+				passphrase, err = anbuGenerics.GeneratePassPhrase(args[1], args[2], false)
+				if err != nil {
+					logger.Fatal().Err(err).Msg("Failed to generate passphrase")
+				}
+			} else if len(args) == 4 {
+				passphrase, err = anbuGenerics.GeneratePassPhrase(args[1], args[2], true)
+				if err != nil {
+					logger.Fatal().Err(err).Msg("Failed to generate passphrase")
+				}
+			}
+			fmt.Println(passphrase)
 			return
 		}
 		// Invalid command

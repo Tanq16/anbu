@@ -40,7 +40,7 @@ Available Commands:
   httpserver  Start a simple HTTP/HTTPS file server
   key-pair    Generate RSA key pairs for encryption
   loop        execute a command for each number range in a range
-  string      generate a random string, a uuid, a shorter uuid, a sequence, or a repetition
+  string      generate a random string, a sequence, a repetition, or password/passphrase
   time        time related function: use `now`, `purple`, `diff` (calculate epoch diff), `parse` (ingest a time str & print)
   tunnel      Create tunnels between local and remote endpoints
 
@@ -75,17 +75,30 @@ Anbu supports a large number of operations across the board. The specific detail
     ```
 - ***String Generation***
   - ```bash
-    anbu sgen 23  # generate 23 (100 if not specified) random alphanumeric chars
+    anbu string 23  # generate 23 (100 if not specified) random alphanumeric chars
     ```
   - ```bash
-    anbu sgen seq 29  # prints "abcdefghijklmnopqrstuvxyz" back to back until desired length
+    anbu string seq 29  # prints "abcdefghijklmnopqrstuvxyz" back to back until desired length
     ```
   - ```bash
-    anbu sgen rep 23 stringToRepeat  # prints "stringToRepeatstringToRepeat...23 times"
+    anbu string rep 23 stringToRepeat  # prints "stringToRepeatstringToRepeat...23 times"
     ```
   - ```bash
-    anbu sgen uuid     # generates a uuid
-    anbu sgen ruid 16  # generates a short uuid of length b/w 1-32
+    anbu string uuid     # generates a uuid
+    anbu string ruid 16  # generates a short uuid of length b/w 1-32
+    anbu string suid     # generates a short uuid of length 18
+    ```
+  - ```bash
+    anbu string password           # generate a 12-character complex password
+    anbu string password 16        # generate a 16-character complex password
+    anbu string password 8 simple  # generate an 8-letter lowercase password
+    ```
+  - ```bash
+    anbu string passphrase               # generate a 3-word passphrase with hyphens
+    anbu string passphrase 5             # generate a 5-word passphrase with hyphens
+    anbu string passphrase 4 '@'         # generate a 4-word passphrase with period separators
+    anbu string passphrase 4 '-' simple  # generate a simple 4-word lowercase passphrase
+    anbu string passphrase 4 '.' simple  # generate a simple 4-word passphrase with numbers and capitalization
     ```
 - ***Time Operations***
   - ```bash

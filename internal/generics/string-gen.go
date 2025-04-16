@@ -77,12 +77,14 @@ func GenerateRUID(len string) (string, error) {
 		return "", fmt.Errorf("not a valid length: %w", err)
 	}
 	if length <= 0 || length > 32 {
-		return "", fmt.Errorf("length must be between 1 and 32")
+		return "", fmt.Errorf("length must be between 1 and 30")
 	}
 	uuid, err := uuid.NewRandom()
 	if err != nil {
 		return "", fmt.Errorf("failed to generate UUID: %w", err)
 	}
-	shortUUID := strings.ReplaceAll(uuid.String(), "-", "")[:length]
-	return shortUUID, nil
+	// remove version and variant bits from UUID
+	shortUUID := uuid.String()[0:8] + uuid.String()[9:13] + uuid.String()[15:18] + uuid.String()[20:23] + uuid.String()[24:]
+	// shortUUID := strings.ReplaceAll(uuid.String(), "-", "")[:length]
+	return shortUUID[:length], nil
 }
