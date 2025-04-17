@@ -42,6 +42,7 @@ func init() {
 	rootCmd.AddCommand(genericsCmd.LoopCmd)
 	rootCmd.AddCommand(genericsCmd.StringCmd)
 	rootCmd.AddCommand(genericsCmd.TimeCmd)
+	rootCmd.AddCommand(genericsCmd.BulkRenameCmd)
 
 	rootCmd.AddCommand(cryptoCmd.FileCryptoCmd)
 	rootCmd.AddCommand(cryptoCmd.KeyPairCmd)
