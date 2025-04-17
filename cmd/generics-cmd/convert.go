@@ -1,8 +1,6 @@
 package genericsCmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
 	"github.com/tanq16/anbu/utils"
@@ -29,6 +27,5 @@ Converters:
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Conversion failed")
 		}
-		fmt.Println(utils.OutDetail("Data converted successfully"))
 	},
 }
