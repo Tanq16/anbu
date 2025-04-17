@@ -24,26 +24,25 @@ var TimeCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			anbuGenerics.Current()
+			anbuGenerics.TimeCurrent()
 			return
 		}
 		switch args[0] {
 		case "now":
-			anbuGenerics.Current()
+			anbuGenerics.TimeCurrent()
 		case "purple":
-			anbuGenerics.Purple()
+			anbuGenerics.TimePurple()
 		case "diff":
-			anbuGenerics.EpochDiff(timeCmdFlags.epochs)
+			anbuGenerics.TimeEpochDiff(timeCmdFlags.epochs)
 		case "parse":
-			anbuGenerics.Parse(timeCmdFlags.timeStr, timeCmdFlags.parseAction)
+			anbuGenerics.TimeParse(timeCmdFlags.timeStr, timeCmdFlags.parseAction)
 		default:
-			anbuGenerics.Current()
+			anbuGenerics.TimeCurrent()
 		}
 	},
 }
 
 func init() {
-	// TimeCmd.Flags().StringVarP(&timeCmdFlags.action, "action", "a", "", "Action to perform: now, purple, diff, parse")
 	TimeCmd.Flags().Int64SliceVarP(&timeCmdFlags.epochs, "epochs", "e", []int64{}, "Epochs to calculate difference between")
 	TimeCmd.Flags().StringVarP(&timeCmdFlags.parseAction, "parse-action", "p", "normal", "Parse action: normal, purple")
 	TimeCmd.Flags().StringVarP(&timeCmdFlags.timeStr, "time-str", "t", "", "Time string to parse")

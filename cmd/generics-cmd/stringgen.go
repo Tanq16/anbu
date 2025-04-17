@@ -57,7 +57,7 @@ Examples:
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Not a valid length")
 			}
-			sequence, err := anbuGenerics.GenerateSequence(length)
+			sequence, err := anbuGenerics.GenerateSequenceString(length)
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate sequence")
 			}
@@ -73,7 +73,7 @@ Examples:
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Not a valid count")
 			}
-			repeated, err := anbuGenerics.GenerateRepetition(count, args[2])
+			repeated, err := anbuGenerics.GenerateRepetitionString(count, args[2])
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate repetition")
 			}
@@ -81,7 +81,7 @@ Examples:
 			return
 		}
 		if args[0] == "uuid" {
-			uuid, err := anbuGenerics.GenerateUUID()
+			uuid, err := anbuGenerics.GenerateUUIDString()
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate UUID")
 			}
@@ -92,7 +92,7 @@ Examples:
 			if len(args) < 2 {
 				logger.Fatal().Msg("Missing length for RUID command")
 			}
-			ruid, err := anbuGenerics.GenerateRUID(args[1])
+			ruid, err := anbuGenerics.GenerateRUIDString(args[1])
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate RUID")
 			}
@@ -100,7 +100,7 @@ Examples:
 			return
 		}
 		if args[0] == "suid" {
-			suid, err := anbuGenerics.GenerateRUID("18")
+			suid, err := anbuGenerics.GenerateRUIDString("18")
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to generate SUID")
 			}

@@ -36,7 +36,7 @@ var fileCryptoEncryptSymmCmd = &cobra.Command{
 		if fileCryptoFlags.password == "" {
 			logger.Fatal().Msg("No password specified")
 		}
-		err := anbuCrypto.EncryptSymmetric(fileCryptoFlags.file, fileCryptoFlags.password)
+		err := anbuCrypto.EncryptFileSymmetric(fileCryptoFlags.file, fileCryptoFlags.password)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Failed to encrypt file")
 		}
@@ -57,7 +57,7 @@ var fileCryptoDecryptSymmCmd = &cobra.Command{
 		if fileCryptoFlags.password == "" {
 			logger.Fatal().Msg("No password specified")
 		}
-		err := anbuCrypto.DecryptSymmetric(fileCryptoFlags.file, fileCryptoFlags.password)
+		err := anbuCrypto.DecryptFileSymmetric(fileCryptoFlags.file, fileCryptoFlags.password)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Failed to decrypt file")
 		}

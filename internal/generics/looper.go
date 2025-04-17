@@ -10,7 +10,7 @@ import (
 	"github.com/tanq16/anbu/utils"
 )
 
-func ProcessRange(input string) ([]int, error) {
+func LoopProcessRange(input string) ([]int, error) {
 	logger := utils.GetLogger("loopcmd")
 	var rangeElems []int
 	if strings.Contains(input, "-") {
@@ -55,17 +55,17 @@ func ProcessRange(input string) ([]int, error) {
 	return rangeElems, nil
 }
 
-func paddedReplace(num, padding int) string {
+func loopPaddedReplace(num, padding int) string {
 	if padding > 0 {
 		return fmt.Sprintf("%0*d", padding+1, num)
 	}
 	return strconv.Itoa(num)
 }
 
-func ProcessCommands(loopRange []int, command string, padding int) error {
+func LoopProcessCommands(loopRange []int, command string, padding int) error {
 	logger := utils.GetLogger("loopcmd")
 	for _, num := range loopRange {
-		cmdToRun := strings.ReplaceAll(command, "$i", paddedReplace(num, padding))
+		cmdToRun := strings.ReplaceAll(command, "$i", loopPaddedReplace(num, padding))
 		logger.Debug().Str("command", cmdToRun).Msg("executing command")
 		cmd := exec.Command("sh", "-c", cmdToRun)
 		var stdoutBuf, stderrBuf bytes.Buffer

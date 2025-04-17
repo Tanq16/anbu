@@ -36,7 +36,7 @@ func GenerateRandomString(length int) (string, error) {
 }
 
 // generates a sequence of alphabetic characters
-func GenerateSequence(length int) (string, error) {
+func GenerateSequenceString(length int) (string, error) {
 	if length <= 0 {
 		return "", fmt.Errorf("length must be greater than 0")
 	}
@@ -49,7 +49,7 @@ func GenerateSequence(length int) (string, error) {
 }
 
 // repeats a string a specified number of times
-func GenerateRepetition(count int, str string) (string, error) {
+func GenerateRepetitionString(count int, str string) (string, error) {
 	if count <= 0 {
 		return "", fmt.Errorf("count must be greater than 0")
 	}
@@ -60,8 +60,7 @@ func GenerateRepetition(count int, str string) (string, error) {
 	return result.String(), nil
 }
 
-// generates a UUID string
-func GenerateUUID() (string, error) {
+func GenerateUUIDString() (string, error) {
 	// use google/uuid package to generate a UUID
 	uuid, err := uuid.NewRandom()
 	if err != nil {
@@ -71,7 +70,7 @@ func GenerateUUID() (string, error) {
 }
 
 // generates shorter UUID string
-func GenerateRUID(len string) (string, error) {
+func GenerateRUIDString(len string) (string, error) {
 	length, err := strconv.Atoi(len)
 	if err != nil {
 		return "", fmt.Errorf("not a valid length: %w", err)
@@ -85,6 +84,5 @@ func GenerateRUID(len string) (string, error) {
 	}
 	// remove version and variant bits from UUID
 	shortUUID := uuid.String()[0:8] + uuid.String()[9:13] + uuid.String()[15:18] + uuid.String()[20:23] + uuid.String()[24:]
-	// shortUUID := strings.ReplaceAll(uuid.String(), "-", "")[:length]
 	return shortUUID[:length], nil
 }

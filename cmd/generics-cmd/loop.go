@@ -21,13 +21,13 @@ var LoopCmd = &cobra.Command{
 			logger.Fatal().Msg("Missing count or command")
 		} else {
 			var err error
-			loopCmdFlagRange, err = anbuGenerics.ProcessRange(args[0])
+			loopCmdFlagRange, err = anbuGenerics.LoopProcessRange(args[0])
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Not a valid count")
 			}
 			loopCmdFlagCommand = args[1]
 		}
-		err := anbuGenerics.ProcessCommands(loopCmdFlagRange, loopCmdFlagCommand, loopCmdFlagPadding)
+		err := anbuGenerics.LoopProcessCommands(loopCmdFlagRange, loopCmdFlagCommand, loopCmdFlagPadding)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Failed to execute linear operation")
 		}

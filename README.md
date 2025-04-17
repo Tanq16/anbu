@@ -12,63 +12,22 @@
 
 ## Installation
 
-Download directly from [releases](https://github.com/Tanq16/anbu/releases). Anbu is available for AMD64 and ARM64 for Linux and MacOS only. Determine the version with `anbu -v`.
-
-To build latest commit directly via Go, use:
-
-```bash
-go install github.com/tanq16/anbu@latest
-```
-
-To clone and build locally for development, use:
-
-```bash
-git clone https://github.com/tanq16/anbu.git && cd anbu
-go build .
-```
+- Download directly from [RELEASES](https://github.com/Tanq16/anbu/releases). Anbu is available for AMD64 and ARM64 for Linux and MacOS.
+- To build latest commit directly via Go, use:
+  ```bash
+  go install github.com/tanq16/anbu@latest
+  ```
+- To clone and build locally for development, use:
+  ```bash
+  git clone https://github.com/tanq16/anbu.git && \
+  cd anbu && \
+  go build .
+  ```
 
 ## Usage
 
 Anbu supports a large number of operations across the board. The specific details of each are:
 
-- ***File Encryption/Decryption***
-  - ```bash
-    anbu filecrypt encrypt /path/to/file.zip -p "P@55w0rd"  # Encrypt a file
-    anbu filecrypt decrypt ./encrypted.enc -p "P@55w0rd"    # Decrypt a file
-    ```
-- ***RSA Key Pair Generation***
-  - ```bash
-    anbu key-pair -o mykey -k 4096  # 4096 bit RSA key pair
-    anbu key-pair --ssh             # 2048 bit RSA SSH key pair called anbu-key.*
-    ```
-- ***Loop Command***
-  - ```bash
-    anbu loop 03-112 'echo "$i"' -p 2  # run command for index 3 to 112 as 003, 004, ...
-    anbu loop 20 'echo justprintme'    # run command 20 times linearly
-    ```
-- ***String Generation***
-  - ```bash
-    anbu string 23               # generate 23 (100 if not specified) random alphanumeric chars
-    anbu string seq 29           # prints "abcdefghijklmnopqrstuvxyz" until desired length
-    anbu string rep 23 str2rep   # prints "str2repstr2rep...23 times"
-    ```
-  - ```bash
-    anbu string uuid     # generates a uuid
-    anbu string ruid 16  # generates a short uuid of length b/w 1-32
-    anbu string suid     # generates a short uuid of length 18
-    ```
-  - ```bash
-    anbu string password           # generate a 12-character complex password
-    anbu string password 16        # generate a 16-character complex password
-    anbu string password 8 simple  # generate an 8-letter lowercase password
-    ```
-  - ```bash
-    anbu string passphrase               # generate a 3-word passphrase with hyphens
-    anbu string passphrase 5             # generate a 5-word passphrase with hyphens
-    anbu string passphrase 4 '@'         # generate a 4-word passphrase with period separators
-    anbu string passphrase 4 '-' simple  # generate a simple 4-word lowercase passphrase
-    anbu string passphrase 4 '.' simple  # generate a simple 4-word passphrase with numbers and capitalization
-    ```
 - ***Time Operations***
   - ```bash
     anbu time          # prints time in various formats
@@ -106,11 +65,53 @@ Anbu supports a large number of operations across the board. The specific detail
     anbu httpserver -l 0.0.0.0:8080 -t  # Serve HTTPS on given add:port with a self-signed cert
     anbu httpserver -u                  # Enables file upload via PUT requests
     ```
+- ***JWT Decode***
+  - ```bash
+    anbu jwtdecode "$TOKEN"  # Decodes and prints the headers and payload values in a table
+    ```
 - ***Bulk Rename***
   - ```bash
     anbu bulkrename 'prefix_(.*)' 'new_\1'        # Rename files matching regex pattern
     anbu bulkrename -d 'old_(.*)' 'new_\1'        # Rename directories instead of files
     anbu bulkrename '(.*)\\.(.*)' '\1_backup.\2'  # Add _backup before extension
+    ```
+- ***String Generation***
+  - ```bash
+    anbu string 23               # generate 23 (100 if not specified) random alphanumeric chars
+    anbu string seq 29           # prints "abcdefghijklmnopqrstuvxyz" until desired length
+    anbu string rep 23 str2rep   # prints "str2repstr2rep...23 times"
+    ```
+  - ```bash
+    anbu string uuid     # generates a uuid
+    anbu string ruid 16  # generates a short uuid of length b/w 1-32
+    anbu string suid     # generates a short uuid of length 18
+    ```
+  - ```bash
+    anbu string password           # generate a 12-character complex password
+    anbu string password 16        # generate a 16-character complex password
+    anbu string password 8 simple  # generate an 8-letter lowercase password
+    ```
+  - ```bash
+    anbu string passphrase               # generate a 3-word passphrase with hyphens
+    anbu string passphrase 5             # generate a 5-word passphrase with hyphens
+    anbu string passphrase 4 '@'         # generate a 4-word passphrase with period separators
+    anbu string passphrase 4 '-' simple  # generate a simple 4-word lowercase passphrase
+    anbu string passphrase 4 '.' simple  # generate a simple 4-word passphrase with numbers and capitalization
+    ```
+- ***File Encryption/Decryption***
+  - ```bash
+    anbu filecrypt encrypt /path/to/file.zip -p "P@55w0rd"  # Encrypt a file
+    anbu filecrypt decrypt ./encrypted.enc -p "P@55w0rd"    # Decrypt a file
+    ```
+- ***RSA Key Pair Generation***
+  - ```bash
+    anbu key-pair -o mykey -k 4096  # 4096 bit RSA key pair
+    anbu key-pair --ssh             # 2048 bit RSA SSH key pair called anbu-key.*
+    ```
+- ***Loop Command***
+  - ```bash
+    anbu loop 03-112 'echo "$i"' -p 2  # run command for index 3 to 112 as 003, 004, ...
+    anbu loop 20 'echo justprintme'    # run command 20 times linearly
     ```
 
 ## Acknowledgements

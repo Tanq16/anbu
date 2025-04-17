@@ -67,7 +67,7 @@ func printTimeTablePurple(concern time.Time) error {
 	return nil
 }
 
-func formatDuration(d time.Duration) string {
+func timeFormatDuration(d time.Duration) string {
 	days := int(d.Hours() / 24)
 	hours := int(d.Hours()) % 24
 	minutes := int(d.Minutes()) % 60
@@ -96,7 +96,7 @@ func formatDuration(d time.Duration) string {
 	return strings.Join(parts, ", ")
 }
 
-func Parse(timeStr string, printType string) error {
+func TimeParse(timeStr string, printType string) error {
 	formats := []string{
 		time.RFC3339,
 		time.RFC822,
@@ -140,7 +140,7 @@ func Parse(timeStr string, printType string) error {
 	return nil
 }
 
-func Current() {
+func TimeCurrent() {
 	logger := utils.GetLogger("time")
 	currentTime := time.Now()
 	if err := printTimeTable(currentTime); err != nil {
@@ -148,7 +148,7 @@ func Current() {
 	}
 }
 
-func Purple() {
+func TimePurple() {
 	logger := utils.GetLogger("time")
 	currentTime := time.Now()
 	if err := printTimeTablePurple(currentTime); err != nil {
@@ -156,7 +156,7 @@ func Purple() {
 	}
 }
 
-func EpochDiff(epochs []int64) error {
+func TimeEpochDiff(epochs []int64) error {
 	var epoch1, epoch2 int64
 	if len(epochs) == 0 {
 		return fmt.Errorf("no epochs provided")
@@ -177,9 +177,9 @@ func EpochDiff(epochs []int64) error {
 	fmt.Printf("  %s  %.1f\n", utils.OutSuccess("Days:"), diff.Hours()/24)
 	// Add human readable description
 	if diff > 0 {
-		fmt.Printf("\n%s is %s after %s\n", utils.OutInfo("Time 2"), utils.OutSuccess(formatDuration(diff)), utils.OutInfo("Time 1"))
+		fmt.Printf("\n%s is %s after %s\n", utils.OutInfo("Time 2"), utils.OutSuccess(timeFormatDuration(diff)), utils.OutInfo("Time 1"))
 	} else {
-		fmt.Printf("\n%s is %s before %s\n", utils.OutInfo("Time 2"), utils.OutSuccess(formatDuration(-diff)), utils.OutInfo("Time 1"))
+		fmt.Printf("\n%s is %s before %s\n", utils.OutInfo("Time 2"), utils.OutSuccess(timeFormatDuration(-diff)), utils.OutInfo("Time 1"))
 	}
 	return nil
 }

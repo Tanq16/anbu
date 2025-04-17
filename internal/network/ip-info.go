@@ -33,3 +33,8 @@ func GetPublicIP() (string, error) {
 	}
 	return ip, nil
 }
+
+// func GetLocalIP() (string, error) {
+// 	// gets the local IP address, hostname, DNS servers, and subnet mask
+// 	return ip, nil
+// }

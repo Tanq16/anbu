@@ -11,7 +11,7 @@ var bulkRenameFlags struct {
 }
 
 var BulkRenameCmd = &cobra.Command{
-	Use:   "rename pattern replacement",
+	Use:   "rename",
 	Short: "Bulk rename files/directories using regex pattern and replacement as args",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {

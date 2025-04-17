@@ -52,5 +52,5 @@ var KeyPairCmd = &cobra.Command{
 func init() {
 	KeyPairCmd.Flags().StringVarP(&keyPairFlags.outputPath, "output-path", "o", "./anbu-key", "Output path for key files")
 	KeyPairCmd.Flags().IntVarP(&keyPairFlags.keySize, "key-size", "k", 2048, "RSA key size (2048, 3072, or 4096)")
-	KeyPairCmd.Flags().BoolVar(&keyPairFlags.sshFormat, "ssh", false, "Generate keys in SSH format instead of PEM")
+	KeyPairCmd.Flags().BoolVarP(&keyPairFlags.sshFormat, "ssh", "s", false, "Generate keys in SSH format instead of PEM")
 }
