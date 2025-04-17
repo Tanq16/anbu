@@ -43,10 +43,11 @@ func init() {
 	rootCmd.AddCommand(genericsCmd.StringCmd)
 	rootCmd.AddCommand(genericsCmd.TimeCmd)
 	rootCmd.AddCommand(genericsCmd.BulkRenameCmd)
-	rootCmd.AddCommand(genericsCmd.JwtDecodeCmd)
+	rootCmd.AddCommand(genericsCmd.ConvertCmd)
 
 	rootCmd.AddCommand(cryptoCmd.FileCryptoCmd)
 	rootCmd.AddCommand(cryptoCmd.KeyPairCmd)
+	rootCmd.AddCommand(cryptoCmd.JwtDecodeCmd)
 
 	rootCmd.AddCommand(networkCmd.TunnelCmd)
 	rootCmd.AddCommand(networkCmd.HTTPServerCmd)

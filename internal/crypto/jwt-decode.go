@@ -1,4 +1,4 @@
-package anbuGenerics
+package anbuCrypto
 
 import (
 	"encoding/base64"
