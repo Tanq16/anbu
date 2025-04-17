@@ -1,6 +1,7 @@
 package anbuGenerics
 
 import (
+	cryptoRand "crypto/rand"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -22,7 +23,7 @@ func GeneratePassword(lengthS string, simple bool) (string, error) {
 	var result strings.Builder
 	for result.Len() < length {
 		randomBytes := make([]byte, length)
-		_, err := rand.Read(randomBytes)
+		_, err := cryptoRand.Read(randomBytes)
 		if err != nil {
 			return "", fmt.Errorf("failed to generate random bytes: %w", err)
 		}

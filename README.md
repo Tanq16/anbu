@@ -35,12 +35,11 @@ Anbu supports a large number of operations across the board. The specific detail
     anbu time purple   # print time and public IP for purple teams
     ```
   - ```bash
-    anbu time diff -e 1744192475 -e 1744497775
-    # print human readable diff between 2 epochs
+    anbu time diff -e 1744192475 -e 1744497775  # print time difference between 2 epochs
     ```
   - ```bash
-    anbu time parse -t "13 Apr 25 16:30 EDT"
-    # read time in a format and print equivalent in multiple formats
+    anbu time parse -t "13 Apr 25 16:30 EDT"  # read given time and print in multiple formats
+    anbu time until -t "13 Apr 25 16:30 EDT"  # read time and print difference from now
     ```
 - ***Network Tunneling***
   - ```bash
@@ -61,19 +60,19 @@ Anbu supports a large number of operations across the board. The specific detail
     ```
 - ***Simple HTTP/HTTPS Server***
   - ```bash
-    anbu httpserver                     # Serves current directory on http://localhost:8000
-    anbu httpserver -l 0.0.0.0:8080 -t  # Serve HTTPS on given add:port with a self-signed cert
-    anbu httpserver -u                  # Enables file upload via PUT requests
+    anbu http-server                     # Serves current directory on http://localhost:8000
+    anbu http-server -l 0.0.0.0:8080 -t  # Serve HTTPS on given add:port with a self-signed cert
+    anbu http-server -u                  # Enables file upload via PUT requests
     ```
 - ***JWT Decode***
   - ```bash
-    anbu jwtdecode "$TOKEN"  # Decodes and prints the headers and payload values in a table
+    anbu jwt-decode "$TOKEN"  # Decodes and prints the headers and payload values in a table
     ```
 - ***Bulk Rename***
   - ```bash
-    anbu bulkrename 'prefix_(.*)' 'new_\1'        # Rename files matching regex pattern
-    anbu bulkrename -d 'old_(.*)' 'new_\1'        # Rename directories instead of files
-    anbu bulkrename '(.*)\\.(.*)' '\1_backup.\2'  # Add _backup before extension
+    anbu rename 'prefix_(.*)' 'new_\1'        # Rename files matching regex pattern
+    anbu rename -d 'old_(.*)' 'new_\1'        # Rename directories instead of files
+    anbu rename '(.*)\\.(.*)' '\1_backup.\2'  # Add _backup before extension
     ```
 - ***String Generation***
   - ```bash
@@ -100,8 +99,8 @@ Anbu supports a large number of operations across the board. The specific detail
     ```
 - ***File Encryption/Decryption***
   - ```bash
-    anbu filecrypt encrypt /path/to/file.zip -p "P@55w0rd"  # Encrypt a file
-    anbu filecrypt decrypt ./encrypted.enc -p "P@55w0rd"    # Decrypt a file
+    anbu file-crypt encrypt /path/to/file.zip -p "P@55w0rd"  # Encrypt a file
+    anbu file-crypt decrypt ./encrypted.enc -p "P@55w0rd"    # Decrypt a file
     ```
 - ***RSA Key Pair Generation***
   - ```bash
