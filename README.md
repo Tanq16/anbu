@@ -79,7 +79,6 @@ Anbu supports a large number of operations across the board. The specific detail
     anbu convert yaml-json config.yaml  # Convert YAML file to JSON
     anbu convert json-yaml data.json    # Convert JSON file to YAML
     ```
-This section should be added to the Usage section of the README to document the `convert` command functionality.
 - ***String Generation***
   - ```bash
     anbu string 23               # generate 23 (100 if not specified) random alphanumeric chars
