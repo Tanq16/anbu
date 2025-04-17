@@ -74,6 +74,12 @@ Anbu supports a large number of operations across the board. The specific detail
     anbu rename -d 'old_(.*)' 'new_\1'        # Rename directories instead of files
     anbu rename '(.*)\\.(.*)' '\1_backup.\2'  # Add _backup before extension
     ```
+- ***Data Conversion***
+  - ```bash
+    anbu convert yaml-json config.yaml  # Convert YAML file to JSON
+    anbu convert json-yaml data.json    # Convert JSON file to YAML
+    ```
+This section should be added to the Usage section of the README to document the `convert` command functionality.
 - ***String Generation***
   - ```bash
     anbu string 23               # generate 23 (100 if not specified) random alphanumeric chars
