@@ -14,7 +14,7 @@ var httpServerFlags struct {
 }
 
 var HTTPServerCmd = &cobra.Command{
-	Use:   "httpserver",
+	Use:   "http-server",
 	Short: "Start a simple HTTP/HTTPS file server",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := utils.GetLogger("httpserver")

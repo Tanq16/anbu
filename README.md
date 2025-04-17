@@ -35,11 +35,11 @@ Anbu supports a large number of operations across the board. The specific detail
     anbu time purple   # print time and public IP for purple teams
     ```
   - ```bash
-    anbu time -a diff -e 1744192475 -e 1744497775
+    anbu time diff -e 1744192475 -e 1744497775
     # print human readable diff between 2 epochs
     ```
   - ```bash
-    anbu time -a parse -t "13 Apr 25 16:30 EDT"
+    anbu time parse -t "13 Apr 25 16:30 EDT"
     # read time in a format and print equivalent in multiple formats
     ```
 - ***Network Tunneling***

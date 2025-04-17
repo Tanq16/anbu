@@ -7,7 +7,7 @@ import (
 )
 
 var JwtDecodeCmd = &cobra.Command{
-	Use:   "jwtdecode",
+	Use:   "jwt-decode",
 	Short: "Decode a JWT token",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

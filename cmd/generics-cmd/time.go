@@ -14,12 +14,13 @@ var timeCmdFlags struct {
 
 var TimeCmd = &cobra.Command{
 	Use:   "time",
-	Short: "print times with args `now`, `purple`, `diff`, `parse`",
+	Short: "time related commands to print or analyze time",
 	Long: `Arguments:
 - now: print the current time in various formats
 - purple: print the current time in purple team format (includes public ip)
 - diff: print the difference between two epochs
 - parse: parse a time string across various formats and print as table
+- until: parse a time string and print the difference between now and then
 `,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -36,6 +37,8 @@ var TimeCmd = &cobra.Command{
 			anbuGenerics.TimeEpochDiff(timeCmdFlags.epochs)
 		case "parse":
 			anbuGenerics.TimeParse(timeCmdFlags.timeStr, timeCmdFlags.parseAction)
+		case "until":
+			anbuGenerics.TimeParse(timeCmdFlags.timeStr, "diff")
 		default:
 			anbuGenerics.TimeCurrent()
 		}

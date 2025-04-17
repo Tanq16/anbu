@@ -19,7 +19,7 @@ var fileCryptoFlags struct {
 }
 
 var FileCryptoCmd = &cobra.Command{
-	Use:   "filecrypt",
+	Use:   "file-crypt",
 	Short: "Encryption/decryption on files using AES-256-GCM symmetric encryption",
 }
 

@@ -67,10 +67,35 @@ func printTimeTablePurple(concern time.Time) error {
 	return nil
 }
 
+func printTimeDifferenceFromNow(targetTime time.Time) error {
+	now := time.Now()
+	var diff time.Duration
+	var direction string
+	if targetTime.After(now) {
+		diff = targetTime.Sub(now)
+		direction = "until"
+	} else {
+		diff = now.Sub(targetTime)
+		direction = "ago"
+	}
+	fmt.Println()
+	fmt.Printf("%s: %s\n", utils.OutDetail("Target time"), utils.OutDebug(targetTime.Format("Mon Jan 2 15:04:05 MST 2006")))
+	fmt.Printf("%s: %s\n", utils.OutDetail("Current time"), utils.OutDebug(now.Format("Mon Jan 2 15:04:05 MST 2006")))
+	fmt.Println()
+	// Print direction-aware message
+	if direction == "until" {
+		fmt.Printf("Target time is %s from now\n", utils.OutDetail(timeFormatDuration(diff)))
+	} else {
+		fmt.Printf("Target time was %s ago\n", utils.OutDetail(timeFormatDuration(diff)))
+	}
+	return nil
+}
+
 func timeFormatDuration(d time.Duration) string {
 	days := int(d.Hours() / 24)
 	hours := int(d.Hours()) % 24
 	minutes := int(d.Minutes()) % 60
+	seconds := int(d.Seconds()) % 60
 	parts := []string{}
 	if days > 0 {
 		if days == 1 {
@@ -91,6 +116,13 @@ func timeFormatDuration(d time.Duration) string {
 			parts = append(parts, "1 minute")
 		} else {
 			parts = append(parts, fmt.Sprintf("%d minutes", minutes))
+		}
+	}
+	if seconds > 0 || len(parts) == 0 {
+		if seconds == 1 {
+			parts = append(parts, "1 second")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d seconds", seconds))
 		}
 	}
 	return strings.Join(parts, ", ")
@@ -115,7 +147,7 @@ func TimeParse(timeStr string, printType string) error {
 	// Try to parse with each common format
 	for _, format := range formats {
 		if t, err := time.Parse(format, timeStr); err == nil {
-			parsedTime = t.UTC()
+			parsedTime = t
 			break
 		}
 	}
@@ -129,13 +161,18 @@ func TimeParse(timeStr string, printType string) error {
 		}
 	}
 	var err error
-	if printType == "normal" {
+	switch printType {
+	case "normal":
 		err = printTimeTable(parsedTime)
-	} else if printType == "purple" {
+	case "purple":
 		err = printTimeTablePurple(parsedTime)
+	case "diff":
+		err = printTimeDifferenceFromNow(parsedTime)
+	default:
+		err = printTimeTable(parsedTime)
 	}
 	if err != nil {
-		return fmt.Errorf("could not print time table: %w", err)
+		return fmt.Errorf("could not print time information: %w", err)
 	}
 	return nil
 }
