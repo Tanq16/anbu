@@ -39,26 +39,18 @@ Anbu supports a large number of operations across the board. The specific detail
 - ***RSA Key Pair Generation***
   - ```bash
     anbu key-pair -o mykey -k 4096  # 4096 bit RSA key pair
-    ```
-  - ```bash
-    anbu key-pair --ssh  # 2048 bit RSA SSH key pair called anbu-key.*
+    anbu key-pair --ssh             # 2048 bit RSA SSH key pair called anbu-key.*
     ```
 - ***Loop Command***
   - ```bash
     anbu loop 03-112 'echo "$i"' -p 2  # run command for index 3 to 112 as 003, 004, ...
-    ```
-  - ```bash
-    anbu loop 20 'echo justprintme'  # run command 20 times linearly
+    anbu loop 20 'echo justprintme'    # run command 20 times linearly
     ```
 - ***String Generation***
   - ```bash
-    anbu string 23  # generate 23 (100 if not specified) random alphanumeric chars
-    ```
-  - ```bash
-    anbu string seq 29  # prints "abcdefghijklmnopqrstuvxyz" back to back until desired length
-    ```
-  - ```bash
-    anbu string rep 23 stringToRepeat  # prints "stringToRepeatstringToRepeat...23 times"
+    anbu string 23               # generate 23 (100 if not specified) random alphanumeric chars
+    anbu string seq 29           # prints "abcdefghijklmnopqrstuvxyz" until desired length
+    anbu string rep 23 str2rep   # prints "str2repstr2rep...23 times"
     ```
   - ```bash
     anbu string uuid     # generates a uuid
@@ -79,13 +71,13 @@ Anbu supports a large number of operations across the board. The specific detail
     ```
 - ***Time Operations***
   - ```bash
-    anbu time  # prints time in various formats
+    anbu time          # prints time in various formats
+    anbu time now      # prints time in various formats
+    anbu time purple   # print time and public IP for purple teams
     ```
   - ```bash
-    anbu time -a purple  # print time and public IP for purple teams
-    ```
-  - ```bash
-    anbu time -a diff -e 1744192475 -e 1744497775  # print human readable diff between 2 epochs
+    anbu time -a diff -e 1744192475 -e 1744497775
+    # print human readable diff between 2 epochs
     ```
   - ```bash
     anbu time -a parse -t "13 Apr 25 16:30 EDT"
@@ -111,21 +103,13 @@ Anbu supports a large number of operations across the board. The specific detail
 - ***Simple HTTP/HTTPS Server***
   - ```bash
     anbu httpserver                     # Serves current directory on http://localhost:8000
-    ```
-  - ```bash
     anbu httpserver -l 0.0.0.0:8080 -t  # Serve HTTPS on given add:port with a self-signed cert
-    ```
-  - ```bash
     anbu httpserver -u                  # Enables file upload via PUT requests
     ```
 - ***Bulk Rename***
   - ```bash
     anbu bulkrename 'prefix_(.*)' 'new_\1'        # Rename files matching regex pattern
-    ```
-  - ```bash
     anbu bulkrename -d 'old_(.*)' 'new_\1'        # Rename directories instead of files
-    ```
-  - ```bash
     anbu bulkrename '(.*)\\.(.*)' '\1_backup.\2'  # Add _backup before extension
     ```
 
