@@ -29,29 +29,6 @@ go build .
 
 ## Usage
 
-```
-anbu is a tool for performing various everyday tasks with ease
-
-Usage:
-  anbu [command]
-
-Available Commands:
-  filecrypt   Encryption/decryption on files using AES-256-GCM symmetric encryption
-  httpserver  Start a simple HTTP/HTTPS file server
-  key-pair    Generate RSA key pairs for encryption
-  loop        execute a command for each number range in a range
-  string      generate a random string, a sequence, a repetition, or password/passphrase
-  time        time related function: use `now`, `purple`, `diff` (calculate epoch diff), `parse` (ingest a time str & print)
-  tunnel      Create tunnels between local and remote endpoints
-
-Flags:
-      --debug     enable debug logging
-  -h, --help      help for anbu
-  -v, --version   version for anbu
-
-Use "anbu [command] --help" for more information about a command.
-```
-
 Anbu supports a large number of operations across the board. The specific details of each are:
 
 - ***File Encryption/Decryption***
@@ -133,13 +110,23 @@ Anbu supports a large number of operations across the board. The specific detail
     ```
 - ***Simple HTTP/HTTPS Server***
   - ```bash
-    anbu httpserver  # Serves current directory on http://localhost:8000
+    anbu httpserver                     # Serves current directory on http://localhost:8000
     ```
   - ```bash
     anbu httpserver -l 0.0.0.0:8080 -t  # Serve HTTPS on given add:port with a self-signed cert
     ```
   - ```bash
-    anbu httpserver -u  # Enables file upload via PUT requests
+    anbu httpserver -u                  # Enables file upload via PUT requests
+    ```
+- ***Bulk Rename***
+  - ```bash
+    anbu bulkrename 'prefix_(.*)' 'new_\1'        # Rename files matching regex pattern
+    ```
+  - ```bash
+    anbu bulkrename -d 'old_(.*)' 'new_\1'        # Rename directories instead of files
+    ```
+  - ```bash
+    anbu bulkrename '(.*)\\.(.*)' '\1_backup.\2'  # Add _backup before extension
     ```
 
 ## Acknowledgements
