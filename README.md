@@ -7,7 +7,7 @@
 
   <p><b>Anbu</b> is a CLI tool that helps perform everyday tasks in an expert way. Just like the Anbu Black Ops division in Naruto, this tool helps carry out all the shadow-operations in your daily workflow.</p><br>
   
-  <a href="#installation">Installation</a> &bull; <a href="#usage">Usage</a> &bull; <a href="#acknowledgements">Acknowledgements</a><br>
+  <a href="#installation">Installation</a> &bull; <a href="#usage">Usage</a> &bull; <a href="#acknowledgements">Acknowledgements</a> &bull; <a href="#tips--tricks">Tips & Tricks</a><br>
 </div>
 
 ## Installation
@@ -43,20 +43,19 @@ Anbu supports a large number of operations across the board. The specific detail
     ```
 - ***Network Tunneling***
   - ```bash
-    anbu tunnel tcp -l localhost:8000 -r example.com:80
-    # TCP Tunnel: forward local port 8000 to example.com:80
+    anbu tunnel tcp -l localhost:8000 -r example.com:80  # forward TCP tunnel, also supports --tls
     ```
   - ```bash
-    anbu tunnel tcp -l localhost:8000 -r example.com:443 --tls
-    # TLS TCP Tunnel: forwards local port 8000 to example.com:443 using TLS
+    anbu tunnel rtcp -l localhost:3000 -r public-server.com:8000  # reverse TCP Tunnel (for NAT traversal), also supports --tls
     ```
   - ```bash
-    anbu tunnel ssh -l localhost:8000 -r internal.example.com:3306 -s ssh.example.com:22 -u username -p password
-    # SSH Tunnel: establishes SSH tunnel from localhost:8000 to internal.example.com:3306 via SSH server
+    # forward SSH tunnels
+    anbu tunnel ssh -l localhost:8000 -r target.com:3306 -s ssh.vm.com:22 -u bob -p "builder"
+    anbu tunnel ssh -l localhost:8000 -r target.com:3306 -s ssh.vm.com:22 -u bob -k ~/.ssh/mykey
     ```
   - ```bash
-    anbu tunnel ssh -l localhost:8000 -r internal.example.com:3306 -s ssh.example.com:22 -u username -k ~/.ssh/mykey
-    # SSH Tunnel with Key Authentication: uses SSH key authentication instead of password
+    # reverse SSH tunnels
+    anbu tunnel rssh -l localhost:3389 -r 0.0.0.0:8080 -s ssh.vm.com:22 -u bob -p "builder"
     ```
 - ***Simple HTTP/HTTPS Server***
   - ```bash
@@ -78,6 +77,21 @@ Anbu supports a large number of operations across the board. The specific detail
   - ```bash
     anbu convert yaml-json config.yaml  # Convert YAML file to JSON
     anbu convert json-yaml data.json    # Convert JSON file to YAML
+    ```
+- ***File Encryption/Decryption***
+  - ```bash
+    anbu file-crypt encrypt /path/to/file.zip -p "P@55w0rd"  # Encrypt a file
+    anbu file-crypt decrypt ./encrypted.enc -p "P@55w0rd"    # Decrypt a file
+    ```
+- ***RSA Key Pair Generation***
+  - ```bash
+    anbu key-pair -o mykey -k 4096  # 4096 bit RSA key pair
+    anbu key-pair --ssh             # 2048 bit RSA SSH key pair called anbu-key.*
+    ```
+- ***Loop Command***
+  - ```bash
+    anbu loop 03-112 'echo "$i"' -p 2  # run command for index 3 to 112 as 003, 004, ...
+    anbu loop 20 'echo justprintme'    # run command 20 times linearly
     ```
 - ***String Generation***
   - ```bash
@@ -102,21 +116,22 @@ Anbu supports a large number of operations across the board. The specific detail
     anbu string passphrase 4 '-' simple  # generate a simple 4-word lowercase passphrase
     anbu string passphrase 4 '.' simple  # generate a simple 4-word passphrase with numbers and capitalization
     ```
-- ***File Encryption/Decryption***
-  - ```bash
-    anbu file-crypt encrypt /path/to/file.zip -p "P@55w0rd"  # Encrypt a file
-    anbu file-crypt decrypt ./encrypted.enc -p "P@55w0rd"    # Decrypt a file
-    ```
-- ***RSA Key Pair Generation***
-  - ```bash
-    anbu key-pair -o mykey -k 4096  # 4096 bit RSA key pair
-    anbu key-pair --ssh             # 2048 bit RSA SSH key pair called anbu-key.*
-    ```
-- ***Loop Command***
-  - ```bash
-    anbu loop 03-112 'echo "$i"' -p 2  # run command for index 3 to 112 as 003, 004, ...
-    anbu loop 20 'echo justprintme'    # run command 20 times linearly
-    ```
+
+## Tips & Tricks
+
+***Connecting Two NAT-hidden Machines via Public VPS***
+
+*Machine A* &rarr;
+```bash
+anbu tunnel rssh -l localhost:3389 -r 0.0.0.0:8001 -s vps.example.com:22 -u bob -p builder
+```
+
+*Machine B* &rarr;
+```bash
+anbu tunnel ssh -l localhost:3389 -r localhost:8001 -s vps.example.com:22 -u bob -p builder
+```
+
+Now, connecting to `localhost:3389` on Machine B will allow access to Machine A's 3389.
 
 ## Acknowledgements
 
