@@ -45,7 +45,7 @@ func (sm *SecretMatches) Add(match SecretMatch) {
 	}
 }
 
-func ScanSecretsInPath(path string) error {
+func ScanSecretsInPath(path string, printFalsePositives bool) error {
 	logger := utils.GetLogger("secrets")
 	rules := make([]struct {
 		Name    string
@@ -85,6 +85,12 @@ func ScanSecretsInPath(path string) error {
 	workers := make(chan struct{}, 20) // Limit to 20
 	errChan := make(chan error, len(filesToScan))
 	for _, file := range filesToScan {
+		if file == "" {
+			continue
+		}
+		if strings.Contains(file, "node_modules") || strings.Contains(file, ".git") {
+			continue
+		}
 		wg.Add(1)
 		workers <- struct{}{}
 		go func(filepath string) {
@@ -108,19 +114,39 @@ func ScanSecretsInPath(path string) error {
 	}
 
 	table := utils.MarkdownTable{
-		Headers: []string{"", "Type", "Match", "File", "Line"},
-		Rows:    make([][]string, 0, len(matches.matches)),
+		Headers: []string{"Type", "Match", "File", "Line"},
+		Rows:    make([][]string, 0),
 	}
-	for i, match := range matches.matches {
+	falsepTable := utils.MarkdownTable{
+		Headers: []string{"Match", "File", "Line"},
+		Rows:    make([][]string, 0),
+	}
+	for _, match := range matches.matches {
+		if match.Type == "Generic Secrets & Keys" {
+			falsepTable.Rows = append(falsepTable.Rows, []string{
+				match.Match,
+				match.File,
+				fmt.Sprintf("%d", match.Line),
+			})
+			continue
+		}
 		table.Rows = append(table.Rows, []string{
-			fmt.Sprintf("%d", i+1),
 			match.Type,
 			match.Match,
 			match.File,
 			fmt.Sprintf("%d", match.Line),
 		})
 	}
-	return table.OutMDPrint(false)
+	if len(table.Rows) > 0 {
+		table.OutMDPrint(false)
+	} else {
+		fmt.Println(utils.OutSuccess("No secrets found."))
+	}
+	if len(falsepTable.Rows) > 0 && printFalsePositives {
+		fmt.Println(utils.OutWarning("\nFalse positive matches detected. Please verify the results for the following:"))
+		falsepTable.OutMDPrint(false)
+	}
+	return nil
 }
 
 func scanFile(filepath string, rules []struct {

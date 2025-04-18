@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"strconv"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 var boxChars = map[string]string{
@@ -74,17 +75,11 @@ func (table MarkdownTable) OutMDPrint(innerDivide bool) error {
 }
 
 func getTerminalWidth() int {
-	if widthStr := os.Getenv("COLUMNS"); widthStr != "" {
-		if width, err := strconv.Atoi(widthStr); err == nil && width > 0 {
-			return width
-		}
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err == nil && width > 0 {
+		return width
 	}
-	if widthStr := os.Getenv("TERM_WIDTH"); widthStr != "" {
-		if width, err := strconv.Atoi(widthStr); err == nil && width > 0 {
-			return width
-		}
-	}
-	return 120
+	return 150 // Default fallback width
 }
 
 func wrapText(text string, width int) []string {
