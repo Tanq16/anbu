@@ -77,7 +77,7 @@ jobs:
         run: |
             GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
               go build -ldflags="-s -w -X github.com/tanq16/anbu/cmd.AnbuVersion=${{ needs.process-commit.outputs.version }}" -o anbu${{ matrix.os == 'windows' && '.exe' || '' }} .
-            zip -r anbu-${{ matrix.os }}-${{ matrix.arch }}.zip anbu README.md LICENSE
+            zip -r anbu-${{ matrix.os }}-${{ matrix.arch }}.zip anbu${{ matrix.os == 'windows' && '.exe' || '' }} README.md LICENSE
 
       - name: Upload Release Asset
         run: |
