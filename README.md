@@ -69,7 +69,9 @@ Anbu supports a large number of operations across the board. The specific detail
     ```
 - ***Secrets Scan***
   - ```bash
-    anbu secrets ./path/to/scan  # Scans given path for secrets based on regex matches
+    anbu secrets                 # Scans current directory for secrets based on regex matches
+    anbu secrets ./path/to/scan  # Scans path for secrets based on regex matches
+    anbu secrets ./path -p       # Scans path with generic matches table (maybe false positive)
     ```
 - ***IP Information***
   - ```bash
