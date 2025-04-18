@@ -67,6 +67,15 @@ Anbu supports a large number of operations across the board. The specific detail
   - ```bash
     anbu jwt-decode "$TOKEN"  # Decodes and prints the headers and payload values in a table
     ```
+- ***Secrets Scan***
+  - ```bash
+    anbu secrets ./path/to/scan  # Scans given path for secrets based on regex matches
+    ```
+- ***IP Information***
+  - ```bash
+    anbu ipinfo       # Print local and public IP information
+    anbu ipinfo ipv6  # Print local (IPv4 & IPv6) and public IP information
+    ```
 - ***Bulk Rename***
   - ```bash
     anbu rename 'prefix_(.*)' 'new_\1'        # Rename files matching regex pattern
@@ -139,3 +148,4 @@ Anbu takes inspiration from the following projects:
 
 - [GoST](https://github.com/ginuerzh/gost)
 - [SimpleHTTPServer](https://github.com/projectdiscovery/simplehttpserver)
+- [TruffleHog](https://github.com/trufflesecurity/trufflehog), [GitLeaks](https://github.com/gitleaks/gitleaks), and [NoseyParker](https://github.com/praetorian-inc/noseyparker) for secret regular expressions
