@@ -14,6 +14,7 @@ import (
 
 var AnbuVersion = "dev-build"
 var debug bool
+var playgroundRun bool
 
 var rootCmd = &cobra.Command{
 	Use:     "anbu",
@@ -26,6 +27,14 @@ var rootCmd = &cobra.Command{
 		utils.InitLogger(debug)
 		log.Debug().Msg("Debug logging enabled")
 	},
+	Run: func(cmd *cobra.Command, args []string) {
+		if playgroundRun {
+			playground()
+		} else {
+			fmt.Println("Anbu CLI - A tool for performing various everyday tasks with ease")
+			fmt.Println("Use 'anbu -h' to see available commands.")
+		}
+	},
 }
 
 func Execute() {
@@ -37,6 +46,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug logging")
+	rootCmd.Flags().BoolVar(&playgroundRun, "playground", false, "try a test command for development")
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	rootCmd.AddCommand(genericsCmd.LoopCmd)
@@ -51,4 +61,5 @@ func init() {
 
 	rootCmd.AddCommand(networkCmd.TunnelCmd)
 	rootCmd.AddCommand(networkCmd.HTTPServerCmd)
+	rootCmd.AddCommand(networkCmd.IPInfoCmd)
 }

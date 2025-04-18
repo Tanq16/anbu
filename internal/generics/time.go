@@ -61,7 +61,8 @@ func printTimeTablePurple(concern time.Time) error {
 	if err != nil {
 		logger.Warn().Err(err).Msg("could not get public IP address")
 	} else {
-		table.Rows = append(table.Rows, []string{"Public IP", ipAddr})
+		ipAddress := ipAddr.UnwindString("ip")
+		table.Rows = append(table.Rows, []string{"Public IP", ipAddress})
 	}
 	table.OutMDPrint(false)
 	return nil
