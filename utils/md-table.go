@@ -6,10 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
-	"unsafe"
-
-	"github.com/mattn/go-isatty"
 )
 
 var boxChars = map[string]string{
@@ -86,22 +82,6 @@ func getTerminalWidth() int {
 	if widthStr := os.Getenv("TERM_WIDTH"); widthStr != "" {
 		if width, err := strconv.Atoi(widthStr); err == nil && width > 0 {
 			return width
-		}
-	}
-	// using syscall on unix systems
-	type windowSize struct {
-		rows    uint16
-		cols    uint16
-		xpixels uint16
-		ypixels uint16
-	}
-	ws := &windowSize{}
-	if isTerm := isatty.IsTerminal(os.Stdout.Fd()); isTerm {
-		if _, _, err := syscall.Syscall(syscall.SYS_IOCTL,
-			os.Stdout.Fd(),
-			uintptr(syscall.TIOCGWINSZ),
-			uintptr(unsafe.Pointer(ws))); err == 0 {
-			return int(ws.cols)
 		}
 	}
 	return 120
