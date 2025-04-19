@@ -48,7 +48,8 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 		<-sigChan
 		close(done)
 		listener.Close()
-		logger.Info().Msg("Shutting down tunnel")
+		sshClient.Close()
+		logger.Debug().Msg("Shutting down tunnel")
 	}()
 
 	for {
@@ -66,7 +67,7 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 				if opErr, ok := err.(*net.OpError); ok && !opErr.Temporary() {
 					return nil
 				}
-				logger.Error().Err(err).Msg("Failed to accept connection")
+				logger.Debug().Err(err).Msg("Failed to accept connection")
 				continue
 			}
 
@@ -137,7 +138,8 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 		<-sigChan
 		close(done)
 		listener.Close()
-		logger.Info().Msg("Shutting down tunnel")
+		sshClient.Close()
+		logger.Debug().Msg("Shutting down tunnel")
 	}()
 
 	for {
@@ -158,7 +160,7 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 						return nil
 					}
 				}
-				logger.Error().Err(err).Msg("Failed to accept connection")
+				logger.Debug().Err(err).Msg("Failed to accept connection")
 				continue
 			}
 
