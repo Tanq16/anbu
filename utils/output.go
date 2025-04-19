@@ -75,3 +75,7 @@ func OutDetail(msg string) string {
 func OutDebug(msg string) string {
 	return fmt.Sprintf("%s%s%s", OutColors["grey"], msg, OutColors["reset"])
 }
+
+func OutCyan(msg string) string {
+	return fmt.Sprintf("%s%s%s", OutColors["cyan"], msg, OutColors["reset"])
+}

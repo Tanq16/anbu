@@ -63,7 +63,7 @@ Anbu supports a large number of operations across the board. The specific detail
     ```
   - ```bash
     anbu exec template.yam -v 'pass=P@55w0rd' -v 'uname=4.u53r'
-    # Execute template file with custom variable replacement
+    # Execute template file with custom variable replacement (see Tips for more information)
     ```
 - ***Simple HTTP/HTTPS Server***
   - ```bash
@@ -138,7 +138,8 @@ Anbu supports a large number of operations across the board. The specific detail
 
 ## Tips & Tricks
 
-***Connecting Two NAT-hidden Machines via Public VPS***
+<details>
+<summary><b>Connecting Two NAT-hidden Machines via Public VPS</b></summary>
 
 *Machine A* &rarr;
 ```bash
@@ -151,6 +152,52 @@ anbu tunnel ssh -l localhost:3389 -r localhost:8001 -s vps.example.com:22 -u bob
 ```
 
 Now, connecting to `localhost:3389` on Machine B will allow access to Machine A's 3389.
+
+</details>
+
+<details>
+<summary><b>Running a Command Template</b></summary>
+
+A command template needs to be in the form of a YAML template. Variables can be declared inline as well as within the template. A variable `var` for example, should be used as `{{.var}}` in the command string.
+
+An example of a template is as follows:
+
+```yaml
+name: "Project Backup"
+description: "Creates a timestamped backup of a project directory"
+variables:
+  backup_dir: "/home/tanq/testrepo"
+  exclude_patterns: ".git,*.log"
+
+steps:
+  - name: "Clone project"
+    command: "git clone https://github.com/tanq16/danzo {{.backup_dir}}"
+
+  - name: "Build Project"
+    command: "cd {{.backup_dir}} && go build -ldflags='-s -w' ."
+
+  - name: "Get current timestamp"
+    command: "timestamp=$(date +%Y%m%d_%H%M%S) && echo $timestamp > {{.backup_dir}}/anbu_backup_timestamp.txt && echo '{{.exclude_patterns}}' > {{.backup_dir}}/anbu_exclude_patterns.txt"
+
+  - name: "Create backup archive"
+    command: "cd {{.project_dir}} && tar --exclude-from={{.backup_dir}}/anbu_exclude_patterns.txt -czf backup_$(cat {{.backup_dir}}/anbu_backup_timestamp.txt).tar.gz {{.backup_dir}}"
+
+  - name: "List created backup"
+    command: "ls -lh {{.project_dir}}/*.tar.gz"
+
+  - name: "Cleanup temporary files"
+    command: "rm /tmp/anbu_backup_timestamp.txt /tmp/anbu_exclude_patterns.txt" # used non-existent for demo
+    ignore_errors: true
+
+```
+
+The template can then be executed as:
+
+```bash
+anbu exec template.yaml -v 'project_dir=/opt/backups'
+```
+
+</details>
 
 ## Acknowledgements
 

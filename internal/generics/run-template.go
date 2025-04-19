@@ -42,9 +42,9 @@ func RunTemplate(filePath string, overrideVars map[string]string) error {
 		config.Variables = make(map[string]string)
 	}
 	maps.Copy(config.Variables, overrideVars)
-	fmt.Println(utils.OutDetail(fmt.Sprintf("Running template: %s", config.Name)))
+	fmt.Println(utils.OutDetail(fmt.Sprintf("\nRunning template: %s", config.Name)))
 	if config.Description != "" {
-		fmt.Println(utils.OutInfo(config.Description))
+		fmt.Println(utils.OutDebug(config.Description))
 	}
 
 	// Run template steps
@@ -53,8 +53,8 @@ func RunTemplate(filePath string, overrideVars map[string]string) error {
 		if err != nil {
 			return fmt.Errorf("failed to process variables in step %d: %w", i+1, err)
 		}
-		fmt.Printf("\n%s %s\n", utils.OutSuccess(fmt.Sprintf("[Step %d]", i+1)), utils.OutDetail(step.Name))
-		fmt.Printf("%s %s\n", utils.OutDebug("Command:"), cmdWithVars)
+		fmt.Printf("\n%s %s\n", utils.OutCyan(fmt.Sprintf("[Step %d]", i+1)), utils.OutCyan(step.Name))
+		fmt.Printf("%s %s\n", utils.OutSuccess("Command:"), utils.OutSuccess(cmdWithVars))
 
 		// Execute command
 		cmd := exec.Command("sh", "-c", cmdWithVars)
@@ -62,7 +62,7 @@ func RunTemplate(filePath string, overrideVars map[string]string) error {
 		cmd.Stderr = os.Stderr
 		err = cmd.Run()
 		if err != nil {
-			logger.Error().Err(err).Str("command", cmdWithVars).Msg("Step failed")
+			logger.Debug().Err(err).Str("command", cmdWithVars).Msg("Step failed")
 			if step.IgnoreError {
 				fmt.Println(utils.OutWarning("Command failed, but ignoring error and continuing..."))
 			} else {
@@ -70,7 +70,7 @@ func RunTemplate(filePath string, overrideVars map[string]string) error {
 			}
 		}
 	}
-	fmt.Println(utils.OutSuccess("\nTemplate execution completed successfully"))
+	fmt.Println(utils.OutInfo("\nTemplate execution completed successfully"))
 	return nil
 }
 
