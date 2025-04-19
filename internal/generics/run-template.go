@@ -1,10 +1,12 @@
 package anbuGenerics
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
+	"sync"
 	"text/template"
 
 	"maps"
@@ -56,11 +58,38 @@ func RunTemplate(filePath string, overrideVars map[string]string) error {
 		fmt.Printf("\n%s %s\n", utils.OutCyan(fmt.Sprintf("[Step %d]", i+1)), utils.OutCyan(step.Name))
 		fmt.Printf("%s %s\n", utils.OutSuccess("Command:"), utils.OutSuccess(cmdWithVars))
 
-		// Execute command
+		// Execute command with streaming output
 		cmd := exec.Command("sh", "-c", cmdWithVars)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
+		stdoutPipe, err := cmd.StdoutPipe()
+		if err != nil {
+			return fmt.Errorf("failed to create stdout pipe: %w", err)
+		}
+		stderrPipe, err := cmd.StderrPipe()
+		if err != nil {
+			return fmt.Errorf("failed to create stderr pipe: %w", err)
+		}
+		if err := cmd.Start(); err != nil {
+			return fmt.Errorf("failed to start command: %w", err)
+		}
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			scanner := bufio.NewScanner(stdoutPipe)
+			for scanner.Scan() {
+				fmt.Println(utils.OutDebug(scanner.Text()))
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			scanner := bufio.NewScanner(stderrPipe)
+			for scanner.Scan() {
+				fmt.Println(utils.OutDebug(scanner.Text()))
+			}
+		}()
+		wg.Wait()
+		err = cmd.Wait()
+
 		if err != nil {
 			logger.Debug().Err(err).Str("command", cmdWithVars).Msg("Step failed")
 			if step.IgnoreError {
