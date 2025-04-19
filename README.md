@@ -57,6 +57,14 @@ Anbu supports a large number of operations across the board. The specific detail
     # reverse SSH tunnels
     anbu tunnel rssh -l localhost:3389 -r 0.0.0.0:8080 -s ssh.vm.com:22 -u bob -p "builder"
     ```
+- ***Command Template Execution***
+  - ```bash
+    anbu exec ./path/to/template.yaml  # Execute template file with commands as steps
+    ```
+  - ```bash
+    anbu exec template.yam -v 'pass=P@55w0rd' -v 'uname=4.u53r'
+    # Execute template file with custom variable replacement
+    ```
 - ***Simple HTTP/HTTPS Server***
   - ```bash
     anbu http-server                     # Serves current directory on http://localhost:8000
