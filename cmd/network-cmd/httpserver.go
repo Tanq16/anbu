@@ -2,7 +2,6 @@ package networkCmd
 
 import (
 	"github.com/spf13/cobra"
-	anbuNetwork "github.com/tanq16/anbu/internal/network"
 )
 
 var httpServerFlags struct {
@@ -16,20 +15,20 @@ var HTTPServerCmd = &cobra.Command{
 	Use:   "http-server",
 	Short: "Start a simple HTTP/HTTPS file server",
 	Run: func(cmd *cobra.Command, args []string) {
-		options := &anbuNetwork.HTTPServerOptions{
-			ListenAddress: httpServerFlags.listenAddress,
-			EnableUpload:  httpServerFlags.enableUpload,
-			EnableTLS:     httpServerFlags.enableTLS,
-			Domain:        httpServerFlags.domain,
-		}
-		server := &anbuNetwork.HTTPServer{
-			Options: options,
-		}
-		err := server.Start()
-		if err != nil {
-			logger.Fatal().Err(err).Msg("Failed to start HTTP server")
-		}
-		defer server.Stop()
+		// options := &anbuNetwork.HTTPServerOptions{
+		// 	ListenAddress: httpServerFlags.listenAddress,
+		// 	EnableUpload:  httpServerFlags.enableUpload,
+		// 	EnableTLS:     httpServerFlags.enableTLS,
+		// 	Domain:        httpServerFlags.domain,
+		// }
+		// server := &anbuNetwork.HTTPServer{
+		// 	Options: options,
+		// }
+		// server.Start()
+		// // if err != nil {
+		// // 	logger.Fatal().Err(err).Msg("Failed to start HTTP server")
+		// // }
+		// defer server.Stop()
 	},
 }
 

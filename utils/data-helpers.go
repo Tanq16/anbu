@@ -2,7 +2,7 @@ package utils
 
 import "slices"
 
-// SliceSame checks if two slices are same, but is not order-sensitive
+// Checks if two slices are same, but is not order-sensitive
 func SliceSame(slice1, slice2 []any) bool {
 	if len(slice1) != len(slice2) {
 		return false
