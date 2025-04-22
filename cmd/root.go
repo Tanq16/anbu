@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
 	networkCmd "github.com/tanq16/anbu/cmd/network-cmd"
-	"github.com/tanq16/anbu/utils"
 )
 
 var AnbuVersion = "dev-build"
@@ -22,10 +20,6 @@ var rootCmd = &cobra.Command{
 	Version: AnbuVersion,
 	CompletionOptions: cobra.CompletionOptions{
 		HiddenDefaultCmd: true,
-	},
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		utils.InitLogger(debug)
-		log.Debug().Msg("Debug logging enabled")
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if playgroundRun {
