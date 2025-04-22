@@ -11,7 +11,6 @@ var IPInfoCmd = &cobra.Command{
 	Short: "Display network interface information including IPs, gateway, DNS, and more",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("ipinfo")
 		var err error
 		if len(args) > 0 {
 			includeIPv6 := args[0] == "ipv6"
@@ -20,7 +19,9 @@ var IPInfoCmd = &cobra.Command{
 			err = anbuNetwork.GetLocalIPInfo(false)
 		}
 		if err != nil {
-			logger.Fatal().Err(err).Msg("Failed to retrieve network information")
+			utils.PrintError("Failed to get IP information")
+		} else {
+			utils.PrintSuccess("IP information retrieved successfully")
 		}
 	},
 }

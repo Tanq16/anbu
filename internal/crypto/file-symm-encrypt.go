@@ -10,12 +10,9 @@ import (
 	"io"
 	"os"
 	"strings"
-
-	"github.com/tanq16/anbu/utils"
 )
 
 func EncryptFileSymmetric(inputPath string, password string) error {
-	logger := utils.GetLogger("filecrypto")
 	content, err := os.ReadFile(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %w", err)
@@ -54,7 +51,6 @@ func EncryptFileSymmetric(inputPath string, password string) error {
 }
 
 func DecryptFileSymmetric(inputPath string, password string) error {
-	logger := utils.GetLogger("filecrypto")
 	// if !strings.HasSuffix(inputPath, ".enc") {
 	// 	return fmt.Errorf("input file must have .enc extension")
 	// }

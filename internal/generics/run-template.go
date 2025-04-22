@@ -29,7 +29,6 @@ type TemplateConfig struct {
 }
 
 func RunTemplate(filePath string, overrideVars map[string]string) error {
-	logger := utils.GetLogger("template")
 
 	// Load template
 	data, err := os.ReadFile(filePath)

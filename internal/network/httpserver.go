@@ -75,7 +75,6 @@ func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *HTTPServer) uploadMiddleware(next http.Handler) http.Handler {
-	logger := utils.GetLogger("http-server-upload")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut {
 			targetPath := filepath.Join(".", r.URL.Path)
@@ -126,7 +125,6 @@ func (s *HTTPServer) getTLSConfig() (*tls.Config, error) {
 }
 
 func (s *HTTPServer) generateSelfSignedCert() (tls.Certificate, error) {
-	logger := utils.GetLogger("http-server-cert")
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return tls.Certificate{}, err

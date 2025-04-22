@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
-	"github.com/tanq16/anbu/utils"
 )
 
 var StringCmd = &cobra.Command{
@@ -29,7 +28,6 @@ Examples:
 	anbu string passphrase N simple    # generate a passphrase of N words and - as separator`,
 	Args: cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("string")
 		// No args
 		if len(args) == 0 {
 			randomStr, err := anbuGenerics.GenerateRandomString(0)

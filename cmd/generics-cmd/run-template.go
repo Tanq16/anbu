@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
-	"github.com/tanq16/anbu/utils"
 )
 
 var templateVars []string
@@ -16,7 +15,6 @@ var TemplateCmd = &cobra.Command{
 	Short: "Run a template file, executing defined commands in sequence",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("template-run")
 		templateFile := args[0]
 		if _, err := os.Stat(templateFile); os.IsNotExist(err) {
 			logger.Fatal().Err(err).Msg("Template file not found")

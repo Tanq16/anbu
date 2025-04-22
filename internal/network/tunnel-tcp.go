@@ -15,7 +15,6 @@ import (
 )
 
 func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) error {
-	logger := utils.GetLogger("tunnel-tcp")
 	// Listen on the local address
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
@@ -100,7 +99,6 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 }
 
 func ReverseTCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) error {
-	logger := utils.GetLogger("tunnel-rtcp")
 	// For graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

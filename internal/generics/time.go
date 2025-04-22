@@ -42,7 +42,6 @@ func printTimeTable(concern time.Time) error {
 }
 
 func printTimeTablePurple(concern time.Time) error {
-	logger := utils.GetLogger("time")
 	utcTime := concern.UTC()
 	table := utils.MarkdownTable{
 		Headers: []string{"Item", "Value"},
@@ -179,7 +178,6 @@ func TimeParse(timeStr string, printType string) error {
 }
 
 func TimeCurrent() {
-	logger := utils.GetLogger("time")
 	currentTime := time.Now()
 	if err := printTimeTable(currentTime); err != nil {
 		logger.Error().Err(err).Msg("could not print table")
@@ -187,7 +185,6 @@ func TimeCurrent() {
 }
 
 func TimePurple() {
-	logger := utils.GetLogger("time")
 	currentTime := time.Now()
 	if err := printTimeTablePurple(currentTime); err != nil {
 		logger.Error().Err(err).Msg("could not print table")

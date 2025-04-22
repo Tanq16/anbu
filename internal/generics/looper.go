@@ -11,7 +11,6 @@ import (
 )
 
 func LoopProcessRange(input string) ([]int, error) {
-	logger := utils.GetLogger("loopcmd")
 	var rangeElems []int
 	if strings.Contains(input, "-") {
 		logger.Debug().Str("input", input).Msg("processing range")
@@ -63,7 +62,6 @@ func loopPaddedReplace(num, padding int) string {
 }
 
 func LoopProcessCommands(loopRange []int, command string, padding int) error {
-	logger := utils.GetLogger("loopcmd")
 	for _, num := range loopRange {
 		cmdToRun := strings.ReplaceAll(command, "$i", loopPaddedReplace(num, padding))
 		logger.Debug().Str("command", cmdToRun).Msg("executing command")

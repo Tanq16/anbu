@@ -20,7 +20,6 @@ var KeyPairCmd = &cobra.Command{
 	Use:   "key-pair",
 	Short: "Generate RSA key pairs for encryption",
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("key-pair")
 		keyName := filepath.Base(keyPairFlags.outputPath)
 		keyDir := filepath.Dir(keyPairFlags.outputPath)
 

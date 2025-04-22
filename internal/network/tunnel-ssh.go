@@ -15,7 +15,6 @@ import (
 )
 
 func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) error {
-	logger := utils.GetLogger("tunnel-ssh")
 	config := &ssh.ClientConfig{
 		User:            user,
 		Auth:            authMethods,
@@ -105,7 +104,6 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 }
 
 func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) error {
-	logger := utils.GetLogger("tunnel-rssh")
 	config := &ssh.ClientConfig{
 		User:            user,
 		Auth:            authMethods,

@@ -16,7 +16,6 @@ var LoopCmd = &cobra.Command{
 	Use:   "loop",
 	Short: "execute a command for each number range in a range",
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("loopcmd")
 		if len(args) < 2 {
 			logger.Fatal().Msg("Missing count or command")
 		} else {

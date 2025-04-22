@@ -28,7 +28,6 @@ var fileCryptoEncryptSymmCmd = &cobra.Command{
 	Short: "Encrypt a file using AES-256-GCM symmetric encryption",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("filecrypto")
 		fileCryptoFlags.file = args[0]
 		if fileCryptoFlags.file == "" {
 			logger.Fatal().Msg("No input file specified")
@@ -49,7 +48,6 @@ var fileCryptoDecryptSymmCmd = &cobra.Command{
 	Short: "Decrypt a file that was encrypted using AES-256-GCM symmetric encryption",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("filecrypto")
 		fileCryptoFlags.file = args[0]
 		if fileCryptoFlags.file == "" {
 			logger.Fatal().Msg("No input file specified")

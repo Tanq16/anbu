@@ -46,7 +46,6 @@ func (sm *SecretMatches) Add(match SecretMatch) {
 }
 
 func ScanSecretsInPath(path string, printFalsePositives bool) error {
-	logger := utils.GetLogger("secrets")
 	rules := make([]struct {
 		Name    string
 		Pattern *regexp.Regexp

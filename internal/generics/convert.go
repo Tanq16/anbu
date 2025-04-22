@@ -61,7 +61,6 @@ func ConvertData(converterType string, input string) error {
 
 // Converter functions
 func convertYAMLToJSON(inputFile string) error {
-	logger := utils.GetLogger("converter")
 	logger.Debug().Str("input", inputFile).Msg("Converting YAML to JSON")
 	data, err := converterReadInputFile(inputFile)
 	if err != nil {
@@ -87,7 +86,6 @@ func convertYAMLToJSON(inputFile string) error {
 }
 
 func convertJSONToYAML(inputFile string) error {
-	logger := utils.GetLogger("converter")
 	logger.Debug().Str("input", inputFile).Msg("Converting JSON to YAML")
 	data, err := converterReadInputFile(inputFile)
 	if err != nil {

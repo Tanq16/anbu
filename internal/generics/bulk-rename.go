@@ -11,7 +11,6 @@ import (
 )
 
 func BulkRename(pattern string, replacement string, renameDirectories bool) error {
-	logger := utils.GetLogger("bulkrename")
 
 	re, err := regexp.Compile(pattern)
 	if err != nil {
