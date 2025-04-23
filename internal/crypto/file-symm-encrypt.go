@@ -1,99 +1,84 @@
 package anbuCrypto
 
-// import (
-// 	"crypto/aes"
-// 	"crypto/cipher"
-// 	"crypto/rand"
-// 	"crypto/sha256"
-// 	"encoding/base64"
-// 	"fmt"
-// 	"io"
-// 	"os"
-// 	"strings"
-// )
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
+	"io"
+	"os"
+	"strings"
 
-// func EncryptFileSymmetric(inputPath string, password string) error {
-// 	content, err := os.ReadFile(inputPath)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to read input file: %w", err)
-// 	}
+	u "github.com/tanq16/anbu/utils"
+)
 
-// 	// Generate a 32-byte key from the password
-// 	hash := sha256.Sum256([]byte(password))
-// 	key := hash[:]
+func EncryptFileSymmetric(inputPath string, password string) {
+	content, err := os.ReadFile(inputPath)
+	if err != nil {
+		u.PrintError(fmt.Sprintf("failed to read input file: %v", err))
+		return
+	}
 
-// 	// Create a new AES cipher block in GCM mode and generate a nonce
-// 	block, err := aes.NewCipher(key)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create AES cipher: %w", err)
-// 	}
-// 	gcm, err := cipher.NewGCM(block)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create GCM mode: %w", err)
-// 	}
-// 	nonce := make([]byte, gcm.NonceSize())
-// 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-// 		return fmt.Errorf("failed to generate nonce: %w", err)
-// 	}
+	// Generate a 32-byte key from the password
+	hash := sha256.Sum256([]byte(password))
+	key := hash[:]
 
-// 	// Encrypt and encode the data
-// 	ciphertext := gcm.Seal(nonce, nonce, content, nil)
-// 	encoded := base64.StdEncoding.EncodeToString(ciphertext)
+	// Create a new AES cipher block in GCM mode and generate a nonce
+	block, _ := aes.NewCipher(key)
+	gcm, _ := cipher.NewGCM(block)
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		u.PrintError(fmt.Sprintf("failed to generate nonce: %v", err))
+		return
+	}
 
-// 	// Write encrypted data to output file
-// 	outputPath := inputPath + ".enc"
-// 	err = os.WriteFile(outputPath, []byte(encoded), 0644)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to write output file: %w", err)
-// 	}
-// 	logger.Debug().Str("input", inputPath).Str("output", outputPath).Msg("file encrypted")
-// 	return nil
-// }
+	// Encrypt and encode the data
+	ciphertext := gcm.Seal(nonce, nonce, content, nil)
+	encoded := base64.StdEncoding.EncodeToString(ciphertext)
 
-// func DecryptFileSymmetric(inputPath string, password string) error {
-// 	// if !strings.HasSuffix(inputPath, ".enc") {
-// 	// 	return fmt.Errorf("input file must have .enc extension")
-// 	// }
-// 	encContent, err := os.ReadFile(inputPath)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to read input file: %w", err)
-// 	}
+	// Write encrypted data to output file
+	outputPath := inputPath + ".enc"
+	os.WriteFile(outputPath, []byte(encoded), 0644)
+	fmt.Printf("\n%s: %s\n", u.FDetail("File encrypted: "), u.FSuccess(outputPath))
+}
 
-// 	// Decode from base64 and generate key from password
-// 	decoded, err := base64.StdEncoding.DecodeString(string(encContent))
-// 	if err != nil {
-// 		return fmt.Errorf("failed to decode base64 content: %w", err)
-// 	}
-// 	hash := sha256.Sum256([]byte(password))
-// 	key := hash[:]
+func DecryptFileSymmetric(inputPath string, password string) {
+	encContent, err := os.ReadFile(inputPath)
+	if err != nil {
+		u.PrintError(fmt.Sprintf("failed to read input file: %v", err))
+		return
+	}
 
-// 	// Create a new AES cipher block in GCM mode and extract nonce
-// 	block, err := aes.NewCipher(key)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create AES cipher: %w", err)
-// 	}
-// 	gcm, err := cipher.NewGCM(block)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create GCM mode: %w", err)
-// 	}
-// 	nonceSize := gcm.NonceSize()
-// 	if len(decoded) < nonceSize {
-// 		return fmt.Errorf("ciphertext too short")
-// 	}
+	// Decode from base64 and generate key from password
+	decoded, err := base64.StdEncoding.DecodeString(string(encContent))
+	if err != nil {
+		u.PrintError(fmt.Sprintf("failed to decode base64 content: %v", err))
+		return
+	}
+	hash := sha256.Sum256([]byte(password))
+	key := hash[:]
 
-// 	// Extract nonce and ciphertext and decrypt
-// 	nonce, ciphertext := decoded[:nonceSize], decoded[nonceSize:]
-// 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to decrypt: %w", err)
-// 	}
+	// Create a new AES cipher block in GCM mode and extract nonce
+	block, _ := aes.NewCipher(key)
+	gcm, _ := cipher.NewGCM(block)
+	nonceSize := gcm.NonceSize()
+	if len(decoded) < nonceSize {
+		u.PrintError("ciphertext too short")
+		return
+	}
 
-// 	// Write decrypted data to output file
-// 	outputPath := strings.TrimSuffix(inputPath, ".enc")
-// 	err = os.WriteFile(outputPath, plaintext, 0644)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to write output file: %w", err)
-// 	}
-// 	logger.Debug().Str("input", inputPath).Str("output", outputPath).Msg("file decrypted")
-// 	return nil
-// }
+	// Extract nonce and ciphertext and decrypt
+	nonce, ciphertext := decoded[:nonceSize], decoded[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		u.PrintError(fmt.Sprintf("failed to decrypt: %v", err))
+		return
+	}
+
+	// Write decrypted data to output file
+	outputPath := strings.TrimSuffix(inputPath, ".enc")
+	os.WriteFile(outputPath, plaintext, 0644)
+	fmt.Printf("\n%s: %s\n", u.FDetail("File decrypted: "), u.FSuccess(outputPath))
+}

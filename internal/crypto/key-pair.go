@@ -8,97 +8,75 @@ import (
 	"fmt"
 	"os"
 
+	u "github.com/tanq16/anbu/utils"
 	"golang.org/x/crypto/ssh"
 )
 
-func GenerateKeyPair(outputDir, name string, keySize int) error {
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
-	}
-	privateKey, err := rsa.GenerateKey(rand.Reader, keySize)
-	if err != nil {
-		return fmt.Errorf("failed to generate RSA key pair: %w", err)
-	}
-	publicKey := &privateKey.PublicKey
+func GenerateKeyPair(outputDir, name string, keySize int) {
+	fmt.Println()
+	os.MkdirAll(outputDir, 0755)
 
-	// Encode private key to PEM
-	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privateKey, _ := rsa.GenerateKey(rand.Reader, keySize)
+	publicKey := &privateKey.PublicKey
 	privateKeyBlock := &pem.Block{
 		Type:  "RSA PRIVATE KEY",
-		Bytes: privateKeyBytes,
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	}
-
-	// Write private key to file
 	privateKeyPath := fmt.Sprintf("%s/%s.private.pem", outputDir, name)
-	privateKeyFile, err := os.Create(privateKeyPath)
-	if err != nil {
-		return fmt.Errorf("failed to create private key file: %w", err)
-	}
-	err = pem.Encode(privateKeyFile, privateKeyBlock)
+	privateKeyFile, _ := os.Create(privateKeyPath)
+	err := pem.Encode(privateKeyFile, privateKeyBlock)
 	privateKeyFile.Close()
 	if err != nil {
-		return fmt.Errorf("failed to write private key to file: %w", err)
+		u.PrintError(fmt.Sprintf("failed to write private key to file: %v", err))
+		return
 	}
 
-	// Encode public key to PEM
-	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
-	if err != nil {
-		return fmt.Errorf("failed to marshal public key: %w", err)
-	}
+	publicKeyBytes, _ := x509.MarshalPKIXPublicKey(publicKey)
 	publicKeyBlock := &pem.Block{
 		Type:  "PUBLIC KEY",
 		Bytes: publicKeyBytes,
 	}
-
-	// Write public key to file
 	publicKeyPath := fmt.Sprintf("%s/%s.public.pem", outputDir, name)
-	publicKeyFile, err := os.Create(publicKeyPath)
-	if err != nil {
-		return fmt.Errorf("failed to create public key file: %w", err)
-	}
+	publicKeyFile, _ := os.Create(publicKeyPath)
 	err = pem.Encode(publicKeyFile, publicKeyBlock)
 	publicKeyFile.Close()
 	if err != nil {
-		return fmt.Errorf("failed to write public key to file: %w", err)
+		u.PrintError(fmt.Sprintf("failed to write public key to file: %v", err))
+		return
 	}
-	return nil
+
+	fmt.Println(u.FDetail(fmt.Sprintf("RSA key pair (%d bits) generated", keySize)))
+	fmt.Println(u.FSuccess("Public key: ") + u.FInfo(publicKeyPath))
+	fmt.Println(u.FSuccess("Private key: ") + u.FInfo(privateKeyPath))
 }
 
-func GenerateSSHKeyPair(outputDir, name string, keySize int) error {
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
-	}
-
-	privateKey, err := rsa.GenerateKey(rand.Reader, keySize)
-	if err != nil {
-		return fmt.Errorf("failed to generate RSA key pair: %w", err)
-	}
-	publicKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return fmt.Errorf("failed to create SSH public key: %w", err)
-	}
-
+func GenerateSSHKeyPair(outputDir, name string, keySize int) {
+	fmt.Println()
+	os.MkdirAll(outputDir, 0755)
+	privateKey, _ := rsa.GenerateKey(rand.Reader, keySize)
+	publicKey, _ := ssh.NewPublicKey(&privateKey.PublicKey)
 	sshPublicKeyBytes := ssh.MarshalAuthorizedKey(publicKey)
+
 	publicKeyPath := fmt.Sprintf("%s/%s.pub", outputDir, name)
 	if err := os.WriteFile(publicKeyPath, sshPublicKeyBytes, 0644); err != nil {
-		return fmt.Errorf("failed to write SSH public key file: %w", err)
+		u.PrintError(fmt.Sprintf("failed to write SSH public key file: %v", err))
+		return
 	}
 	privatePEM := &pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	}
-
 	privateKeyPath := fmt.Sprintf("%s/%s", outputDir, name)
-	privateKeyFile, err := os.Create(privateKeyPath)
+	privateKeyFile, _ := os.Create(privateKeyPath)
+	err := pem.Encode(privateKeyFile, privatePEM)
+	privateKeyFile.Close()
 	if err != nil {
-		return fmt.Errorf("failed to create private key file: %w", err)
+		u.PrintError(fmt.Sprintf("failed to write private key to file: %v", err))
+		return
 	}
-	defer privateKeyFile.Close()
-	if err := pem.Encode(privateKeyFile, privatePEM); err != nil {
-		return fmt.Errorf("failed to write private key to file: %w", err)
-	}
-	if err := os.Chmod(privateKeyPath, 0600); err != nil {
-		return fmt.Errorf("failed to set permissions on private key: %w", err)
-	}
-	return nil
+	os.Chmod(privateKeyPath, 0600)
+
+	fmt.Println(u.FDetail(fmt.Sprintf("SSH key pair (%d bits) generated", keySize)))
+	fmt.Println(u.FSuccess("Public key: ") + u.FInfo(publicKeyPath))
+	fmt.Println(u.FSuccess("Private key: ") + u.FInfo(privateKeyPath))
 }

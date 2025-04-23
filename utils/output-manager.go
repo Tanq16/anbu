@@ -112,6 +112,12 @@ func NewTable(headers []string) *Table {
 		Rows:    [][]string{},
 	}
 	t.table = table.New().Headers(headers...)
+	t.table = t.table.StyleFunc(func(row, col int) lipgloss.Style {
+		if row == table.HeaderRow {
+			return lipgloss.NewStyle().Bold(true).Align(lipgloss.Center).Padding(0, 1)
+		}
+		return lipgloss.NewStyle().Padding(0, 1)
+	})
 	return t
 }
 
