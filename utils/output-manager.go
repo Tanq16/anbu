@@ -68,6 +68,33 @@ func PrintStream(text string) {
 func PrintHeader(text string) {
 	fmt.Println(headerStyle.Render(text))
 }
+func FSuccess(text string) string {
+	return successStyle.Render(text)
+}
+func FSuccess2(text string) string {
+	return success2Style.Render(text)
+}
+func FError(text string) string {
+	return errorStyle.Render(text)
+}
+func FWarning(text string) string {
+	return warningStyle.Render(text)
+}
+func FInfo(text string) string {
+	return infoStyle.Render(text)
+}
+func FDebug(text string) string {
+	return debugStyle.Render(text)
+}
+func FDetail(text string) string {
+	return detailStyle.Render(text)
+}
+func FStream(text string) string {
+	return streamStyle.Render(text)
+}
+func FHeader(text string) string {
+	return headerStyle.Render(text)
+}
 
 // ======================================== =================
 // ======================================== Table Definitions
@@ -106,7 +133,7 @@ func (t *Table) FormatTable(useMarkdown bool) string {
 }
 
 func (t *Table) PrintTable(useMarkdown bool) {
-	os.Stdout.WriteString(t.FormatTable(useMarkdown))
+	fmt.Println(t.FormatTable(useMarkdown))
 }
 
 func (t *Table) WriteMarkdownTableToFile(outputPath string) error {

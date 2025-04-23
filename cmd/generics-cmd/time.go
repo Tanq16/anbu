@@ -2,6 +2,7 @@ package genericsCmd
 
 import (
 	"github.com/spf13/cobra"
+	anbuGenerics "github.com/tanq16/anbu/internal/generics"
 )
 
 var timeCmdFlags struct {
@@ -23,24 +24,24 @@ var TimeCmd = &cobra.Command{
 `,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// if len(args) == 0 {
-		// 	anbuGenerics.TimeCurrent()
-		// 	return
-		// }
-		// switch args[0] {
-		// case "now":
-		// 	anbuGenerics.TimeCurrent()
-		// case "purple":
-		// 	anbuGenerics.TimePurple()
-		// case "diff":
-		// 	anbuGenerics.TimeEpochDiff(timeCmdFlags.epochs)
-		// case "parse":
-		// 	anbuGenerics.TimeParse(timeCmdFlags.timeStr, timeCmdFlags.parseAction)
-		// case "until":
-		// 	anbuGenerics.TimeParse(timeCmdFlags.timeStr, "diff")
-		// default:
-		// 	anbuGenerics.TimeCurrent()
-		// }
+		if len(args) == 0 {
+			anbuGenerics.TimeCurrent()
+			return
+		}
+		switch args[0] {
+		case "now":
+			anbuGenerics.TimeCurrent()
+		case "purple":
+			anbuGenerics.TimePurple()
+		case "diff":
+			anbuGenerics.TimeEpochDiff(timeCmdFlags.epochs)
+		case "parse":
+			anbuGenerics.TimeParse(timeCmdFlags.timeStr, timeCmdFlags.parseAction)
+		case "until":
+			anbuGenerics.TimeParse(timeCmdFlags.timeStr, "diff")
+		default:
+			anbuGenerics.TimeCurrent()
+		}
 	},
 }
 

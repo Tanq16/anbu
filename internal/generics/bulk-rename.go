@@ -1,77 +1,65 @@
 package anbuGenerics
 
-// import (
-// 	"fmt"
-// 	"os"
-// 	"path/filepath"
-// 	"regexp"
-// 	"strings"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 
-// 	"github.com/tanq16/anbu/utils"
-// )
+	u "github.com/tanq16/anbu/utils"
+)
 
-// func BulkRename(pattern string, replacement string, renameDirectories bool) error {
+// BulkRename renames files/directories based on a regex pattern and replacement string
+func BulkRename(pattern string, replacement string, renameDirectories bool) {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		u.PrintError(fmt.Sprintf("Invalid regex pattern: %v", err))
+		return
+	}
+	currentDir, _ := os.Getwd()
+	entries, _ := os.ReadDir(currentDir)
 
-// 	re, err := regexp.Compile(pattern)
-// 	if err != nil {
-// 		return fmt.Errorf("invalid regular expression: %w", err)
-// 	}
-// 	currentDir, err := os.Getwd()
-// 	if err != nil {
-// 		return fmt.Errorf("failed to get current directory: %w", err)
-// 	}
-// 	entries, err := os.ReadDir(currentDir)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to read directory: %w", err)
-// 	}
+	renameCount := 0
+	for _, entry := range entries {
+		if renameDirectories && !entry.IsDir() {
+			continue
+		}
+		if !renameDirectories && entry.IsDir() {
+			continue
+		}
+		oldName := entry.Name()
+		matches := re.FindStringSubmatch(oldName)
+		if matches == nil {
+			continue
+		}
+		newName := replacement
+		for i, match := range matches {
+			if i == 0 {
+				continue // Skip the full match
+			}
+			placeholder := fmt.Sprintf("\\%d", i)
+			newName = strings.Replace(newName, placeholder, match, -1)
+		}
+		if oldName == newName {
+			continue
+		}
+		err := os.Rename(filepath.Join(currentDir, oldName), filepath.Join(currentDir, newName))
+		if err != nil {
+			u.PrintError(fmt.Sprintf("Failed to rename %s to %s: %v", oldName, newName, err))
+			continue
+		}
+		fmt.Printf("%s %s %s %s\n", u.FDetail("Renamed:"),
+			u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName))
+		renameCount++
+	}
 
-// 	renameCount := 0
-// 	for _, entry := range entries {
-// 		// Skip based on whether it's handling files or directories
-// 		if renameDirectories && !entry.IsDir() {
-// 			continue
-// 		}
-// 		if !renameDirectories && entry.IsDir() {
-// 			continue
-// 		}
-// 		oldName := entry.Name()
-
-// 		matches := re.FindStringSubmatch(oldName)
-// 		if matches == nil {
-// 			continue
-// 		}
-// 		newName := replacement
-// 		for i, match := range matches {
-// 			if i == 0 {
-// 				continue // Skip the full match
-// 			}
-// 			placeholder := fmt.Sprintf("\\%d", i)
-// 			newName = strings.Replace(newName, placeholder, match, -1)
-// 		}
-
-// 		// If nothing changed, skip, otherwise rename
-// 		if oldName == newName {
-// 			continue
-// 		}
-// 		err := os.Rename(
-// 			filepath.Join(currentDir, oldName),
-// 			filepath.Join(currentDir, newName),
-// 		)
-// 		if err != nil {
-// 			logger.Debug().Str("old", oldName).Str("new", newName).Err(err).Msg("failed to rename")
-// 			continue
-// 		}
-// 		logger.Debug().Str("old", oldName).Str("new", newName).Msg("renamed successfully")
-// 		fmt.Printf("%s %s %s %s\n", utils.OutSuccess("Renamed:"), utils.OutDebug(oldName), utils.OutSuccess("→"), utils.OutInfo(newName))
-// 		renameCount++
-// 	}
-
-// 	// Provide a summary
-// 	fmt.Println()
-// 	if renameCount == 0 {
-// 		fmt.Println(utils.OutWarning("No items were renamed."))
-// 	} else {
-// 		fmt.Printf("%s %s\n", utils.OutDetail("Operation completed:"), utils.OutSuccess(fmt.Sprintf("%d %s renamed", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories])))
-// 	}
-// 	return nil
-// }
+	// Provide a summary
+	fmt.Println()
+	if renameCount == 0 {
+		u.PrintWarning("No items were renamed")
+	} else {
+		fmt.Printf("%s %s\n", u.FDebug("Operation completed: Renamed"),
+			u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories])))
+	}
+}
