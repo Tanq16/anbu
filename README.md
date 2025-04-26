@@ -232,23 +232,6 @@ This allows a connection to restricted databases while maintaining security best
 
 </details>
 
-<details>
-<summary><b>Creating a Simple Demo/Development Environment</b></summary>
-
-For quickly sharing a local development site with someone:
-
-```bash
-# Start your local development server on port 3000
-# Then create a tunnel from your public VPS to your local machine
-anbu tunnel rtcp -l localhost:3000 -r public-vps.example.com:8080 -t
-
-# Anyone can now access your local site at http://public-vps.example.com:8080
-```
-
-The `-t` flag enables TLS encryption for better security.
-
-</details>
-
 ## Acknowledgements
 
 Anbu takes inspiration from the following projects:
