@@ -89,27 +89,6 @@ var sshTunnelCmd = &cobra.Command{
 	},
 }
 
-var reverseTcpTunnelCmd = &cobra.Command{
-	Use:   "rtcp",
-	Short: "Create a reverse TCP tunnel from remote to local",
-	Run: func(cmd *cobra.Command, args []string) {
-		if tunnelFlags.localAddr == "" {
-			utils.PrintError("Local address is required")
-			os.Exit(1)
-		}
-		if tunnelFlags.remoteAddr == "" {
-			utils.PrintError("Remote address is required")
-			os.Exit(1)
-		}
-		anbuNetwork.ReverseTCPTunnel(
-			tunnelFlags.localAddr,
-			tunnelFlags.remoteAddr,
-			tunnelFlags.useTLS,
-			tunnelFlags.insecureSkipVerify,
-		)
-	},
-}
-
 var reverseSshTunnelCmd = &cobra.Command{
 	Use:   "rssh",
 	Short: "Create a reverse SSH tunnel from remote to local",
@@ -157,7 +136,6 @@ func init() {
 
 	TunnelCmd.AddCommand(tcpTunnelCmd)
 	TunnelCmd.AddCommand(sshTunnelCmd)
-	TunnelCmd.AddCommand(reverseTcpTunnelCmd)
 	TunnelCmd.AddCommand(reverseSshTunnelCmd)
 
 	// TCP tunnel flags
@@ -173,12 +151,6 @@ func init() {
 	sshTunnelCmd.Flags().StringVarP(&tunnelFlags.sshUser, "user", "u", "", "SSH username")
 	sshTunnelCmd.Flags().StringVarP(&tunnelFlags.sshPassword, "password", "p", "", "SSH password")
 	sshTunnelCmd.Flags().StringVarP(&tunnelFlags.sshKeyPath, "key", "k", "", "SSH private key path")
-
-	// Reverse TCP tunnel flags
-	reverseTcpTunnelCmd.Flags().StringVarP(&tunnelFlags.localAddr, "local", "l", "localhost:8000", "Local address:port to connect to")
-	reverseTcpTunnelCmd.Flags().StringVarP(&tunnelFlags.remoteAddr, "remote", "r", "", "Remote address:port to listen on")
-	reverseTcpTunnelCmd.Flags().BoolVar(&tunnelFlags.useTLS, "tls", false, "Use TLS for the connection")
-	reverseTcpTunnelCmd.Flags().BoolVar(&tunnelFlags.insecureSkipVerify, "insecure", false, "Skip TLS certificate verification")
 
 	// Reverse SSH tunnel flags
 	reverseSshTunnelCmd.Flags().StringVarP(&tunnelFlags.localAddr, "local", "l", "localhost:8000", "Local address to connect to")

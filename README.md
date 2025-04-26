@@ -10,6 +10,22 @@
   <a href="#installation">Installation</a> &bull; <a href="#usage">Usage</a> &bull; <a href="#acknowledgements">Acknowledgements</a> &bull; <a href="#tips--tricks">Tips & Tricks</a><br>
 </div>
 
+A summary of all capabilities that **Anbu** can perform:
+
+- Time Operations
+- Network Tunneling
+- Command Template Execution
+- Simple HTTP/HTTPS Server
+- JWT Decode
+- Secrets Scan
+- IP Information
+- Bulk Rename
+- Data Conversion
+- File Encryption/Decryption
+- RSA Key Pair Generation
+- Loop Command
+- String Generation
+
 ## Installation
 
 - Download directly from [RELEASES](https://github.com/Tanq16/anbu/releases). Anbu is available for AMD64 and ARM64 for Linux and MacOS.
@@ -43,10 +59,8 @@ Anbu supports a large number of operations across the board. The specific detail
     ```
 - ***Network Tunneling***
   - ```bash
-    anbu tunnel tcp -l localhost:8000 -r example.com:80  # forward TCP tunnel, also supports --tls
-    ```
-  - ```bash
-    anbu tunnel rtcp -l localhost:3000 -r public-server.com:8000  # reverse TCP Tunnel (for NAT traversal), also supports --tls
+    # forward TCP tunnels
+    anbu tunnel tcp -l localhost:8000 -r example.com:80  # also supports --tls
     ```
   - ```bash
     # forward SSH tunnels
@@ -196,6 +210,42 @@ The template can then be executed as:
 ```bash
 anbu exec template.yaml -v 'project_dir=/opt/backups'
 ```
+
+</details>
+
+<details>
+<summary><b>Creating a Secure Database (or service) Connection Tunnel</b></summary>
+
+When working with remote databases or services that don't allow direct access, this method can enable connections. Create an SSH tunnel to the database server:
+
+```bash
+anbu tunnel ssh -l localhost:3306 -r db.internal.network:3306 -s jumpbox.vpn.com:22 -u bob -p builder
+```
+
+Now, connect your database client to localhost:3306, which will forward requests via the SSH forward proxy through the jumphost:
+
+```bash
+mysql -u dbuser -p -h localhost -P 3306
+```
+
+This allows a connection to restricted databases while maintaining security best practices.
+
+</details>
+
+<details>
+<summary><b>Creating a Simple Demo/Development Environment</b></summary>
+
+For quickly sharing a local development site with someone:
+
+```bash
+# Start your local development server on port 3000
+# Then create a tunnel from your public VPS to your local machine
+anbu tunnel rtcp -l localhost:3000 -r public-vps.example.com:8080 -t
+
+# Anyone can now access your local site at http://public-vps.example.com:8080
+```
+
+The `-t` flag enables TLS encryption for better security.
 
 </details>
 
