@@ -4,17 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
 	networkCmd "github.com/tanq16/anbu/cmd/network-cmd"
-	"github.com/tanq16/anbu/utils"
 )
 
 var AnbuVersion = "dev-build"
-var debug bool
-var playgroundRun bool
 
 var rootCmd = &cobra.Command{
 	Use:     "anbu",
@@ -22,18 +18,6 @@ var rootCmd = &cobra.Command{
 	Version: AnbuVersion,
 	CompletionOptions: cobra.CompletionOptions{
 		HiddenDefaultCmd: true,
-	},
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		utils.InitLogger(debug)
-		log.Debug().Msg("Debug logging enabled")
-	},
-	Run: func(cmd *cobra.Command, args []string) {
-		if playgroundRun {
-			playground()
-		} else {
-			fmt.Println("Anbu CLI - A tool for performing various everyday tasks with ease")
-			fmt.Println("Use 'anbu -h' to see available commands.")
-		}
 	},
 }
 
@@ -44,10 +28,17 @@ func Execute() {
 	}
 }
 
+var playgroundCmd = &cobra.Command{
+	Use:   "playground",
+	Short: "Playground for testing and experimenting with commands",
+	Run: func(cmd *cobra.Command, args []string) {
+		playground()
+	},
+}
+
 func init() {
-	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug logging")
-	rootCmd.Flags().BoolVar(&playgroundRun, "playground", false, "try a test command for development")
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+	rootCmd.AddCommand(playgroundCmd)
 
 	rootCmd.AddCommand(genericsCmd.LoopCmd)
 	rootCmd.AddCommand(genericsCmd.StringCmd)

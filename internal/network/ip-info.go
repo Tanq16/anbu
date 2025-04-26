@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 type NetworkInterface struct {
@@ -22,20 +22,15 @@ type NetworkInterface struct {
 	IsLoopback bool
 }
 
-func GetLocalIPInfo(includeIPv6 bool) error {
+func GetLocalIPInfo(includeIPv6 bool) {
 	// Get network interfaces
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		return fmt.Errorf("failed to get network interfaces: %w", err)
+		u.PrintError(fmt.Sprintf("failed to get network interfaces: %v", err))
+		return
 	}
-	ipv4Table := utils.MarkdownTable{
-		Headers: []string{"Interface", "IPv4 Address", "Subnet Mask", "MAC Address", "Status"},
-		Rows:    [][]string{},
-	}
-	ipv6Table := utils.MarkdownTable{
-		Headers: []string{"Interface", "IPv6 Address", "MAC Address", "Status"},
-		Rows:    [][]string{},
-	}
+	ipv4Table := u.NewTable([]string{"Interface", "IP Address", "Subnet Mask", "MAC Address", "Status"})
+	ipv6Table := u.NewTable([]string{"Interface", "IPv6 Address", "MAC Address", "Status"})
 
 	// Process each interface
 	for _, iface := range interfaces {
@@ -65,33 +60,26 @@ func GetLocalIPInfo(includeIPv6 bool) error {
 		}
 		if ipv4 != "" {
 			ipv4Table.Rows = append(ipv4Table.Rows, []string{
-				iface.Name,
-				ipv4,
-				mask,
-				iface.HardwareAddr.String(),
-				status,
+				iface.Name, ipv4, mask, iface.HardwareAddr.String(), status,
 			})
 		}
 		if ipv6 != "" {
 			ipv6Table.Rows = append(ipv6Table.Rows, []string{
-				iface.Name,
-				ipv6,
-				iface.HardwareAddr.String(),
-				status,
+				iface.Name, ipv6, iface.HardwareAddr.String(), status,
 			})
 		}
 	}
 
-	ipv4Table.OutMDPrint(false)
+	fmt.Println()
+	ipv4Table.PrintTable(false)
 	if includeIPv6 {
-		ipv6Table.OutMDPrint(false)
+		ipv6Table.PrintTable(false)
 	}
+	fmt.Println()
 
 	// Public IP Table
 	publicIP, err := GetPublicIP()
-	pubIPTable := utils.MarkdownTable{
-		Headers: []string{"Field", "Value"},
-	}
+	pubIPTable := u.NewTable([]string{"Field", "Value"})
 	if err == nil && publicIP != nil {
 		geography := struct {
 			Country  string
@@ -130,14 +118,13 @@ func GetLocalIPInfo(includeIPv6 bool) error {
 			pubIPTable.Rows = append(pubIPTable.Rows, []string{key, fmt.Sprintf("%v", value)})
 		}
 		pubIPTable.Rows = append(pubIPTable.Rows, []string{"geography", fmt.Sprintf("%s, %s, %s, %s (TZ: %s)", geography.Postal, geography.City, geography.Region, geography.Country, geography.Timezone)})
-		pubIPTable.OutMDPrint(false)
+		pubIPTable.PrintTable(false)
 	} else {
-		fmt.Println(utils.OutWarning("Could not retrieve public IP"))
+		u.PrintWarning("Could not retrieve public IP")
 	}
-	return nil
 }
 
-func GetPublicIP() (utils.Dictionary, error) {
+func GetPublicIP() (u.Dictionary, error) {
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -150,7 +137,7 @@ func GetPublicIP() (utils.Dictionary, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
-	var data utils.Dictionary
+	var data u.Dictionary
 	if err := json.Unmarshal(body, &data); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON response: %w", err)
 	}

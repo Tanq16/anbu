@@ -63,10 +63,6 @@ var secretRules = []struct {
 		Pattern: `ey[\w]{17,}\.ey[\w/_-]{17,}\.(?:[\w/_-]{10,}={0,2})?`,
 	},
 	{
-		Name:    "Heroku API Key",
-		Pattern: `[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`,
-	},
-	{
 		Name:    "Hugging Face API Token",
 		Pattern: `hf_[a-zA-Z]{34}`,
 	},
@@ -90,22 +86,9 @@ var secretRules = []struct {
 		Name:    "Stripe API Key",
 		Pattern: `(?:sk|rk)_(?:test|live|prod)_[\w]{10,99}`,
 	},
-	// done
-	{
-		Name:    "Telegram Bot Token",
-		Pattern: `[0-9]{5,16}:(?-i:A)[a-z0-9_\\-]{34}`,
-	},
-	{
-		Name:    "Twilio API Key",
-		Pattern: `SK[a-f0-9]{32}`,
-	},
-	{
-		Name:    "Twitter Access Token",
-		Pattern: `[0-9]{15,25}-[\w]{20,40}`,
-	},
 	{
 		Name:    "Vault Token",
-		Pattern: `(?:hvs\.[\w-]{90,120}|s\.(?i:[a-z0-9]{24}))`,
+		Pattern: `(?:hvs\.[\w-]{90,120}|s\.(?:[a-z0-9]{24}))`,
 	},
 	// Inferred Matches
 	{
@@ -114,7 +97,7 @@ var secretRules = []struct {
 	},
 	{
 		Name:    "Cloudflare API Key",
-		Pattern: `(?i)(?:(?:cloudflare)|(?:cf)).?(?:api)?(?-i).{0,25}\b(?:[\w-]{40})\b`,
+		Pattern: `(?i)(?:(?:cloudflare)|(?:cf_)).?(?:api)?(?-i).{0,25}\b(?:[\w-]{40})\b`,
 	},
 	{
 		Name:    "AWS Secret Access Key",
@@ -126,6 +109,18 @@ var secretRules = []struct {
 	},
 	{
 		Name:    "Generic Secrets & Keys",
-		Pattern: `(?:(?i)password|pass|pw|secret|key|api|access(?-i)).?(?:(?i)key(?-i))?.{0,25}\b(?:[\w]{20,64})\b`,
+		Pattern: `(?:(?i)password|pass|pw|secret|key|api|access(?-i)).?(?:(?i)key(?-i))?.{0,25}\b(?:[\w]{20,100})\b`,
 	},
+}
+
+var secretSkips = []string{
+	"node_modules",
+	".git",
+	".idea",
+	".vscode",
+	".DS_Store",
+	".terraform",
+	"__pycache__",
+	"site-packages",
+	".venv",
 }

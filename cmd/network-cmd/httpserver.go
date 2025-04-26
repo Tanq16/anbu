@@ -1,9 +1,12 @@
 package networkCmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
-	"github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var httpServerFlags struct {
@@ -17,7 +20,6 @@ var HTTPServerCmd = &cobra.Command{
 	Use:   "http-server",
 	Short: "Start a simple HTTP/HTTPS file server",
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("httpserver")
 		options := &anbuNetwork.HTTPServerOptions{
 			ListenAddress: httpServerFlags.listenAddress,
 			EnableUpload:  httpServerFlags.enableUpload,
@@ -29,7 +31,8 @@ var HTTPServerCmd = &cobra.Command{
 		}
 		err := server.Start()
 		if err != nil {
-			logger.Fatal().Err(err).Msg("Failed to start HTTP server")
+			u.PrintError(fmt.Sprintf("Failed to start HTTP server: %v", err))
+			os.Exit(1)
 		}
 		defer server.Stop()
 	},

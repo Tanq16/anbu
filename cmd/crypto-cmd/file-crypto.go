@@ -1,21 +1,16 @@
 package cryptoCmd
 
 import (
-	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	anbuCrypto "github.com/tanq16/anbu/internal/crypto"
-	"github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var fileCryptoFlags struct {
-	file          string
-	password      string
-	pubKeyPath    string
-	privKeyPath   string
-	signerPubKey  string
-	signerPrivKey string
-	passphrase    string
+	file     string
+	password string
 }
 
 var FileCryptoCmd = &cobra.Command{
@@ -28,19 +23,11 @@ var fileCryptoEncryptSymmCmd = &cobra.Command{
 	Short: "Encrypt a file using AES-256-GCM symmetric encryption",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("filecrypto")
-		fileCryptoFlags.file = args[0]
-		if fileCryptoFlags.file == "" {
-			logger.Fatal().Msg("No input file specified")
-		}
 		if fileCryptoFlags.password == "" {
-			logger.Fatal().Msg("No password specified")
+			u.PrintError("No password specified")
+			os.Exit(1)
 		}
-		err := anbuCrypto.EncryptFileSymmetric(fileCryptoFlags.file, fileCryptoFlags.password)
-		if err != nil {
-			logger.Fatal().Err(err).Msg("Failed to encrypt file")
-		}
-		fmt.Println(utils.OutDetail("File encrypted successfully: ") + utils.OutSuccess(fileCryptoFlags.file+".enc"))
+		anbuCrypto.EncryptFileSymmetric(args[0], fileCryptoFlags.password)
 	},
 }
 
@@ -49,23 +36,11 @@ var fileCryptoDecryptSymmCmd = &cobra.Command{
 	Short: "Decrypt a file that was encrypted using AES-256-GCM symmetric encryption",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("filecrypto")
-		fileCryptoFlags.file = args[0]
-		if fileCryptoFlags.file == "" {
-			logger.Fatal().Msg("No input file specified")
-		}
 		if fileCryptoFlags.password == "" {
-			logger.Fatal().Msg("No password specified")
+			u.PrintError("No password specified")
+			os.Exit(1)
 		}
-		err := anbuCrypto.DecryptFileSymmetric(fileCryptoFlags.file, fileCryptoFlags.password)
-		if err != nil {
-			logger.Fatal().Err(err).Msg("Failed to decrypt file")
-		}
-		outputFile := fileCryptoFlags.file
-		if len(outputFile) > 4 && outputFile[len(outputFile)-4:] == ".enc" {
-			outputFile = outputFile[:len(outputFile)-4]
-		}
-		fmt.Println(utils.OutDetail("File decrypted successfully: ") + utils.OutSuccess(outputFile))
+		anbuCrypto.DecryptFileSymmetric(args[0], fileCryptoFlags.password)
 	},
 }
 

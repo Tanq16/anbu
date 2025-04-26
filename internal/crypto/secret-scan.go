@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 type SecretMatch struct {
@@ -45,23 +45,36 @@ func (sm *SecretMatches) Add(match SecretMatch) {
 	}
 }
 
-func ScanSecretsInPath(path string, printFalsePositives bool) error {
-	logger := utils.GetLogger("secrets")
+func ScanSecretsInPath(path string, printFalsePositives bool) {
+	logger := u.NewManager(0)
+	logger.StartDisplay()
+	defer logger.StopDisplay()
+	funcID := logger.Register("secrets-scanner")
+	logger.SetMessage(funcID, "Scanning for secrets...")
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		logger.ReportError(funcID, err)
+		logger.SetMessage(funcID, "Path doesn't exist")
+		return
+	}
+
 	rules := make([]struct {
 		Name    string
 		Pattern *regexp.Regexp
 	}, len(secretRules))
 	for i, rule := range secretRules {
-		logger.Debug().Str("name", rule.Name).Str("pattern", rule.Pattern).Msg("compiling pattern")
+		logger.SetMessage(funcID, "Compiling patterns...")
 		pattern, err := regexp.Compile(rule.Pattern)
 		if err != nil {
-			return fmt.Errorf("invalid pattern for %s: %v", rule.Name, err)
+			logger.ReportError(funcID, err)
+			logger.SetMessage(funcID, fmt.Sprintf("Failed to compile pattern %s", rule.Name))
+			return
 		}
 		rules[i].Name = rule.Name
 		rules[i].Pattern = pattern
 	}
 
 	// Collect files to scan
+	logger.SetMessage(funcID, "Collecting files to scan...")
 	var filesToScan []string
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -73,80 +86,100 @@ func ScanSecretsInPath(path string, printFalsePositives bool) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		logger.ReportError(funcID, err)
+		logger.SetMessage(funcID, "Error collecting files")
+		return
 	}
-	logger.Debug().Int("file_count", len(filesToScan)).Msg("files to scan")
+	logger.SetMessage(funcID, fmt.Sprintf("Found %d files to scan", len(filesToScan)))
 	matches := &SecretMatches{
 		matches: make([]SecretMatch, 0),
 	}
 
 	// Create scanner pool
+	logger.SetMessage(funcID, "Scanning files...")
 	var wg sync.WaitGroup
-	workers := make(chan struct{}, 20) // Limit to 20
+	var progWg sync.WaitGroup
+	progressChan := make(chan int64)
+	progWg.Add(1)
+	go func(progCh <-chan int64) {
+		defer progWg.Done()
+		var completed int64
+		for i := range progCh {
+			completed += i
+			logger.AddProgressBarToStream(funcID, completed, int64(len(filesToScan)), fmt.Sprintf("Scanned %d files", completed))
+		}
+	}(progressChan)
+	workers := make(chan struct{}, 30) // Limit to 30
 	errChan := make(chan error, len(filesToScan))
 	for _, file := range filesToScan {
-		if file == "" {
-			continue
+		// if file == "" {
+		// 	continue
+		// }
+		skipped := false
+		for _, skipMatch := range secretSkips {
+			if strings.Contains(file, skipMatch) {
+				skipped = true
+				break
+			}
 		}
-		if strings.Contains(file, "node_modules") || strings.Contains(file, ".git") {
+		if skipped {
+			progressChan <- 1
 			continue
 		}
 		wg.Add(1)
 		workers <- struct{}{}
-		go func(filepath string) {
+		go func(filepath string, progCh chan<- int64) {
 			defer wg.Done()
 			defer func() { <-workers }()
 			if err := scanFile(filepath, rules, matches); err != nil {
 				errChan <- fmt.Errorf("error scanning file %s: %v", filepath, err)
 			}
-			logger.Debug().Str("file", filepath).Msg("scanned")
-		}(file)
+			progressChan <- 1
+		}(file, progressChan)
 	}
 	wg.Wait()
+	close(progressChan)
 	close(errChan)
+	progWg.Wait()
+	if len(matches.matches) == 0 {
+		logger.SetMessage(funcID, "No secrets found")
+	} else {
+		logger.SetMessage(funcID, fmt.Sprintf("Found %d potential secrets", len(matches.matches)))
+	}
 
 	if len(errChan) > 0 {
 		var errMsgs []string
 		for err := range errChan {
 			errMsgs = append(errMsgs, err.Error())
 		}
-		return fmt.Errorf("scanning errors occurred: %s", strings.Join(errMsgs, "; "))
+		logger.ReportError(funcID, fmt.Errorf("scanning errors occurred: %s", strings.Join(errMsgs, "; ")))
+		logger.SetMessage(funcID, "Errors occurred during scanning")
+	} else {
+		logger.Complete(funcID, "Scanning completed successfully")
 	}
 
-	table := utils.MarkdownTable{
-		Headers: []string{"Type", "Match", "File", "Line"},
-		Rows:    make([][]string, 0),
-	}
-	falsepTable := utils.MarkdownTable{
-		Headers: []string{"Match", "File", "Line"},
-		Rows:    make([][]string, 0),
-	}
+	table := logger.RegisterTable("Primary Matches", []string{"Type", "Match", "File", "Line"})
+	falsepTable := logger.RegisterTable("Generic Matches", []string{"Match", "File", "Line"})
 	for _, match := range matches.matches {
 		if match.Type == "Generic Secrets & Keys" {
+			if !printFalsePositives {
+				continue
+			}
 			falsepTable.Rows = append(falsepTable.Rows, []string{
 				match.Match,
 				match.File,
 				fmt.Sprintf("%d", match.Line),
 			})
 			continue
+		} else {
+			table.Rows = append(table.Rows, []string{
+				match.Type,
+				match.Match,
+				match.File,
+				fmt.Sprintf("%d", match.Line),
+			})
 		}
-		table.Rows = append(table.Rows, []string{
-			match.Type,
-			match.Match,
-			match.File,
-			fmt.Sprintf("%d", match.Line),
-		})
 	}
-	if len(table.Rows) > 0 {
-		table.OutMDPrint(false)
-	} else {
-		fmt.Println(utils.OutSuccess("No secrets found."))
-	}
-	if len(falsepTable.Rows) > 0 && printFalsePositives {
-		fmt.Println(utils.OutWarning("\nFalse positive matches detected. Please verify the results for the following:"))
-		falsepTable.OutMDPrint(false)
-	}
-	return nil
 }
 
 func scanFile(filepath string, rules []struct {
@@ -173,8 +206,8 @@ func scanFile(filepath string, rules []struct {
 				if len(foundMatches) > 1 && foundMatches[1] != "" {
 					matchStr = foundMatches[1]
 				}
-				if len(matchStr) > 50 {
-					matchStr = matchStr[:47] + "..."
+				if len(matchStr) > 40 {
+					matchStr = matchStr[:37] + "..."
 				}
 				match := SecretMatch{
 					Type:  rule.Name,

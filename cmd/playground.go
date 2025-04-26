@@ -1,16 +1,23 @@
 package cmd
 
-import (
-	"fmt"
-	"os"
-	"strconv"
-
-	"github.com/tanq16/anbu/utils"
-)
+import "github.com/tanq16/anbu/utils"
 
 func playground() {
-	fmt.Println(utils.OutError("Playground mode executed"))
-	variable := os.Getenv("COLUMNS")
-	size, _ := strconv.Atoi(variable)
-	fmt.Println(utils.OutDetail(fmt.Sprintf("Terminal size: %d", size)))
+	utils.PrintSuccess("Playground success test")
+	utils.PrintSuccess2("Playground success test 2")
+	utils.PrintError("Playground error test")
+	utils.PrintWarning("Playground warning test")
+	utils.PrintInfo("Playground info test")
+	utils.PrintDebug("Playground debug test")
+	utils.PrintDetail("Playground detail test")
+	utils.PrintHeader("Playground header test")
+	utils.PrintStream("Playground stream test")
+	// om := utils.GetDefaultManager()
+	// funcID := om.Register("playground")
+	// om.SetMessage(funcID, "Playground started")
+	// time.Sleep(4 * time.Second)
+	// om.SetMessage(funcID, "Playground done executing")
+	// time.Sleep(2 * time.Second)
+	// om.Complete(funcID, "Playground completed")
+	// time.Sleep(2 * time.Second)
 }

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
-	"github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 type timeFormat struct {
@@ -15,14 +15,11 @@ type timeFormat struct {
 	Value  string
 }
 
-func printTimeTable(concern time.Time) error {
+func printTimeTable(concern time.Time) {
 	utcTime := concern.UTC()
 	localTime := concern.Local()
 	// Create table for parsed time formats
-	table := utils.MarkdownTable{
-		Headers: []string{"Format", "Value"},
-		Rows:    [][]string{},
-	}
+	table := u.NewTable([]string{"Format", "Value"})
 	timeFormats := []timeFormat{
 		{"ISO8601 UTC", utcTime.Format(time.RFC3339)},
 		{"Human UTC", utcTime.Format("Mon Jan 2 15:04:05 MST 2006")},
@@ -38,16 +35,12 @@ func printTimeTable(concern time.Time) error {
 	for _, format := range timeFormats {
 		table.Rows = append(table.Rows, []string{format.Format, format.Value})
 	}
-	return table.OutMDPrint(false)
+	table.PrintTable(false)
 }
 
-func printTimeTablePurple(concern time.Time) error {
-	logger := utils.GetLogger("time")
+func printTimeTablePurple(concern time.Time) {
 	utcTime := concern.UTC()
-	table := utils.MarkdownTable{
-		Headers: []string{"Item", "Value"},
-		Rows:    [][]string{},
-	}
+	table := u.NewTable([]string{"Item", "Value"})
 	formats := []timeFormat{
 		{"ISO8601 UTC", utcTime.Format(time.RFC3339)},
 		{"Human UTC", utcTime.Format("Mon Jan 2 15:04:05 MST 2006")},
@@ -59,16 +52,15 @@ func printTimeTablePurple(concern time.Time) error {
 	}
 	ipAddr, err := anbuNetwork.GetPublicIP()
 	if err != nil {
-		logger.Warn().Err(err).Msg("could not get public IP address")
+		u.PrintWarning("could not get public IP address")
 	} else {
 		ipAddress := ipAddr.UnwindString("ip")
 		table.Rows = append(table.Rows, []string{"Public IP", ipAddress})
 	}
-	table.OutMDPrint(false)
-	return nil
+	table.PrintTable(false)
 }
 
-func printTimeDifferenceFromNow(targetTime time.Time) error {
+func printTimeDifferenceFromNow(targetTime time.Time) {
 	now := time.Now()
 	var diff time.Duration
 	var direction string
@@ -80,16 +72,15 @@ func printTimeDifferenceFromNow(targetTime time.Time) error {
 		direction = "ago"
 	}
 	fmt.Println()
-	fmt.Printf("%s: %s\n", utils.OutDetail("Target time"), utils.OutDebug(targetTime.Format("Mon Jan 2 15:04:05 MST 2006")))
-	fmt.Printf("%s: %s\n", utils.OutDetail("Current time"), utils.OutDebug(now.Format("Mon Jan 2 15:04:05 MST 2006")))
+	fmt.Printf("%s: %s\n", u.FDetail("Target time"), u.FDebug(targetTime.Format("Mon Jan 2 15:04:05 MST 2006")))
+	fmt.Printf("%s: %s\n", u.FDetail("Current time"), u.FDebug(now.Format("Mon Jan 2 15:04:05 MST 2006")))
 	fmt.Println()
 	// Print direction-aware message
 	if direction == "until" {
-		fmt.Printf("Target time is %s from now\n", utils.OutDetail(timeFormatDuration(diff)))
+		fmt.Printf("Target time is %s from now\n", u.FDetail(timeFormatDuration(diff)))
 	} else {
-		fmt.Printf("Target time was %s ago\n", utils.OutDetail(timeFormatDuration(diff)))
+		fmt.Printf("Target time was %s ago\n", u.FDetail(timeFormatDuration(diff)))
 	}
-	return nil
 }
 
 func timeFormatDuration(d time.Duration) string {
@@ -129,7 +120,7 @@ func timeFormatDuration(d time.Duration) string {
 	return strings.Join(parts, ", ")
 }
 
-func TimeParse(timeStr string, printType string) error {
+func TimeParse(timeStr string, printType string) {
 	formats := []string{
 		time.RFC3339,
 		time.RFC822,
@@ -158,46 +149,37 @@ func TimeParse(timeStr string, printType string) error {
 		if err == nil {
 			parsedTime = time.Unix(checkEpock, 0)
 		} else {
-			return fmt.Errorf("could not parse time string with any known format")
+			u.PrintError("could not parse time string with any known format")
+			return
 		}
 	}
-	var err error
 	switch printType {
 	case "normal":
-		err = printTimeTable(parsedTime)
+		printTimeTable(parsedTime)
 	case "purple":
-		err = printTimeTablePurple(parsedTime)
+		printTimeTablePurple(parsedTime)
 	case "diff":
-		err = printTimeDifferenceFromNow(parsedTime)
+		printTimeDifferenceFromNow(parsedTime)
 	default:
-		err = printTimeTable(parsedTime)
+		printTimeTable(parsedTime)
 	}
-	if err != nil {
-		return fmt.Errorf("could not print time information: %w", err)
-	}
-	return nil
 }
 
 func TimeCurrent() {
-	logger := utils.GetLogger("time")
 	currentTime := time.Now()
-	if err := printTimeTable(currentTime); err != nil {
-		logger.Error().Err(err).Msg("could not print table")
-	}
+	printTimeTable(currentTime)
 }
 
 func TimePurple() {
-	logger := utils.GetLogger("time")
 	currentTime := time.Now()
-	if err := printTimeTablePurple(currentTime); err != nil {
-		logger.Error().Err(err).Msg("could not print table")
-	}
+	printTimeTablePurple(currentTime)
 }
 
-func TimeEpochDiff(epochs []int64) error {
+func TimeEpochDiff(epochs []int64) {
 	var epoch1, epoch2 int64
 	if len(epochs) == 0 {
-		return fmt.Errorf("no epochs provided")
+		u.PrintError("No epochs provided")
+		return
 	} else if len(epochs) == 1 {
 		epoch1, epoch2 = epochs[0], time.Now().Unix()
 	} else {
@@ -208,16 +190,15 @@ func TimeEpochDiff(epochs []int64) error {
 	t2 := time.Unix(epoch2, 0)
 	diff := t2.Sub(t1)
 	// Show difference in multiple units
-	fmt.Println(utils.OutDetail("Time difference:"))
-	fmt.Printf("  %s  %d\n", utils.OutSuccess("Seconds:"), int64(diff.Seconds()))
-	fmt.Printf("  %s  %.1f\n", utils.OutSuccess("Minutes:"), diff.Minutes())
-	fmt.Printf("  %s  %.1f\n", utils.OutSuccess("Hours:"), diff.Hours())
-	fmt.Printf("  %s  %.1f\n", utils.OutSuccess("Days:"), diff.Hours()/24)
+	fmt.Println(u.FDetail("Time difference:"))
+	fmt.Printf("  %s  %d\n", u.FSuccess("Seconds:"), int64(diff.Seconds()))
+	fmt.Printf("  %s  %.1f\n", u.FSuccess("Minutes:"), diff.Minutes())
+	fmt.Printf("  %s  %.1f\n", u.FSuccess("Hours:"), diff.Hours())
+	fmt.Printf("  %s  %.1f\n", u.FSuccess("Days:"), diff.Hours()/24)
 	// Add human readable description
 	if diff > 0 {
-		fmt.Printf("\n%s is %s after %s\n", utils.OutInfo("Time 2"), utils.OutSuccess(timeFormatDuration(diff)), utils.OutInfo("Time 1"))
+		fmt.Printf("\n%s is %s after %s\n", u.FInfo("Time 2"), u.FSuccess(timeFormatDuration(diff)), u.FInfo("Time 1"))
 	} else {
-		fmt.Printf("\n%s is %s before %s\n", utils.OutInfo("Time 2"), utils.OutSuccess(timeFormatDuration(-diff)), utils.OutInfo("Time 1"))
+		fmt.Printf("\n%s is %s before %s\n", u.FInfo("Time 2"), u.FSuccess(timeFormatDuration(-diff)), u.FInfo("Time 1"))
 	}
-	return nil
 }

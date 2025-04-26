@@ -2,8 +2,8 @@ package genericsCmd
 
 import (
 	"github.com/spf13/cobra"
+
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
-	"github.com/tanq16/anbu/utils"
 )
 
 var ConvertCmd = &cobra.Command{
@@ -20,12 +20,8 @@ Converters:
 `,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := utils.GetLogger("convert")
 		converterType := args[0]
 		input := args[1]
-		err := anbuGenerics.ConvertData(converterType, input)
-		if err != nil {
-			logger.Fatal().Err(err).Msg("Conversion failed")
-		}
+		anbuGenerics.ConvertData(converterType, input)
 	},
 }

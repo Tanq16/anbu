@@ -8,17 +8,19 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	u "github.com/tanq16/anbu/utils"
 )
 
 // generates a random string of specified length
-func GenerateRandomString(length int) (string, error) {
+func GenerateRandomString(length int) {
 	if length <= 0 {
 		length = 100
 	}
 	randomBytes := make([]byte, length)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate random bytes: %w", err)
+		u.PrintError(fmt.Sprintf("failed to generate random bytes: %v", err))
+		return
 	}
 	encoded := base64.StdEncoding.EncodeToString(randomBytes)
 	encoded = strings.Map(func(r rune) rune {
@@ -32,57 +34,55 @@ func GenerateRandomString(length int) (string, error) {
 	if len(encoded) > length {
 		encoded = encoded[:length]
 	}
-	return encoded, nil
+	fmt.Println(encoded)
 }
 
 // generates a sequence of alphabetic characters
-func GenerateSequenceString(length int) (string, error) {
+func GenerateSequenceString(length int) {
 	if length <= 0 {
-		return "", fmt.Errorf("length must be greater than 0")
+		u.PrintWarning("length must be greater than 0; using 100")
+		length = 100
 	}
 	alphabet := "abcdefghijklmnopqrstuvxyz"
 	var result strings.Builder
 	for result.Len() < length {
 		result.WriteString(alphabet)
 	}
-	return result.String()[:length], nil
+	fmt.Println(result.String()[:length])
 }
 
 // repeats a string a specified number of times
-func GenerateRepetitionString(count int, str string) (string, error) {
+func GenerateRepetitionString(count int, str string) {
 	if count <= 0 {
-		return "", fmt.Errorf("count must be greater than 0")
+		u.PrintWarning("count must be greater than 0; using 10")
+		count = 10
 	}
 	var result strings.Builder
 	for range count {
 		result.WriteString(str)
 	}
-	return result.String(), nil
+	fmt.Println(result.String())
 }
 
-func GenerateUUIDString() (string, error) {
-	// use google/uuid package to generate a UUID
-	uuid, err := uuid.NewRandom()
-	if err != nil {
-		return "", fmt.Errorf("failed to generate UUID: %w", err)
-	}
-	return uuid.String(), nil
+// use google/uuid package to generate a UUID
+func GenerateUUIDString() {
+	uuid, _ := uuid.NewRandom()
+	fmt.Println(uuid.String())
 }
 
 // generates shorter UUID string
-func GenerateRUIDString(len string) (string, error) {
+func GenerateRUIDString(len string) {
 	length, err := strconv.Atoi(len)
 	if err != nil {
-		return "", fmt.Errorf("not a valid length: %w", err)
+		u.PrintError("not a valid length")
+		return
 	}
-	if length <= 0 || length > 32 {
-		return "", fmt.Errorf("length must be between 1 and 30")
+	if length <= 0 || length > 30 {
+		u.PrintWarning("length must be between 1 and 30; using 18")
+		length = 18
 	}
-	uuid, err := uuid.NewRandom()
-	if err != nil {
-		return "", fmt.Errorf("failed to generate UUID: %w", err)
-	}
+	uuid, _ := uuid.NewRandom()
 	// remove version and variant bits from UUID
 	shortUUID := uuid.String()[0:8] + uuid.String()[9:13] + uuid.String()[15:18] + uuid.String()[20:23] + uuid.String()[24:]
-	return shortUUID[:length], nil
+	fmt.Println(shortUUID[:length])
 }

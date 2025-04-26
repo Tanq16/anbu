@@ -15,16 +15,23 @@ import (
 )
 
 func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) error {
-	logger := utils.GetLogger("tunnel-tcp")
+	logger := utils.NewManager(0)
+	logger.StartDisplay()
+	defer logger.StopDisplay()
+	funcID := logger.Register("tcp-tunnel")
+	logger.SetMessage(funcID, fmt.Sprintf("TCP tunnel %s → %s", localAddr, remoteAddr))
+
 	// Listen on the local address
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
-		return fmt.Errorf("failed to listen on %s: %w", localAddr, err)
+		logger.ReportError(funcID, fmt.Errorf("failed to listen on %s: %w", localAddr, err))
+		return err
 	}
 	defer listener.Close()
-	logger.Debug().Str("local", localAddr).Str("remote", remoteAddr).Bool("tls", useTLS).Msg("TCP tunnel started")
-	fmt.Println(utils.OutSuccess(fmt.Sprintf("TCP tunnel %s ➜ %s", localAddr, remoteAddr)))
-	fmt.Println(utils.OutWarning("Press Ctrl+C to stop"))
+	logger.AddStreamLine(funcID, fmt.Sprintf("Listening on %s", localAddr))
+	if useTLS {
+		logger.AddStreamLine(funcID, "Using TLS for remote connections")
+	}
 
 	// For graceful shutdown
 	sigChan := make(chan os.Signal, 1)
@@ -34,9 +41,8 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 	go func() {
 		<-sigChan
 		close(done)
+		logger.Complete(funcID, "TCP tunnel stopped gracefully")
 		listener.Close()
-		activeConns.Wait()
-		fmt.Println(utils.OutSuccess("TCP tunnel stopped gracefully"))
 	}()
 
 	// Continue accepting new connections until explicitly stopped
@@ -55,8 +61,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 				if opErr, ok := err.(*net.OpError); ok && !opErr.Temporary() {
 					return nil
 				}
-				logger.Debug().Err(err).Msg("Failed to accept connection")
-				fmt.Println(utils.OutError("Failed to accept connection"))
+				logger.AddStreamLine(funcID, fmt.Sprintf("Failed to accept connection: %v", err))
 				continue
 			}
 
@@ -65,6 +70,8 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 			go func() {
 				defer activeConns.Done()
 				defer localConn.Close()
+				logger.AddStreamLine(funcID, fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
+
 				// Connect to remote
 				var remoteConn net.Conn
 				if useTLS {
@@ -76,31 +83,47 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 					remoteConn, err = net.Dial("tcp", remoteAddr)
 				}
 				if err != nil {
-					logger.Error().Err(err).Str("remote", remoteAddr).Msg("Failed to connect to remote")
+					logger.AddStreamLine(funcID, fmt.Sprintf("Failed to connect to remote %s: %v", remoteAddr, err))
 					return
 				}
 				defer remoteConn.Close()
-				logger.Debug().Str("remote", remoteAddr).Msg("New connection established to remote")
+				logger.AddStreamLine(funcID, fmt.Sprintf("Connected to remote %s", remoteAddr))
+
 				// Copy data bidirectionally
 				var wg sync.WaitGroup
 				wg.Add(2)
 				go func() {
 					defer wg.Done()
-					io.Copy(remoteConn, localConn)
+					// Local to Remote
+					n, err := io.Copy(remoteConn, localConn)
+					if err != nil && err != io.EOF {
+						logger.AddStreamLine(funcID, fmt.Sprintf("Error copying data to remote: %v", err))
+					}
+					logger.AddStreamLine(funcID, fmt.Sprintf("→ Sent %d bytes to remote", n))
 				}()
 				go func() {
 					defer wg.Done()
-					io.Copy(localConn, remoteConn)
+					// Remote to Local
+					n, err := io.Copy(localConn, remoteConn)
+					if err != nil && err != io.EOF {
+						logger.AddStreamLine(funcID, fmt.Sprintf("Error copying data from remote: %v", err))
+					}
+					logger.AddStreamLine(funcID, fmt.Sprintf("← Received %d bytes from remote", n))
 				}()
 				wg.Wait()
-				logger.Debug().Msg("Connection closed")
+				logger.AddStreamLine(funcID, fmt.Sprintf("Connection closed from %s", localConn.RemoteAddr()))
 			}()
 		}
 	}
 }
 
 func ReverseTCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) error {
-	logger := utils.GetLogger("tunnel-rtcp")
+	logger := utils.NewManager(0)
+	logger.StartDisplay()
+	defer logger.StopDisplay()
+	funcID := logger.Register("reverse-tcp-tunnel")
+	logger.SetMessage(funcID, fmt.Sprintf("Reverse TCP tunnel %s ← %s", localAddr, remoteAddr))
+
 	// For graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -109,12 +132,9 @@ func ReverseTCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify b
 	go func() {
 		<-sigChan
 		close(done)
-		fmt.Println(utils.OutSuccess("Reverse TCP tunnel stopping gracefully"))
+		logger.Complete(funcID, "Reverse TCP tunnel stopped gracefully")
 	}()
-
-	logger.Debug().Str("local", localAddr).Str("remote", remoteAddr).Bool("tls", useTLS).Msg("Reverse TCP tunnel starting")
-	fmt.Println(utils.OutSuccess(fmt.Sprintf("Reverse TCP tunnel %s ➜ %s", remoteAddr, localAddr)))
-	fmt.Println(utils.OutWarning("Press Ctrl+C to stop"))
+	logger.AddStreamLine(funcID, fmt.Sprintf("Connecting to remote %s", remoteAddr))
 
 	// Continue connecting to the remote server until explicitly stopped
 	for {
@@ -134,8 +154,7 @@ func ReverseTCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify b
 				remoteConn, err = net.Dial("tcp", remoteAddr)
 			}
 			if err != nil {
-				logger.Error().Err(err).Str("remote", remoteAddr).Msg("Failed to connect to remote")
-				fmt.Println(utils.OutError(fmt.Sprintf("Failed to connect to remote at %s: %v", remoteAddr, err)))
+				logger.AddStreamLine(funcID, fmt.Sprintf("Failed to connect to remote at %s: %v", remoteAddr, err))
 				select {
 				case <-done:
 					activeConns.Wait()
@@ -150,29 +169,39 @@ func ReverseTCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify b
 			go func(remoteConn net.Conn) {
 				defer activeConns.Done()
 				defer remoteConn.Close()
+				logger.AddStreamLine(funcID, fmt.Sprintf("Connected to remote %s", remoteAddr))
 				// Connect to the local service
 				localConn, err := net.Dial("tcp", localAddr)
 				if err != nil {
-					logger.Error().Err(err).Str("local", localAddr).Msg("Failed to connect to local service")
-					fmt.Println(utils.OutError(fmt.Sprintf("Failed to connect to local service at %s: %v", localAddr, err)))
+					logger.AddStreamLine(funcID, fmt.Sprintf("Failed to connect to local service at %s: %v", localAddr, err))
 					return
 				}
 				defer localConn.Close()
-				logger.Debug().Str("local", localAddr).Str("remote", remoteAddr).Msg("Tunnel connection established")
+				logger.AddStreamLine(funcID, fmt.Sprintf("Connected to local service %s", localAddr))
 
 				// Copy data bidirectionally
 				var wg sync.WaitGroup
 				wg.Add(2)
 				go func() {
 					defer wg.Done()
-					io.Copy(localConn, remoteConn)
+					// Local to Remote
+					n, err := io.Copy(remoteConn, localConn)
+					if err != nil && err != io.EOF {
+						logger.AddStreamLine(funcID, fmt.Sprintf("Error copying data to remote: %v", err))
+					}
+					logger.AddStreamLine(funcID, fmt.Sprintf("→ Sent %d bytes to remote", n))
 				}()
 				go func() {
 					defer wg.Done()
-					io.Copy(remoteConn, localConn)
+					// Remote to Local
+					n, err := io.Copy(localConn, remoteConn)
+					if err != nil && err != io.EOF {
+						logger.AddStreamLine(funcID, fmt.Sprintf("Error copying data from remote: %v", err))
+					}
+					logger.AddStreamLine(funcID, fmt.Sprintf("← Received %d bytes from remote", n))
 				}()
 				wg.Wait()
-				logger.Debug().Msg("Connection closed")
+				logger.AddStreamLine(funcID, "Connection closed")
 			}(remoteConn)
 		}
 	}

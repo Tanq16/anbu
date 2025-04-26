@@ -7,14 +7,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
-func LoopProcessRange(input string) ([]int, error) {
-	logger := utils.GetLogger("loopcmd")
+func loopProcessRange(input string) ([]int, error) {
 	var rangeElems []int
 	if strings.Contains(input, "-") {
-		logger.Debug().Str("input", input).Msg("processing range")
 		parts := strings.Split(input, "-")
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid range format: %s", input)
@@ -35,9 +33,7 @@ func LoopProcessRange(input string) ([]int, error) {
 			loopRange[i-start] = i
 		}
 		rangeElems = loopRange
-		logger.Debug().Str("range", fmt.Sprintf("%d-%d", start, end)).Msg("range processed")
 	} else {
-		logger.Debug().Str("input", input).Msg("processing count")
 		count, err := strconv.Atoi(strings.TrimSpace(input))
 		if err != nil {
 			return nil, fmt.Errorf("invalid count: %w", err)
@@ -50,7 +46,6 @@ func LoopProcessRange(input string) ([]int, error) {
 			loopRange[i] = i
 		}
 		rangeElems = loopRange
-		logger.Debug().Str("count", fmt.Sprintf("%d", count)).Msg("count processed")
 	}
 	return rangeElems, nil
 }
@@ -62,23 +57,24 @@ func loopPaddedReplace(num, padding int) string {
 	return strconv.Itoa(num)
 }
 
-func LoopProcessCommands(loopRange []int, command string, padding int) error {
-	logger := utils.GetLogger("loopcmd")
+func LoopProcessCommands(loopRangeStr string, command string, padding int) {
+	loopRange, err := loopProcessRange(loopRangeStr)
+	if err != nil {
+		u.PrintError(fmt.Sprintf("Invalid range: %s", err))
+		return
+	}
 	for _, num := range loopRange {
 		cmdToRun := strings.ReplaceAll(command, "$i", loopPaddedReplace(num, padding))
-		logger.Debug().Str("command", cmdToRun).Msg("executing command")
 		cmd := exec.Command("sh", "-c", cmdToRun)
 		var stdoutBuf, stderrBuf bytes.Buffer
 		cmd.Stdout = &stdoutBuf
 		cmd.Stderr = &stderrBuf
 		err := cmd.Run()
 		if err != nil {
-			logger.Error().Err(err).Str("stderr", stderrBuf.String()).Msg("failure")
-			return fmt.Errorf("command execution failed: %w", err)
+			u.PrintError(fmt.Sprintf("command execution failed: %s", err))
 		}
 		if stdoutBuf.Len() > 0 {
-			fmt.Println(utils.OutDebug(stdoutBuf.String()))
+			u.PrintDebug(stdoutBuf.String())
 		}
 	}
-	return nil
 }

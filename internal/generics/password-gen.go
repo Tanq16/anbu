@@ -6,15 +6,19 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+
+	u "github.com/tanq16/anbu/utils"
 )
 
-func GeneratePassword(lengthS string, simple bool) (string, error) {
+func GeneratePassword(lengthS string, simple bool) {
 	length, err := strconv.Atoi(lengthS)
 	if err != nil {
-		return "", fmt.Errorf("invalid length: %w", err)
+		u.PrintError("invalid length")
+		return
 	}
 	if length <= 0 {
-		return "", fmt.Errorf("length must be greater than 0")
+		u.PrintWarning("length must be greater than 0; using 15")
+		length = 15
 	}
 	alphabet := "abcdefghijklmnopqrstuvwxyz"
 	if !simple {
@@ -23,29 +27,29 @@ func GeneratePassword(lengthS string, simple bool) (string, error) {
 	var result strings.Builder
 	for result.Len() < length {
 		randomBytes := make([]byte, length)
-		_, err := cryptoRand.Read(randomBytes)
-		if err != nil {
-			return "", fmt.Errorf("failed to generate random bytes: %w", err)
-		}
+		cryptoRand.Read(randomBytes)
 		for _, b := range randomBytes {
 			result.WriteByte(alphabet[b%byte(len(alphabet))])
 		}
 	}
-	return result.String()[:length], nil
+	fmt.Println(result.String()[:length])
 }
 
-func GeneratePassPhrase(lengthS string, separator string, simple bool) (string, error) {
+func GeneratePassPhrase(lengthS string, separator string, simple bool) {
 	length, err := strconv.Atoi(lengthS)
 	if err != nil {
-		return "", fmt.Errorf("invalid length: %w", err)
+		u.PrintError("invalid length")
+		return
 	}
 	if length < 2 || length > 50 {
-		return "", fmt.Errorf("length must be between 2 to 50")
+		u.PrintWarning("length must be between 2 to 50; using 3")
+		length = 3
 	}
 	if separator == "" {
 		separator = "-"
-	} else if len(separator) > 1 {
-		return "", fmt.Errorf("separator must be a single character")
+	}
+	if len(separator) > 1 {
+		u.PrintWarning("separator must be a single character; using -")
 	}
 	numberList := "0123456789"
 	var result strings.Builder
@@ -65,7 +69,7 @@ func GeneratePassPhrase(lengthS string, separator string, simple bool) (string, 
 			result.WriteString(separator)
 		}
 	}
-	return result.String(), nil
+	fmt.Println(result.String())
 }
 
 var passphraseWords = []string{

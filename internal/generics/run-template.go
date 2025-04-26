@@ -11,7 +11,7 @@ import (
 
 	"maps"
 
-	"github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,48 +28,53 @@ type TemplateConfig struct {
 	Steps       []TemplateStep    `yaml:"steps"`
 }
 
-func RunTemplate(filePath string, overrideVars map[string]string) error {
-	logger := utils.GetLogger("template")
+func RunTemplate(filePath string, overrideVars map[string]string) {
+	logger := u.NewManager(0)
+	logger.StartDisplay()
+	templateFuncID := logger.Register("Run Template")
+	logger.SetMessage(templateFuncID, fmt.Sprintf("Initializing template: %s", filePath))
+	defer logger.StopDisplay()
 
 	// Load template
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("failed to read template file: %w", err)
+		logger.ReportError(templateFuncID, fmt.Errorf("failed to read template file: %s", err))
+		logger.SetMessage(templateFuncID, "Error reading template file")
+		return
 	}
 	var config TemplateConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
-		return fmt.Errorf("failed to parse template YAML: %w", err)
+		logger.ReportError(templateFuncID, fmt.Errorf("failed to parse template YAML: %s", err))
+		logger.SetMessage(templateFuncID, "Error parsing template YAML")
+		return
 	}
 	if config.Variables == nil {
 		config.Variables = make(map[string]string)
 	}
 	maps.Copy(config.Variables, overrideVars)
-	fmt.Println(utils.OutDetail(fmt.Sprintf("\nRunning template: %s", config.Name)))
-	if config.Description != "" {
-		fmt.Println(utils.OutDebug(config.Description))
-	}
+	logger.SetMessage(templateFuncID, fmt.Sprintf("Running template: %s", config.Name))
+	// if config.Description != "" {
+	// 	fmt.Println(u.OutDebug(config.Description))
+	// }
 
 	// Run template steps
 	for i, step := range config.Steps {
+		stepID := logger.Register(fmt.Sprintf("Step %d: %s", i+1, step.Name))
+		logger.SetMessage(stepID, fmt.Sprintf("Executing step %d: %s", i+1, step.Name))
 		cmdWithVars, err := processTemplateVariables(step.Command, config.Variables)
 		if err != nil {
-			return fmt.Errorf("failed to process variables in step %d: %w", i+1, err)
+			logger.ReportError(stepID, fmt.Errorf("failed to process step %d variables: %s", i+1, err))
+			return
 		}
-		fmt.Printf("\n%s %s\n", utils.OutCyan(fmt.Sprintf("[Step %d]", i+1)), utils.OutCyan(step.Name))
-		fmt.Printf("%s %s\n", utils.OutSuccess("Command:"), utils.OutSuccess(cmdWithVars))
 
 		// Execute command with streaming output
 		cmd := exec.Command("sh", "-c", cmdWithVars)
-		stdoutPipe, err := cmd.StdoutPipe()
-		if err != nil {
-			return fmt.Errorf("failed to create stdout pipe: %w", err)
-		}
-		stderrPipe, err := cmd.StderrPipe()
-		if err != nil {
-			return fmt.Errorf("failed to create stderr pipe: %w", err)
-		}
+		stdoutPipe, _ := cmd.StdoutPipe()
+		stderrPipe, _ := cmd.StderrPipe()
 		if err := cmd.Start(); err != nil {
-			return fmt.Errorf("failed to start command: %w", err)
+			logger.ReportError(stepID, fmt.Errorf("failed to start command: %s", err))
+			logger.SetMessage(templateFuncID, "Template failed midway")
+			return
 		}
 		var wg sync.WaitGroup
 		wg.Add(2)
@@ -77,30 +82,34 @@ func RunTemplate(filePath string, overrideVars map[string]string) error {
 			defer wg.Done()
 			scanner := bufio.NewScanner(stdoutPipe)
 			for scanner.Scan() {
-				fmt.Println(utils.OutDebug(scanner.Text()))
+				logger.AddStreamLine(stepID, scanner.Text())
 			}
 		}()
 		go func() {
 			defer wg.Done()
 			scanner := bufio.NewScanner(stderrPipe)
 			for scanner.Scan() {
-				fmt.Println(utils.OutDebug(scanner.Text()))
+				logger.AddStreamLine(stepID, scanner.Text())
 			}
 		}()
 		wg.Wait()
 		err = cmd.Wait()
 
 		if err != nil {
-			logger.Debug().Err(err).Str("command", cmdWithVars).Msg("Step failed")
+			logger.ReportError(stepID, fmt.Errorf("command failed: %s", err))
 			if step.IgnoreError {
-				fmt.Println(utils.OutWarning("Command failed, but ignoring error and continuing..."))
+				logger.SetMessage(stepID, fmt.Sprintf("Step %d errored but ignored", i+1))
 			} else {
-				return fmt.Errorf("step %d failed: %w", i+1, err)
+				logger.SetMessage(stepID, fmt.Sprintf("Step %d failed", i+1))
+				logger.SetMessage(templateFuncID, "Template failed midway")
+				return
 			}
+		} else {
+			logger.Complete(stepID, fmt.Sprintf("Step %d completed successfully", i+1))
 		}
+		logger.AddProgressBarToStream(templateFuncID, int64(i+1), int64(len(config.Steps)), fmt.Sprintf("%d / %d", i+1, len(config.Steps)))
 	}
-	fmt.Println(utils.OutInfo("\nTemplate execution completed successfully"))
-	return nil
+	logger.Complete(templateFuncID, fmt.Sprintf("Template %s completed successfully", config.Name))
 }
 
 func processTemplateVariables(cmdStr string, variables map[string]string) (string, error) {
