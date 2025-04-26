@@ -101,7 +101,7 @@ var secretRules = []struct {
 	},
 	{
 		Name:    "AWS Secret Access Key",
-		Pattern: `(?:)(?i)(?:aws).?(?:secret)?.?(?:access)?.?(?:key)?(?-i).{0,25}\b(?:[a-z0-9/+=]{40})\b`,
+		Pattern: `(?:)(?i)(?:aws).?(?:secret)?.?(?:access)?.?(?:key)?(?-i).{0,25}\b?(?:[\w/+=]{40})\b`,
 	},
 	{
 		Name:    "AWS Session Token",
