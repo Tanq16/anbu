@@ -1,6 +1,8 @@
 package utils
 
-import "slices"
+import (
+	"slices"
+)
 
 // Checks if two slices are same, but is not order-sensitive
 func SliceSame(slice1, slice2 []any) bool {

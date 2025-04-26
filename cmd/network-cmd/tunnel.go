@@ -1,9 +1,11 @@
 package networkCmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
+	anbuNetwork "github.com/tanq16/anbu/internal/network"
 	"github.com/tanq16/anbu/utils"
 	"golang.org/x/crypto/ssh"
 )
@@ -42,10 +44,6 @@ var tcpTunnelCmd = &cobra.Command{
 			tunnelFlags.useTLS,
 			tunnelFlags.insecureSkipVerify,
 		)
-		if err != nil {
-			utils.PrintError("Failed to create TCP tunnel: %v", err)
-			os.Exit(1)
-		}
 	},
 }
 
@@ -74,11 +72,11 @@ var sshTunnelCmd = &cobra.Command{
 			authMethods = append(authMethods, anbuNetwork.TunnelSSHPassword(tunnelFlags.sshPassword))
 		}
 		if tunnelFlags.sshKeyPath != "" {
-			// MOVE TO MAIN FUNCTION
-			keyAuth, _ := anbuNetwork.TunnelSSHPrivateKey(tunnelFlags.sshKeyPath)
-			// if err != nil {
-			// 	logger.Fatal().Err(err).Msg("Failed to load SSH key")
-			// }
+			keyAuth, err := anbuNetwork.TunnelSSHPrivateKey(tunnelFlags.sshKeyPath)
+			if err != nil {
+				utils.PrintError("Failed to load SSH key: " + err.Error())
+				os.Exit(1)
+			}
 			authMethods = append(authMethods, keyAuth)
 		}
 		anbuNetwork.SSHTunnel(
@@ -88,9 +86,6 @@ var sshTunnelCmd = &cobra.Command{
 			tunnelFlags.sshUser,
 			authMethods,
 		)
-		if err != nil {
-			logger.Fatal().Err(err).Msg("Failed to create SSH tunnel")
-		}
 	},
 }
 
@@ -112,9 +107,6 @@ var reverseTcpTunnelCmd = &cobra.Command{
 			tunnelFlags.useTLS,
 			tunnelFlags.insecureSkipVerify,
 		)
-		if err != nil {
-			logger.Fatal().Err(err).Msg("Failed to create reverse TCP tunnel")
-		}
 	},
 }
 
@@ -143,10 +135,11 @@ var reverseSshTunnelCmd = &cobra.Command{
 			authMethods = append(authMethods, anbuNetwork.TunnelSSHPassword(tunnelFlags.sshPassword))
 		}
 		if tunnelFlags.sshKeyPath != "" {
-			keyAuth, _ := anbuNetwork.TunnelSSHPrivateKey(tunnelFlags.sshKeyPath)
-			// if err != nil {
-			// 	logger.Fatal().Err(err).Msg("Failed to load SSH key")
-			// }
+			keyAuth, err := anbuNetwork.TunnelSSHPrivateKey(tunnelFlags.sshKeyPath)
+			if err != nil {
+				utils.PrintError("Failed to load SSH key: " + err.Error())
+				os.Exit(1)
+			}
 			authMethods = append(authMethods, keyAuth)
 		}
 		anbuNetwork.ReverseSSHTunnel(
@@ -156,13 +149,12 @@ var reverseSshTunnelCmd = &cobra.Command{
 			tunnelFlags.sshUser,
 			authMethods,
 		)
-		if err != nil {
-			logger.Fatal().Err(err).Msg("Failed to create reverse SSH tunnel")
-		}
 	},
 }
 
 func init() {
+	fmt.Println() // Readability
+
 	TunnelCmd.AddCommand(tcpTunnelCmd)
 	TunnelCmd.AddCommand(sshTunnelCmd)
 	TunnelCmd.AddCommand(reverseTcpTunnelCmd)
