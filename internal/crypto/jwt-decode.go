@@ -10,7 +10,6 @@ import (
 )
 
 func JwtParse(tokenString string) {
-	fmt.Println()
 	parts := strings.Split(tokenString, ".")
 	if len(parts) != 3 {
 		u.PrintError("invalid token format")
@@ -27,11 +26,25 @@ func JwtParse(tokenString string) {
 	// Print the header and payload in a table format
 	headerTable := u.NewTable([]string{"Header", "Value"})
 	for k, v := range header {
-		headerTable.Rows = append(headerTable.Rows, []string{k, fmt.Sprintf("%v", v)})
+		switch v := v.(type) {
+		case float64:
+			headerTable.Rows = append(headerTable.Rows, []string{k, fmt.Sprintf("%.0f", v)})
+		case int64:
+			headerTable.Rows = append(headerTable.Rows, []string{k, fmt.Sprintf("%d", v)})
+		default:
+			headerTable.Rows = append(headerTable.Rows, []string{k, fmt.Sprintf("%v", v)})
+		}
 	}
 	payloadTable := u.NewTable([]string{"Payload", "Value"})
 	for k, v := range payload {
-		payloadTable.Rows = append(payloadTable.Rows, []string{k, fmt.Sprintf("%v", v)})
+		switch v := v.(type) {
+		case float64:
+			payloadTable.Rows = append(payloadTable.Rows, []string{k, fmt.Sprintf("%.0f", v)})
+		case int64:
+			payloadTable.Rows = append(payloadTable.Rows, []string{k, fmt.Sprintf("%d", v)})
+		default:
+			payloadTable.Rows = append(payloadTable.Rows, []string{k, fmt.Sprintf("%v", v)})
+		}
 	}
 	headerTable.PrintTable(false)
 	payloadTable.PrintTable(false)
