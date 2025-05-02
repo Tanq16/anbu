@@ -1,7 +1,6 @@
 package networkCmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -132,8 +131,6 @@ var reverseSshTunnelCmd = &cobra.Command{
 }
 
 func init() {
-	fmt.Println() // Readability
-
 	TunnelCmd.AddCommand(tcpTunnelCmd)
 	TunnelCmd.AddCommand(sshTunnelCmd)
 	TunnelCmd.AddCommand(reverseSshTunnelCmd)

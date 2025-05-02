@@ -31,18 +31,58 @@ var supportedConverters = map[string]converterInfo{
 	"docker-compose": {
 		InputType:  "string",
 		OutputType: "file",
-		// Handler: convertDockerToCompose,
+		// Handler:    convertDockerToCompose,
 	},
 	"compose-docker": {
 		InputType:  "file",
 		OutputType: "string",
-		// Handler: convertComposeToDocker,
+		// Handler:    convertComposeToDocker,
+	},
+	// Text to Text Conversion Handlers (present in convert-more.go)
+	"b64": {
+		InputType:  "string",
+		OutputType: "string",
+		Handler:    textToBase64,
+	},
+	"b64d": {
+		InputType:  "string",
+		OutputType: "string",
+		Handler:    base64ToText,
+	},
+	"hex": {
+		InputType:  "string",
+		OutputType: "string",
+		Handler:    textToHex,
+	},
+	"hexd": {
+		InputType:  "string",
+		OutputType: "string",
+		Handler:    hexToText,
+	},
+	"b64-hex": {
+		InputType:  "string",
+		OutputType: "string",
+		Handler:    base64ToHex,
+	},
+	"hex-b64": {
+		InputType:  "string",
+		OutputType: "string",
+		Handler:    hexToBase64,
+	},
+	"urld": {
+		InputType:  "string",
+		OutputType: "string",
+		Handler:    urlToText,
+	},
+	"url": {
+		InputType:  "string",
+		OutputType: "string",
+		Handler:    textToUrl,
 	},
 }
 
-// ConvertData validates the converter and calls the appropriate handler
+// Primary Handler
 func ConvertData(converterType string, input string) {
-	fmt.Println()
 	converter, exists := supportedConverters[converterType]
 	if !exists {
 		u.PrintError(fmt.Sprintf("unsupported converter type: %s", converterType))
@@ -63,7 +103,8 @@ func ConvertData(converterType string, input string) {
 	converter.Handler(input)
 }
 
-// Converter functions
+// Converter functions for YAML <-> JSON
+
 func convertYAMLToJSON(inputFile string) {
 	data, err := converterReadInputFile(inputFile)
 	if err != nil {
@@ -119,6 +160,7 @@ func convertJSONToYAML(inputFile string) {
 }
 
 // Helper functions
+
 func converterReadInputFile(filePath string) ([]byte, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
