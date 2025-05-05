@@ -21,6 +21,7 @@ A summary of all capabilities that **Anbu** can perform:
 - IP Information
 - Bulk Rename
 - Data Conversion
+- Encoding Conversion
 - File Encryption/Decryption
 - RSA Key Pair Generation
 - Loop Command
@@ -110,6 +111,19 @@ Anbu supports a large number of operations across the board. The specific detail
   - ```bash
     anbu convert yaml-json config.yaml  # Convert YAML file to JSON
     anbu convert json-yaml data.json    # Convert JSON file to YAML
+    ```
+- ***Encoding Conversion***
+  - ```bash
+    anbu convert b64 "Hello World"              # Convert text to base64
+    anbu convert b64d "SGVsbG8gV29ybGQ="        # Decode base64 to text
+    anbu convert hex "Hello World"              # Convert text to hex
+    anbu convert hexd "48656c6c6f20576f726c64"  # Decode hex to text
+    anbu convert url "Hello World"              # URL encode text
+    anbu convert urld "Hello%20World"           # URL decode text
+    ```
+  - ```bash
+    anbu convert b64-hex "SGVsbG8gV29ybGQ="        # Convert base64 to hex
+    anbu convert hex-b64 "48656c6c6f20576f726c64"  # Convert hex to base64
     ```
 - ***File Encryption/Decryption***
   - ```bash
