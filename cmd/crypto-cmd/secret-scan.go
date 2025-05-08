@@ -8,7 +8,7 @@ import (
 var printFalsePositives bool
 
 var SecretsScanCmd = &cobra.Command{
-	Use:   "secrets [path]",
+	Use:   "secret-scan",
 	Short: "Scan files in a directory for potential secrets and sensitive information",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

@@ -31,12 +31,12 @@ var supportedConverters = map[string]converterInfo{
 	"docker-compose": {
 		InputType:  "string",
 		OutputType: "file",
-		// Handler:    convertDockerToCompose,
+		Handler:    convertDockerToCompose,
 	},
 	"compose-docker": {
 		InputType:  "file",
 		OutputType: "string",
-		// Handler:    convertComposeToDocker,
+		Handler:    convertComposeToDocker,
 	},
 	// Text to Text Conversion Handlers (present in convert-more.go)
 	"b64": {

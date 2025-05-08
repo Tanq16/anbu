@@ -13,6 +13,7 @@
 A summary of all capabilities that **Anbu** can perform:
 
 - Time Operations
+- Secrets & Parameters Management
 - Network Tunneling
 - Command Template Execution
 - Simple HTTP/HTTPS Server
@@ -21,6 +22,7 @@ A summary of all capabilities that **Anbu** can perform:
 - IP Information
 - Bulk Rename
 - Data Conversion
+- Encoding Conversion
 - File Encryption/Decryption
 - RSA Key Pair Generation
 - Loop Command
@@ -56,6 +58,27 @@ Anbu supports a large number of operations across the board. The specific detail
   - ```bash
     anbu time parse -t "13 Apr 25 16:30 EDT"  # read given time and print in multiple formats
     anbu time until -t "13 Apr 25 16:30 EDT"  # read time and print difference from now
+    ```
+- ***Secrets & Parameters Management***
+  - ```bash
+    anbu secrets list  # List all secrets and parameters
+    ```
+  - ```bash
+    # Managing Secrets (Password asked or from ANBUPW env var)
+    anbu secrets set API_KEY     # Set a new secret (encrypted with AES GCM at rest)
+    anbu secrets get API_KEY     # Retrieve a secret (decrypted value)
+    anbu secrets delete API_KEY  # Delete a secret
+    ```
+  - ```bash
+    # Managing Parameters (always in plaintext)
+    anbu secrets p set SERVER_URL     # Set a parameter
+    anbu secrets p get SERVER_URL     # Retrieve a parameter
+    anbu secrets p delete SERVER_URL  # Delete a parameter
+    ```
+  - ```bash
+    # Import and Export to file
+    anbu secrets export backup.json  # Export to a file (secrets are decrypted)
+    anbu secrets import backup.json  # Import from a file
     ```
 - ***Network Tunneling***
   - ```bash
@@ -110,6 +133,19 @@ Anbu supports a large number of operations across the board. The specific detail
   - ```bash
     anbu convert yaml-json config.yaml  # Convert YAML file to JSON
     anbu convert json-yaml data.json    # Convert JSON file to YAML
+    ```
+- ***Encoding Conversion***
+  - ```bash
+    anbu convert b64 "Hello World"              # Convert text to base64
+    anbu convert b64d "SGVsbG8gV29ybGQ="        # Decode base64 to text
+    anbu convert hex "Hello World"              # Convert text to hex
+    anbu convert hexd "48656c6c6f20576f726c64"  # Decode hex to text
+    anbu convert url "Hello World"              # URL encode text
+    anbu convert urld "Hello%20World"           # URL decode text
+    ```
+  - ```bash
+    anbu convert b64-hex "SGVsbG8gV29ybGQ="        # Convert base64 to hex
+    anbu convert hex-b64 "48656c6c6f20576f726c64"  # Convert hex to base64
     ```
 - ***File Encryption/Decryption***
   - ```bash
