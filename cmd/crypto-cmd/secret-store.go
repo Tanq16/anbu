@@ -12,17 +12,6 @@ import (
 var SecretsCmd = &cobra.Command{
 	Use:   "secrets",
 	Short: "Manage secrets and parameters securely",
-	Long: `Manage secrets and parameters securely. Secrets are stored encrypted, while parameters are stored in plain text.
-Examples:
-  anbu secrets list                  # List all secrets and parameters
-  anbu secrets get SECRETID          # Show specific secret
-  anbu secrets param get PARAMID     # Show specific parameter
-  anbu secrets set SECRETID          # Set secret (prompt for value)
-  anbu secrets delete SECRETID       # Delete secret
-  anbu secrets param set PARAMID     # Set parameter (prompt for value)
-  anbu secrets param delete PARAMID  # Delete parameter
-  anbu secrets import FILE           # Import secrets and parameters from file
-  anbu secrets export FILE           # Export secrets and parameters to file (unencrypted)`,
 }
 
 var secretsFile string
@@ -37,7 +26,6 @@ var secretsListCmd = &cobra.Command{
 		}
 	},
 }
-
 var secretsGetCmd = &cobra.Command{
 	Use:   "get SECRETID",
 	Short: "Show a specific secret",
@@ -49,7 +37,6 @@ var secretsGetCmd = &cobra.Command{
 		}
 	},
 }
-
 var secretsSetCmd = &cobra.Command{
 	Use:   "set SECRETID",
 	Short: "Set a secret (prompt for value)",
@@ -61,7 +48,6 @@ var secretsSetCmd = &cobra.Command{
 		}
 	},
 }
-
 var secretsDeleteCmd = &cobra.Command{
 	Use:   "delete SECRETID",
 	Short: "Delete a secret",
@@ -73,7 +59,6 @@ var secretsDeleteCmd = &cobra.Command{
 		}
 	},
 }
-
 var secretsImportCmd = &cobra.Command{
 	Use:   "import FILE",
 	Short: "Import secrets and parameters from file",
@@ -86,7 +71,6 @@ var secretsImportCmd = &cobra.Command{
 		}
 	},
 }
-
 var secretsExportCmd = &cobra.Command{
 	Use:   "export FILE",
 	Short: "Export secrets and parameters to file (unencrypted)",
@@ -105,7 +89,6 @@ var secretsParamCmd = &cobra.Command{
 	Use:   "param",
 	Short: "Manage parameters",
 }
-
 var secretsParamGetCmd = &cobra.Command{
 	Use:   "get PARAMID",
 	Short: "Show a specific parameter",
@@ -117,7 +100,6 @@ var secretsParamGetCmd = &cobra.Command{
 		}
 	},
 }
-
 var secretsParamSetCmd = &cobra.Command{
 	Use:   "set PARAMID",
 	Short: "Set a parameter (prompt for value)",
@@ -129,7 +111,6 @@ var secretsParamSetCmd = &cobra.Command{
 		}
 	},
 }
-
 var secretsParamDeleteCmd = &cobra.Command{
 	Use:   "delete PARAMID",
 	Short: "Delete a parameter",
@@ -143,17 +124,17 @@ var secretsParamDeleteCmd = &cobra.Command{
 }
 
 func init() {
-	// Get home directory for default file path
 	homeDir, err := os.UserHomeDir()
-	defaultPath := ""
+	secretsFile = ".anbu-secrets.json"
 	if err == nil {
-		defaultPath = filepath.Join(homeDir, ".anbu-secrets.json")
+		secretsFile = filepath.Join(homeDir, ".anbu-secrets.json")
+	}
+	err = anbuCrypto.InitializeSecretsStore(secretsFile)
+	if err != nil {
+		u.PrintError(err.Error())
+		os.Exit(1)
 	}
 
-	// Add global flag for secrets file location
-	SecretsCmd.PersistentFlags().StringVarP(&secretsFile, "file", "f", defaultPath, "Path to secrets file")
-
-	// Add commands
 	SecretsCmd.AddCommand(secretsListCmd)
 	SecretsCmd.AddCommand(secretsGetCmd)
 	SecretsCmd.AddCommand(secretsSetCmd)
@@ -161,7 +142,6 @@ func init() {
 	SecretsCmd.AddCommand(secretsImportCmd)
 	SecretsCmd.AddCommand(secretsExportCmd)
 
-	// Add parameter subcommands
 	secretsParamCmd.AddCommand(secretsParamGetCmd)
 	secretsParamCmd.AddCommand(secretsParamSetCmd)
 	secretsParamCmd.AddCommand(secretsParamDeleteCmd)
