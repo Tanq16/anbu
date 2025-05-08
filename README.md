@@ -12,21 +12,23 @@
 
 A summary of all capabilities that **Anbu** can perform:
 
-- Time Operations
-- Secrets & Parameters Management
-- Network Tunneling
-- Command Template Execution
-- Simple HTTP/HTTPS Server
-- JWT Decode
-- Secrets Scan
-- IP Information
-- Bulk Rename
-- Data Conversion
-- Encoding Conversion
-- File Encryption/Decryption
-- RSA Key Pair Generation
-- Loop Command
-- String Generation
+| Operation | Details |
+| --- | --- |
+| **Time Operations** | Display current time in various formats, calculate time differences, and parse time strings |
+| **Secrets & Parameters Management** | Securely store and retrieve secrets and parameters with encryption at rest |
+| **Network Tunneling** | Create TCP and SSH tunnels to securely access remote services through jump hosts |
+| **Command Template Execution** | Run command sequences with variable substitution via YAML configuration |
+| **Simple HTTP/HTTPS Server** | Host a simple webserver over HTTP/HTTPS with optional file upload capability |
+| **JWT Decode** | Decode and display JWT header and payload contents in a readable tabular format |
+| **Secrets Scan** | Find common secrets in file systems using regular expressions, with optional high-noise patterns |
+| **IP Information** | Display local and public IP details (with optional IPv6), including geolocation information |
+| **Bulk Rename** | Batch rename files or directories using regular expression patterns |
+| **Data Conversion** | Convert between data formats like YAML, JSON, and Docker Compose (WIP) |
+| **Encoding Conversion** | Convert text between different encodings: base64, hex, URL encoding |
+| **File Encryption/Decryption** | Secure file encryption and decryption with AES-256-GCM symmetric encryption |
+| **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
+| **Loop Command** | Execute commands in sequence with incrementing index substitution |
+| **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 
 ## Installation
 
