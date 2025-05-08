@@ -15,6 +15,7 @@ var SecretsCmd = &cobra.Command{
 }
 
 var secretsFile string
+var multilineFlag bool
 
 var secretsListCmd = &cobra.Command{
 	Use:   "list",
@@ -38,11 +39,11 @@ var secretsGetCmd = &cobra.Command{
 	},
 }
 var secretsSetCmd = &cobra.Command{
-	Use:   "set",
+	Use:   "add",
 	Short: "Set value for a secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuCrypto.SetSecret(secretsFile, args[0]); err != nil {
+		if err := anbuCrypto.SetSecret(secretsFile, args[0], multilineFlag); err != nil {
 			u.PrintError(err.Error())
 			os.Exit(1)
 		}
@@ -101,11 +102,11 @@ var secretsParamGetCmd = &cobra.Command{
 	},
 }
 var secretsParamSetCmd = &cobra.Command{
-	Use:   "set",
+	Use:   "add",
 	Short: "Set value for a parameter",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuCrypto.SetParameter(secretsFile, args[0]); err != nil {
+		if err := anbuCrypto.SetParameter(secretsFile, args[0], multilineFlag); err != nil {
 			u.PrintError(err.Error())
 			os.Exit(1)
 		}
@@ -134,6 +135,9 @@ func init() {
 		u.PrintError(err.Error())
 		os.Exit(1)
 	}
+
+	secretsSetCmd.Flags().BoolVarP(&multilineFlag, "multiline", "m", false, "Enable multiline input (end with `EOF` on a new line)")
+	secretsParamSetCmd.Flags().BoolVarP(&multilineFlag, "multiline", "m", false, "Enable multiline input (end with `EOF` on a new line)")
 
 	SecretsCmd.AddCommand(secretsListCmd)
 	SecretsCmd.AddCommand(secretsGetCmd)

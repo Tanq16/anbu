@@ -242,10 +242,47 @@ func GetParameter(filePath, paramID string) error {
 	return nil
 }
 
-func SetSecret(filePath, secretID string) error {
+func readMultilineInput() (string, error) {
+	var sb strings.Builder
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Enter value (type 'EOF' on a new line to finish):")
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "EOF" {
+			break
+		}
+		sb.WriteString(line)
+		sb.WriteString("\n")
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error reading input: %w", err)
+	}
+	// Trim the last newline if it exists
+	text := sb.String()
+	if len(text) > 0 {
+		text = text[:len(text)-1]
+	}
+	return text, nil
+}
+
+func readSingleLineInput() (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	text, err := reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("error reading input: %w", err)
+	}
+	return strings.TrimSpace(text), nil
+}
+
+func SetSecret(filePath, secretID string, multiline bool) error {
 	fmt.Printf("Enter value for secret '%s': ", secretID)
-	value, err := term.ReadPassword(int(syscall.Stdin))
-	fmt.Println() // Add a newline after input
+	var value string
+	var err error
+	if multiline {
+		value, err = readMultilineInput()
+	} else {
+		value, err = readSingleLineInput()
+	}
 	if err != nil {
 		return fmt.Errorf("failed to read secret value: %w", err)
 	}
@@ -253,25 +290,28 @@ func SetSecret(filePath, secretID string) error {
 	if err != nil {
 		return err
 	}
-	if err := encryptAndSaveSecret(filePath, secretID, string(value), password); err != nil {
+	if err := encryptAndSaveSecret(filePath, secretID, value, password); err != nil {
 		return err
 	}
 	u.PrintSuccess(fmt.Sprintf("Secret '%s' set successfully", secretID))
 	return nil
 }
 
-func SetParameter(filePath, paramID string) error {
+func SetParameter(filePath, paramID string, multiline bool) error {
 	store, err := loadSecretsStoreStructure(filePath)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Enter value for parameter '%s': ", paramID)
-	reader := bufio.NewReader(os.Stdin)
-	value, err := reader.ReadString('\n')
+	var value string
+	if multiline {
+		value, err = readMultilineInput()
+	} else {
+		value, err = readSingleLineInput()
+	}
 	if err != nil {
 		return fmt.Errorf("failed to read parameter value: %w", err)
 	}
-	value = strings.TrimSpace(value)
 	store.Parameters[paramID] = value
 	if err := saveSecretsStore(store, filePath); err != nil {
 		return err
