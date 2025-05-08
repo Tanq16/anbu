@@ -65,13 +65,15 @@ Anbu supports a large number of operations across the board. The specific detail
     ```
   - ```bash
     # Managing Secrets (Password asked or from ANBUPW env var)
-    anbu secrets set API_KEY     # Set a new secret (encrypted with AES GCM at rest)
+    anbu secrets add API_KEY     # Create a new secret (encrypted with AES GCM at rest)
+    anbu secrets add API_KEY -m  # Create a new multi-line secret
     anbu secrets get API_KEY     # Retrieve a secret (decrypted value)
     anbu secrets delete API_KEY  # Delete a secret
     ```
   - ```bash
     # Managing Parameters (always in plaintext)
-    anbu secrets p set SERVER_URL     # Set a parameter
+    anbu secrets p add SERVER_URL     # Create a new parameter
+    anbu secrets p add SERVER_URL -m  # Create a new multi-line parameter
     anbu secrets p get SERVER_URL     # Retrieve a parameter
     anbu secrets p delete SERVER_URL  # Delete a parameter
     ```
