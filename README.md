@@ -13,6 +13,7 @@
 A summary of all capabilities that **Anbu** can perform:
 
 - Time Operations
+- Secrets & Parameters Management
 - Network Tunneling
 - Command Template Execution
 - Simple HTTP/HTTPS Server
@@ -57,6 +58,27 @@ Anbu supports a large number of operations across the board. The specific detail
   - ```bash
     anbu time parse -t "13 Apr 25 16:30 EDT"  # read given time and print in multiple formats
     anbu time until -t "13 Apr 25 16:30 EDT"  # read time and print difference from now
+    ```
+- ***Secrets & Parameters Management***
+  - ```bash
+    anbu secrets list  # List all secrets and parameters
+    ```
+  - ```bash
+    # Managing Secrets (Password asked or from ANBUPW env var)
+    anbu secrets set API_KEY     # Set a new secret (encrypted with AES GCM at rest)
+    anbu secrets get API_KEY     # Retrieve a secret (decrypted value)
+    anbu secrets delete API_KEY  # Delete a secret
+    ```
+  - ```bash
+    # Managing Parameters (always in plaintext)
+    anbu secrets p set SERVER_URL     # Set a parameter
+    anbu secrets p get SERVER_URL     # Retrieve a parameter
+    anbu secrets p delete SERVER_URL  # Delete a parameter
+    ```
+  - ```bash
+    # Import and Export to file
+    anbu secrets export backup.json  # Export to a file (secrets are decrypted)
+    anbu secrets import backup.json  # Import from a file
     ```
 - ***Network Tunneling***
   - ```bash
