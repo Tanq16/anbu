@@ -18,7 +18,7 @@ var secretsFile string
 
 var secretsListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all secrets and parameters",
+	Short: "List IDs of all secrets and parameters",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuCrypto.ListSecrets(secretsFile); err != nil {
 			u.PrintError(err.Error())
@@ -27,8 +27,8 @@ var secretsListCmd = &cobra.Command{
 	},
 }
 var secretsGetCmd = &cobra.Command{
-	Use:   "get SECRETID",
-	Short: "Show a specific secret",
+	Use:   "get",
+	Short: "Print value of a specific secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuCrypto.GetSecret(secretsFile, args[0]); err != nil {
@@ -38,8 +38,8 @@ var secretsGetCmd = &cobra.Command{
 	},
 }
 var secretsSetCmd = &cobra.Command{
-	Use:   "set SECRETID",
-	Short: "Set a secret (prompt for value)",
+	Use:   "set",
+	Short: "Set value for a secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuCrypto.SetSecret(secretsFile, args[0]); err != nil {
@@ -49,7 +49,7 @@ var secretsSetCmd = &cobra.Command{
 	},
 }
 var secretsDeleteCmd = &cobra.Command{
-	Use:   "delete SECRETID",
+	Use:   "delete",
 	Short: "Delete a secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -60,7 +60,7 @@ var secretsDeleteCmd = &cobra.Command{
 	},
 }
 var secretsImportCmd = &cobra.Command{
-	Use:   "import FILE",
+	Use:   "import",
 	Short: "Import secrets and parameters from file",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -72,7 +72,7 @@ var secretsImportCmd = &cobra.Command{
 	},
 }
 var secretsExportCmd = &cobra.Command{
-	Use:   "export FILE",
+	Use:   "export",
 	Short: "Export secrets and parameters to file (unencrypted)",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -86,12 +86,12 @@ var secretsExportCmd = &cobra.Command{
 
 // Parameter commands
 var secretsParamCmd = &cobra.Command{
-	Use:   "param",
+	Use:   "p",
 	Short: "Manage parameters",
 }
 var secretsParamGetCmd = &cobra.Command{
-	Use:   "get PARAMID",
-	Short: "Show a specific parameter",
+	Use:   "get",
+	Short: "Print value of a specific parameter",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuCrypto.GetParameter(secretsFile, args[0]); err != nil {
@@ -101,8 +101,8 @@ var secretsParamGetCmd = &cobra.Command{
 	},
 }
 var secretsParamSetCmd = &cobra.Command{
-	Use:   "set PARAMID",
-	Short: "Set a parameter (prompt for value)",
+	Use:   "set",
+	Short: "Set value for a parameter",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuCrypto.SetParameter(secretsFile, args[0]); err != nil {
@@ -112,7 +112,7 @@ var secretsParamSetCmd = &cobra.Command{
 	},
 }
 var secretsParamDeleteCmd = &cobra.Command{
-	Use:   "delete PARAMID",
+	Use:   "delete",
 	Short: "Delete a parameter",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -142,8 +142,9 @@ func init() {
 	SecretsCmd.AddCommand(secretsImportCmd)
 	SecretsCmd.AddCommand(secretsExportCmd)
 
+	SecretsCmd.AddCommand(secretsParamCmd)
+
 	secretsParamCmd.AddCommand(secretsParamGetCmd)
 	secretsParamCmd.AddCommand(secretsParamSetCmd)
 	secretsParamCmd.AddCommand(secretsParamDeleteCmd)
-	SecretsCmd.AddCommand(secretsParamCmd)
 }

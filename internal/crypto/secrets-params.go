@@ -10,12 +10,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
-
-	"maps"
 
 	u "github.com/tanq16/anbu/utils"
 	"golang.org/x/term"
@@ -63,19 +62,11 @@ func loadAndDecryptSecret(filePath, secretID string, password string) (string, e
 	if !exists {
 		return "", fmt.Errorf("secret '%s' not found", secretID)
 	}
-	// Decode from base64
-	encryptedBytes, err := base64.StdEncoding.DecodeString(encryptedValue)
+	decryptedBytes, err := decryptString(encryptedValue, password)
 	if err != nil {
-		return "", fmt.Errorf("failed to decode secret: %w", err)
+		return "", err
 	}
-	// Generate key from password
-	key := generateKeyFromPassword(password)
-	// Decrypt the value
-	decryptedBytes, err := decryptData(encryptedBytes, key)
-	if err != nil {
-		return "", fmt.Errorf("failed to decrypt secret: %w", err)
-	}
-	return string(decryptedBytes), nil
+	return decryptedBytes, nil
 }
 
 func saveSecretsStore(store *SecretsStore, filePath string) error {
@@ -98,21 +89,46 @@ func encryptAndSaveSecret(filePath, secretID, value, password string) error {
 	if err != nil {
 		return err
 	}
-	key := generateKeyFromPassword(password)
 	// Encrypt the value
-	encryptedBytes, err := encryptData([]byte(value), key)
+	encryptedValue, err := encryptString(value, password)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt secret: %w", err)
 	}
-	// Encode to base64
-	encodedValue := base64.StdEncoding.EncodeToString(encryptedBytes)
 	// Update the store
-	store.Secrets[secretID] = encodedValue
+	store.Secrets[secretID] = encryptedValue
 	// Save the store
 	if err := saveSecretsStore(store, filePath); err != nil {
 		return err
 	}
 	return nil
+}
+
+func encryptString(value, password string) (string, error) {
+	key := generateKeyFromPassword(password)
+	// Encrypt the value
+	encryptedBytes, err := encryptData([]byte(value), key)
+	if err != nil {
+		return "", fmt.Errorf("failed to encrypt string: %w", err)
+	}
+	// Encode to base64
+	encodedValue := base64.StdEncoding.EncodeToString(encryptedBytes)
+	return encodedValue, nil
+}
+
+func decryptString(encryptedValue, password string) (string, error) {
+	// Decode from base64
+	encryptedBytes, err := base64.StdEncoding.DecodeString(encryptedValue)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode string: %w", err)
+	}
+	// Generate key from password
+	key := generateKeyFromPassword(password)
+	// Decrypt the value
+	decryptedBytes, err := decryptData(encryptedBytes, key)
+	if err != nil {
+		return "", fmt.Errorf("failed to decrypt string: %w", err)
+	}
+	return string(decryptedBytes), nil
 }
 
 func generateKeyFromPassword(password string) []byte {
@@ -209,7 +225,7 @@ func GetSecret(filePath, secretID string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s: %s\n", secretID, value)
+	fmt.Println(value)
 	return nil
 }
 
@@ -222,7 +238,7 @@ func GetParameter(filePath, paramID string) error {
 	if !exists {
 		return fmt.Errorf("parameter '%s' not found", paramID)
 	}
-	fmt.Printf("%s: %s\n", paramID, value)
+	fmt.Println(value)
 	return nil
 }
 
@@ -305,18 +321,26 @@ func ImportSecrets(filePath, importFilePath string) error {
 	if err := json.Unmarshal(importData, &importStore); err != nil {
 		return fmt.Errorf("failed to parse import file: %w", err)
 	}
-	store, err := loadSecretsStoreStructure(filePath)
+	currentStore, err := loadSecretsStoreStructure(filePath)
 	if err != nil {
 		return err
 	}
-	maps.Copy(store.Parameters, importStore.Parameters)
+	// Copy parameters from import to current store
+	if currentStore.Parameters == nil {
+		currentStore.Parameters = make(map[string]string)
+	}
+	maps.Copy(currentStore.Parameters, importStore.Parameters)
+	if err := saveSecretsStore(currentStore, filePath); err != nil {
+		return err
+	}
+	// Process secrets
 	password, err := getPassword()
 	if err != nil {
 		return err
 	}
-	for id, value := range importStore.Secrets {
-		if err := encryptAndSaveSecret(filePath, id, value, password); err != nil {
-			return fmt.Errorf("failed to encrypt and save secret '%s': %w", id, err)
+	for secretID, secretValue := range importStore.Secrets {
+		if err := encryptAndSaveSecret(filePath, secretID, secretValue, password); err != nil {
+			return fmt.Errorf("failed to encrypt and save secret '%s': %w", secretID, err)
 		}
 	}
 	u.PrintSuccess(fmt.Sprintf("Imported %d secrets and %d parameters successfully", len(importStore.Secrets), len(importStore.Parameters)))
