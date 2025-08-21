@@ -41,7 +41,7 @@ func EncryptFileSymmetric(inputPath string, password string) {
 	// Write encrypted data to output file
 	outputPath := inputPath + ".enc"
 	os.WriteFile(outputPath, []byte(encoded), 0644)
-	fmt.Printf("\n%s: %s\n", u.FDetail("File encrypted: "), u.FSuccess(outputPath))
+	fmt.Printf("\nFile encrypted: %s\n", u.FSuccess(outputPath))
 }
 
 func DecryptFileSymmetric(inputPath string, password string) {
@@ -80,5 +80,5 @@ func DecryptFileSymmetric(inputPath string, password string) {
 	// Write decrypted data to output file
 	outputPath := strings.TrimSuffix(inputPath, ".enc")
 	os.WriteFile(outputPath, plaintext, 0644)
-	fmt.Printf("\n%s: %s\n", u.FDetail("File decrypted: "), u.FSuccess(outputPath))
+	fmt.Printf("\nFile decrypted: %s\n", u.FSuccess(outputPath))
 }

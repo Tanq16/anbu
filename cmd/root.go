@@ -28,17 +28,8 @@ func Execute() {
 	}
 }
 
-var playgroundCmd = &cobra.Command{
-	Use:   "playground",
-	Short: "Playground for testing and experimenting with commands",
-	Run: func(cmd *cobra.Command, args []string) {
-		playground()
-	},
-}
-
 func init() {
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	rootCmd.AddCommand(playgroundCmd)
 
 	rootCmd.AddCommand(genericsCmd.LoopCmd)
 	rootCmd.AddCommand(genericsCmd.StringCmd)

@@ -72,14 +72,14 @@ func printTimeDifferenceFromNow(targetTime time.Time) {
 		direction = "ago"
 	}
 	fmt.Println()
-	fmt.Printf("%s: %s\n", u.FDetail("Target time"), u.FDebug(targetTime.Format("Mon Jan 2 15:04:05 MST 2006")))
-	fmt.Printf("%s: %s\n", u.FDetail("Current time"), u.FDebug(now.Format("Mon Jan 2 15:04:05 MST 2006")))
+	fmt.Printf("Target time: %s\n", u.FDebug(targetTime.Format("Mon Jan 2 15:04:05 MST 2006")))
+	fmt.Printf("Current time: %s\n", u.FDebug(now.Format("Mon Jan 2 15:04:05 MST 2006")))
 	fmt.Println()
 	// Print direction-aware message
 	if direction == "until" {
-		fmt.Printf("Target time is %s from now\n", u.FDetail(timeFormatDuration(diff)))
+		fmt.Printf("Target time is %s from now\n", u.FInfo(timeFormatDuration(diff)))
 	} else {
-		fmt.Printf("Target time was %s ago\n", u.FDetail(timeFormatDuration(diff)))
+		fmt.Printf("Target time was %s ago\n", u.FInfo(timeFormatDuration(diff)))
 	}
 }
 
@@ -190,7 +190,7 @@ func TimeEpochDiff(epochs []int64) {
 	t2 := time.Unix(epoch2, 0)
 	diff := t2.Sub(t1)
 	// Show difference in multiple units
-	fmt.Println(u.FDetail("Time difference:"))
+	fmt.Println("Time difference:")
 	fmt.Printf("  %s  %d\n", u.FSuccess("Seconds:"), int64(diff.Seconds()))
 	fmt.Printf("  %s  %.1f\n", u.FSuccess("Minutes:"), diff.Minutes())
 	fmt.Printf("  %s  %.1f\n", u.FSuccess("Hours:"), diff.Hours())

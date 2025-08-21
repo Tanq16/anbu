@@ -39,7 +39,7 @@ func BulkRename(pattern string, replacement string, renameDirectories bool) {
 				continue // Skip the full match
 			}
 			placeholder := fmt.Sprintf("\\%d", i)
-			newName = strings.Replace(newName, placeholder, match, -1)
+			newName = strings.ReplaceAll(newName, placeholder, match)
 		}
 		if oldName == newName {
 			continue
@@ -49,8 +49,7 @@ func BulkRename(pattern string, replacement string, renameDirectories bool) {
 			u.PrintError(fmt.Sprintf("Failed to rename %s to %s: %v", oldName, newName, err))
 			continue
 		}
-		fmt.Printf("%s %s %s %s\n", u.FDetail("Renamed:"),
-			u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName))
+		fmt.Printf("Renamed: %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName))
 		renameCount++
 	}
 

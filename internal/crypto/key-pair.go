@@ -45,9 +45,9 @@ func GenerateKeyPair(outputDir, name string, keySize int) {
 		return
 	}
 
-	fmt.Println(u.FDetail(fmt.Sprintf("RSA key pair (%d bits) generated", keySize)))
-	fmt.Println(u.FSuccess("Public key: ") + u.FInfo(publicKeyPath))
-	fmt.Println(u.FSuccess("Private key: ") + u.FInfo(privateKeyPath))
+	fmt.Printf("RSA key pair (%d bits) generated", keySize)
+	fmt.Println("Public key: " + u.FInfo(publicKeyPath))
+	fmt.Println("Private key: " + u.FInfo(privateKeyPath))
 }
 
 func GenerateSSHKeyPair(outputDir, name string, keySize int) {
@@ -76,7 +76,7 @@ func GenerateSSHKeyPair(outputDir, name string, keySize int) {
 	}
 	os.Chmod(privateKeyPath, 0600)
 
-	fmt.Println(u.FDetail(fmt.Sprintf("SSH key pair (%d bits) generated", keySize)))
-	fmt.Println(u.FSuccess("Public key: ") + u.FInfo(publicKeyPath))
-	fmt.Println(u.FSuccess("Private key: ") + u.FInfo(privateKeyPath))
+	fmt.Printf("SSH key pair (%d bits) generated", keySize)
+	fmt.Println("Public key: " + u.FInfo(publicKeyPath))
+	fmt.Println("Private key: " + u.FInfo(privateKeyPath))
 }
