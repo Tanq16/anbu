@@ -9,10 +9,11 @@ import (
 	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
 	networkCmd "github.com/tanq16/anbu/cmd/network-cmd"
+	"github.com/tanq16/anbu/utils"
 )
 
 var AnbuVersion = "dev-build"
-var debug bool
+var debugFlag bool
 
 var rootCmd = &cobra.Command{
 	Use:     "anbu",
@@ -31,9 +32,10 @@ func Execute() {
 }
 
 func setupLogs() {
-	if debug {
+	if debugFlag {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("Debug logging enabled")
+		utils.GlobalDebugFlag = true
 	} else {
 		log.SetLevel(log.InfoLevel)
 	}
@@ -41,7 +43,7 @@ func setupLogs() {
 
 func init() {
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging")
+	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Enable debug logging")
 	cobra.OnInitialize(setupLogs)
 
 	rootCmd.AddCommand(genericsCmd.LoopCmd)

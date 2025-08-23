@@ -46,7 +46,9 @@ type Manager struct {
 	displayWg     sync.WaitGroup // WaitGroup for display goroutine shutdown
 }
 
-func NewManager(debug bool) *Manager {
+var GlobalDebugFlag bool
+
+func NewManager() *Manager {
 	retMgr := &Manager{
 		outputs:       make(map[string]*FunctionOutput),
 		noClear:       false,
@@ -59,7 +61,7 @@ func NewManager(debug bool) *Manager {
 		displayTick:   200 * time.Millisecond, // Default
 		functionCount: 0,
 	}
-	if debug {
+	if GlobalDebugFlag {
 		retMgr.displayTick = 1 * time.Second // slow refresh for debug mode
 		retMgr.noClear = true
 	}
@@ -429,6 +431,9 @@ func (m *Manager) displayTables() {
 	defer m.mutex.RUnlock()
 	if len(m.tables) > 0 {
 		for name, table := range m.tables {
+			if len(table.Rows) == 0 {
+				continue
+			}
 			fmt.Println(strings.Repeat(" ", basePadding) + infoStyle.Render(name))
 			fmt.Println(table.FormatTable(false))
 		}
