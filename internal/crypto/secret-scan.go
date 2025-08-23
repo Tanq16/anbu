@@ -46,7 +46,7 @@ func (sm *SecretMatches) Add(match SecretMatch) {
 }
 
 func ScanSecretsInPath(path string, printFalsePositives bool) {
-	logger := u.NewManager(0)
+	logger := u.NewManager(false)
 	logger.StartDisplay()
 	defer logger.StopDisplay()
 	funcID := logger.Register("secrets-scanner")

@@ -15,7 +15,7 @@ import (
 )
 
 func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) error {
-	logger := utils.NewManager(0)
+	logger := utils.NewManager(false)
 	logger.StartDisplay()
 	defer logger.StopDisplay()
 	funcID := logger.Register("ssh-tunnel")
@@ -125,7 +125,7 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 }
 
 func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) error {
-	logger := utils.NewManager(0)
+	logger := utils.NewManager(false)
 	logger.StartDisplay()
 	defer logger.StopDisplay()
 	funcID := logger.Register("reverse-ssh-tunnel")

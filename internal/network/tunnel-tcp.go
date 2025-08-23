@@ -15,7 +15,7 @@ import (
 )
 
 func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) error {
-	logger := utils.NewManager(0)
+	logger := utils.NewManager(false)
 	logger.StartDisplay()
 	defer logger.StopDisplay()
 	funcID := logger.Register("tcp-tunnel")

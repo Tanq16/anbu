@@ -33,6 +33,7 @@ type ErrorReport struct {
 type Manager struct {
 	outputs       map[string]*FunctionOutput
 	mutex         sync.RWMutex
+	noClear       bool
 	numLines      int
 	maxStreams    int               // Max output stream lines per function
 	tables        map[string]*Table // Global tables
@@ -45,21 +46,24 @@ type Manager struct {
 	displayWg     sync.WaitGroup // WaitGroup for display goroutine shutdown
 }
 
-func NewManager(maxStreams int) *Manager {
-	if maxStreams <= 0 {
-		maxStreams = 15 // Default
-	}
-	return &Manager{
+func NewManager(debug bool) *Manager {
+	retMgr := &Manager{
 		outputs:       make(map[string]*FunctionOutput),
+		noClear:       false,
 		tables:        make(map[string]*Table),
 		errors:        []ErrorReport{},
-		maxStreams:    maxStreams,
+		maxStreams:    15,
 		doneCh:        make(chan struct{}),
 		pauseCh:       make(chan bool),
 		isPaused:      false,
 		displayTick:   200 * time.Millisecond, // Default
 		functionCount: 0,
 	}
+	if debug {
+		retMgr.displayTick = 1 * time.Second // slow refresh for debug mode
+		retMgr.noClear = true
+	}
+	return retMgr
 }
 
 func (m *Manager) Pause() {
@@ -100,24 +104,6 @@ func (m *Manager) SetMessage(name, message string) {
 	}
 }
 
-func (m *Manager) SetStatus(name, status string) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	if info, exists := m.outputs[name]; exists {
-		info.Status = status
-		info.LastUpdated = time.Now()
-	}
-}
-
-func (m *Manager) GetStatus(name string) string {
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-	if info, exists := m.outputs[name]; exists {
-		return info.Status
-	}
-	return "unknown"
-}
-
 func (m *Manager) Complete(name, message string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -151,27 +137,27 @@ func (m *Manager) ReportError(name string, err error) {
 	}
 }
 
-func (m *Manager) UpdateStreamOutput(name string, output []string) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	if info, exists := m.outputs[name]; exists {
-		currentLen := len(info.StreamLines)
-		if currentLen+len(output) > m.maxStreams {
-			startIndex := currentLen + len(output) - m.maxStreams
-			if startIndex > currentLen {
-				startIndex = 0
-			}
-			newLines := append(info.StreamLines[startIndex:], output...)
-			if len(newLines) > m.maxStreams {
-				newLines = newLines[len(newLines)-m.maxStreams:]
-			}
-			info.StreamLines = newLines
-		} else {
-			info.StreamLines = append(info.StreamLines, output...)
-		}
-		info.LastUpdated = time.Now()
-	}
-}
+// func (m *Manager) UpdateStreamOutput(name string, output []string) {
+// 	m.mutex.Lock()
+// 	defer m.mutex.Unlock()
+// 	if info, exists := m.outputs[name]; exists {
+// 		currentLen := len(info.StreamLines)
+// 		if currentLen+len(output) > m.maxStreams {
+// 			startIndex := currentLen + len(output) - m.maxStreams
+// 			if startIndex > currentLen {
+// 				startIndex = 0
+// 			}
+// 			newLines := append(info.StreamLines[startIndex:], output...)
+// 			if len(newLines) > m.maxStreams {
+// 				newLines = newLines[len(newLines)-m.maxStreams:]
+// 			}
+// 			info.StreamLines = newLines
+// 		} else {
+// 			info.StreamLines = append(info.StreamLines, output...)
+// 		}
+// 		info.LastUpdated = time.Now()
+// 	}
+// }
 
 func (m *Manager) AddStreamLine(name string, line string) {
 	m.mutex.Lock()
@@ -269,6 +255,9 @@ func PrintProgressBar(current, total int64, width int) string {
 }
 
 func (m *Manager) ClearAll() {
+	if m.noClear {
+		return
+	}
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	for name := range m.outputs {
@@ -325,7 +314,7 @@ func (m *Manager) sortFunctions() (active, pending, completed []*FunctionOutput)
 func (m *Manager) updateDisplay() {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
-	if m.numLines > 0 {
+	if m.numLines > 0 && !m.noClear {
 		fmt.Printf("\033[%dA\033[J", m.numLines)
 	}
 	lineCount := 0

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
@@ -11,6 +12,7 @@ import (
 )
 
 var AnbuVersion = "dev-build"
+var debug bool
 
 var rootCmd = &cobra.Command{
 	Use:     "anbu",
@@ -28,15 +30,25 @@ func Execute() {
 	}
 }
 
+func setupLogs() {
+	if debug {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("Debug logging enabled")
+	} else {
+		log.SetLevel(log.InfoLevel)
+	}
+}
+
 func init() {
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging")
+	cobra.OnInitialize(setupLogs)
 
 	rootCmd.AddCommand(genericsCmd.LoopCmd)
 	rootCmd.AddCommand(genericsCmd.StringCmd)
 	rootCmd.AddCommand(genericsCmd.TimeCmd)
 	rootCmd.AddCommand(genericsCmd.BulkRenameCmd)
 	rootCmd.AddCommand(genericsCmd.ConvertCmd)
-	rootCmd.AddCommand(genericsCmd.TemplateCmd)
 
 	rootCmd.AddCommand(cryptoCmd.FileCryptoCmd)
 	rootCmd.AddCommand(cryptoCmd.KeyPairCmd)
