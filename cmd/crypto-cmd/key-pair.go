@@ -17,10 +17,16 @@ var keyPairFlags struct {
 var KeyPairCmd = &cobra.Command{
 	Use:     "key-pair",
 	Aliases: []string{},
-	Short:   "Generate SSH key pairs for encryption",
-	Long: `Examples:
-s
-`,
+	Short:   "Generate RSA key pairs in PEM or SSH format",
+	Long: `Generates RSA public and private key pairs.
+Supports standard PEM format for general use and OpenSSH format for SSH authentication.
+
+Examples:
+  # Generate a 4096-bit RSA key pair in PEM format
+  anbu key-pair -o my-key -k 4096
+
+  # Generate a default 2048-bit RSA key pair in SSH format
+  anbu key-pair --ssh -o my-ssh-key`,
 	Run: func(cmd *cobra.Command, args []string) {
 		keyName := filepath.Base(keyPairFlags.outputPath)
 		keyDir := filepath.Dir(keyPairFlags.outputPath)
@@ -33,7 +39,7 @@ s
 }
 
 func init() {
-	KeyPairCmd.Flags().StringVarP(&keyPairFlags.outputPath, "output-path", "o", "./anbu-key", "Output path for key files")
-	KeyPairCmd.Flags().IntVarP(&keyPairFlags.keySize, "key-size", "k", 2048, "RSA key size (2048, 3072, or 4096)")
+	KeyPairCmd.Flags().StringVarP(&keyPairFlags.outputPath, "output-path", "o", "./anbu-key", "Output path and name for the key files")
+	KeyPairCmd.Flags().IntVarP(&keyPairFlags.keySize, "key-size", "k", 2048, "RSA key size (e.g., 2048, 3072, 4096)")
 	KeyPairCmd.Flags().BoolVarP(&keyPairFlags.noSSHFormat, "ssh", "s", false, "Generate keys in SSH format instead of PEM")
 }

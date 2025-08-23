@@ -21,8 +21,7 @@ var TimeCmd = &cobra.Command{
 - purple: print the current time in purple team format (includes public ip)
 - diff: print the difference between two epochs
 - parse: parse a time string across various formats and print as table
-- until: parse a time string and print the difference between now and then
-`,
+- until: parse a time string and print the difference between now and then`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {

@@ -10,9 +10,7 @@ var ConvertCmd = &cobra.Command{
 	Use:     "convert [converter] [data or file]",
 	Aliases: []string{"c"},
 	Short:   "Convert data between different formats",
-	Long: `Convert data between different formats.
-
-Converters:
+	Long: `Convert data between different formats. These are the supported converters:
 
 File Formats:
 - yaml-json:      Convert YAML to JSON, requires a file path as input

@@ -13,10 +13,40 @@ import (
 var SecretsCmd = &cobra.Command{
 	Use:     "pass",
 	Aliases: []string{"p"},
-	Short:   "Manage secrets and parameters securely",
-	Long: `Examples:
-s
-`,
+	Short:   "Manage secrets securely with AES-GCM encryption",
+	Long: `A secure store for secrets, which are encrypted at rest using AES-GCM.
+The store is protected by a master password derived from the ANBUPW environment
+variable or entered interactively.
+
+It acts locally and can also act as a client or server for remote secret store.
+
+Examples:
+  # List all stored secret IDs
+  anbu pass list
+
+  # Add a new secret
+  anbu pass add my-api-key
+
+  # Add a multi-line secret like a private key
+  anbu pass add my-ssh-key -m
+
+  # Retrieve and print a secret's value
+  anbu pass get my-api-key
+
+  # Delete a secret
+  anbu pass delete my-api-key
+
+  # Export all secrets (decrypted) to a JSON file
+  anbu pass export secrets_backup.json
+
+  # Import secrets from a JSON file
+  anbu pass import secrets_backup.json
+
+  # Start a server to manage secrets via an API
+  anbu pass serve
+
+  # Interact with a remote secrets server
+  anbu pass --remote http://127.0.0.1:8080 list`,
 }
 
 var secretsFile string
@@ -25,7 +55,7 @@ var remoteHost string
 
 var secretsListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List IDs of all secrets and parameters",
+	Short: "List all secrets",
 	Run: func(cmd *cobra.Command, args []string) {
 		if remoteHost != "" {
 			if err := anbuCrypto.RemoteListSecrets(remoteHost); err != nil {
@@ -47,8 +77,8 @@ var secretsListCmd = &cobra.Command{
 	},
 }
 var secretsGetCmd = &cobra.Command{
-	Use:   "get",
-	Short: "Print value of a specific secret",
+	Use:   "get <secret-id>",
+	Short: "Print the value of a specific secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if remoteHost != "" {
@@ -72,8 +102,8 @@ var secretsGetCmd = &cobra.Command{
 	},
 }
 var secretsSetCmd = &cobra.Command{
-	Use:   "add",
-	Short: "Set value for a secret",
+	Use:   "add <secret-id>",
+	Short: "Set the value for a secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		secretID := args[0]
@@ -109,7 +139,7 @@ var secretsSetCmd = &cobra.Command{
 	},
 }
 var secretsDeleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete <secret-id>",
 	Short: "Delete a secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -128,8 +158,8 @@ var secretsDeleteCmd = &cobra.Command{
 	},
 }
 var secretsImportCmd = &cobra.Command{
-	Use:   "import",
-	Short: "Import secrets and parameters from file",
+	Use:   "import <file-path>",
+	Short: "Import secrets from a JSON file",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		importFile := args[0]
@@ -148,8 +178,8 @@ var secretsImportCmd = &cobra.Command{
 	},
 }
 var secretsExportCmd = &cobra.Command{
-	Use:   "export",
-	Short: "Export secrets and parameters to file (unencrypted)",
+	Use:   "export <file-path>",
+	Short: "Export secrets to a JSON file (unencrypted)",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		exportFile := args[0]
@@ -170,10 +200,9 @@ var secretsExportCmd = &cobra.Command{
 
 var secretsServe = &cobra.Command{
 	Use:   "serve",
-	Short: "Use a server to handle secrets on a remote server via a simple web API",
-	Long: `Example:
-Start the server with: a p serve
-`,
+	Short: "Serve secrets over a simple web API",
+	Long: `Starts a simple web server on port 8080 to manage secrets remotely.
+This allows other 'anbu' instances to act as clients using the --remote flag.`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		filePath := secretsFile
@@ -199,8 +228,8 @@ func init() {
 		os.Exit(1)
 	}
 
-	SecretsCmd.PersistentFlags().StringVar(&remoteHost, "remote", "", "Remote server URL to make API calls to")
-	secretsSetCmd.Flags().BoolVarP(&multilineFlag, "multiline", "m", false, "Enable multiline input (end with `EOF` on a new line)")
+	SecretsCmd.PersistentFlags().StringVar(&remoteHost, "remote", "", "Remote server URL (e.g., http://localhost:8080)")
+	secretsSetCmd.Flags().BoolVarP(&multilineFlag, "multiline", "m", false, "Enable multiline input (end with 'EOF' on a new line)")
 
 	SecretsCmd.AddCommand(secretsListCmd)
 	SecretsCmd.AddCommand(secretsGetCmd)
