@@ -164,10 +164,7 @@ var secretsImportCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		importFile := args[0]
 		if remoteHost != "" {
-			if err := anbuCrypto.RemoteImportSecrets(remoteHost, importFile); err != nil {
-				u.PrintError(err.Error())
-				os.Exit(1)
-			}
+			u.PrintError("Cannot use import for remote; perform i/o on server.")
 			return
 		}
 		if err := anbuCrypto.ImportSecrets(secretsFile, importFile); err != nil {
@@ -184,10 +181,7 @@ var secretsExportCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		exportFile := args[0]
 		if remoteHost != "" {
-			if err := anbuCrypto.RemoteExportSecrets(remoteHost, exportFile); err != nil {
-				u.PrintError(err.Error())
-				os.Exit(1)
-			}
+			u.PrintError("Cannot use export for remote; perform i/o on server.")
 			return
 		}
 		if err := anbuCrypto.ExportSecrets(secretsFile, exportFile); err != nil {

@@ -185,13 +185,18 @@ func ExportSecrets(filePath, exportFilePath string) error {
 	return os.WriteFile(exportFilePath, exportData, 0600)
 }
 
+func loggingHandler(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		u.PrintStream(fmt.Sprintf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path))
+		h.ServeHTTP(w, r)
+	}
+}
+
 func ServeSecrets(filePath string) error {
-	http.HandleFunc("/list", listHandler(filePath))
-	http.HandleFunc("/get", getHandler(filePath))
-	http.HandleFunc("/add", addHandler(filePath))
-	http.HandleFunc("/delete", deleteHandler(filePath))
-	http.HandleFunc("/import", importHandler(filePath))
-	http.HandleFunc("/export", exportHandler(filePath))
+	http.HandleFunc("/list", loggingHandler(listHandler(filePath)))
+	http.HandleFunc("/get", loggingHandler(getHandler(filePath)))
+	http.HandleFunc("/add", loggingHandler(addHandler(filePath)))
+	http.HandleFunc("/delete", loggingHandler(deleteHandler(filePath)))
 	addr := ":8080"
 	u.PrintSuccess(fmt.Sprintf("secrets server listening on %s", addr))
 	return http.ListenAndServe(addr, nil)
@@ -268,67 +273,6 @@ func deleteHandler(filePath string) http.HandlerFunc {
 	}
 }
 
-func importHandler(filePath string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req APIRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		var importStore SecretsStore
-		if err := json.Unmarshal([]byte(req.Content), &importStore); err != nil {
-			http.Error(w, "invalid import content", http.StatusBadRequest)
-			return
-		}
-		currentStore, err := loadSecretsStore(filePath)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		password, err := GetPassword()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		for secretID, secretValue := range importStore.Secrets {
-			setSecret(currentStore, filePath, secretID, secretValue, password)
-		}
-		resp := APIResponse{Status: "success", Message: "secrets imported"}
-		json.NewEncoder(w).Encode(resp)
-	}
-}
-
-func exportHandler(filePath string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		store, err := loadSecretsStore(filePath)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		exportStore := &SecretsStore{Secrets: make(map[string]string)}
-		password, err := GetPassword()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		for id, encryptedValue := range store.Secrets {
-			decryptedValue, err := decryptString(encryptedValue, password)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("failed to decrypt secret '%s'", id), http.StatusInternalServerError)
-				return
-			}
-			exportStore.Secrets[id] = decryptedValue
-		}
-		exportData, err := json.MarshalIndent(exportStore, "", "  ")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		resp := APIResponse{Status: "success", Content: string(exportData)}
-		json.NewEncoder(w).Encode(resp)
-	}
-}
-
 // Client-side Remote Functions
 func RemoteCall(host, command string, data map[string]string) ([]byte, error) {
 	requestData := APIRequest{Command: command}
@@ -341,7 +285,6 @@ func RemoteCall(host, command string, data map[string]string) ([]byte, error) {
 	if content, ok := data["content"]; ok {
 		requestData.Content = content
 	}
-
 	jsonData, _ := json.Marshal(requestData)
 	resp, err := http.Post(host, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -415,45 +358,6 @@ func RemoteDeleteSecret(host, secretID string) error {
 		return fmt.Errorf("server error: %s", resp.Message)
 	}
 	u.PrintSuccess(fmt.Sprintf("Secret '%s' deleted from remote server", secretID))
-	return nil
-}
-
-func RemoteImportSecrets(host, importFilePath string) error {
-	content, err := os.ReadFile(importFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to read import file: %w", err)
-	}
-	body, err := RemoteCall(host+"/import", "import", map[string]string{"content": string(content)})
-	if err != nil {
-		return err
-	}
-	var resp APIResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return err
-	}
-	if resp.Status != "success" {
-		return fmt.Errorf("server error: %s", resp.Message)
-	}
-	u.PrintSuccess("Secrets imported to remote server")
-	return nil
-}
-
-func RemoteExportSecrets(host, exportFilePath string) error {
-	body, err := RemoteCall(host+"/export", "export", nil)
-	if err != nil {
-		return err
-	}
-	var resp APIResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return err
-	}
-	if resp.Status != "success" {
-		return fmt.Errorf("server error: %s", resp.Message)
-	}
-	if err := os.WriteFile(exportFilePath, []byte(resp.Content), 0600); err != nil {
-		return fmt.Errorf("failed to write export file: %w", err)
-	}
-	u.PrintSuccess(fmt.Sprintf("Secrets exported from remote to %s", exportFilePath))
 	return nil
 }
 
