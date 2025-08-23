@@ -6,8 +6,9 @@ import (
 )
 
 var IPInfoCmd = &cobra.Command{
-	Use:   "ipinfo",
-	Short: "Display network interface information including IPs, gateway, DNS, and more",
+	Use:     "ip-info",
+	Aliases: []string{"ip"},
+	Short:   "Display network interface information including IPs, gateway, DNS, and more",
 	Run: func(cmd *cobra.Command, args []string) {
 		ipv6, _ := cmd.Flags().GetBool("ipv6")
 		anbuNetwork.GetLocalIPInfo(ipv6)

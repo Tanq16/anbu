@@ -39,7 +39,7 @@ var HTTPServerCmd = &cobra.Command{
 }
 
 func init() {
-	HTTPServerCmd.Flags().StringVarP(&httpServerFlags.listenAddress, "listen", "l", "localhost:8000", "Address:Port to listen on")
+	HTTPServerCmd.Flags().StringVarP(&httpServerFlags.listenAddress, "listen", "l", "0.0.0.0:8000", "Address:Port to listen on")
 	HTTPServerCmd.Flags().BoolVarP(&httpServerFlags.enableUpload, "upload", "u", false, "Enable file uploads via PUT")
 	HTTPServerCmd.Flags().BoolVarP(&httpServerFlags.enableTLS, "tls", "t", false, "Enable HTTPS (TLS)")
 	HTTPServerCmd.Flags().StringVar(&httpServerFlags.domain, "domain", "localhost", "Domain for self-signed certificate")

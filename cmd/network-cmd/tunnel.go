@@ -21,8 +21,12 @@ var tunnelFlags struct {
 }
 
 var TunnelCmd = &cobra.Command{
-	Use:   "tunnel",
-	Short: "Create tunnels between local and remote endpoints",
+	Use:     "tunnel",
+	Aliases: []string{},
+	Short:   "Create tunnels between local and remote endpoints",
+	Long: `Examples:
+s
+`,
 }
 
 var tcpTunnelCmd = &cobra.Command{
