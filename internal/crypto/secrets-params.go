@@ -2,6 +2,7 @@ package anbuCrypto
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -10,7 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"maps"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,52 +22,34 @@ import (
 )
 
 type SecretsStore struct {
-	Secrets    map[string]string `json:"secrets"`
-	Parameters map[string]string `json:"parameters"`
+	Secrets map[string]string `json:"secrets"`
+}
+
+type APIRequest struct {
+	Command string `json:"command"`
+	ID      string `json:"id,omitempty"`
+	Value   string `json:"value,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
+type APIResponse struct {
+	Status  string   `json:"status"`
+	Message string   `json:"message,omitempty"`
+	Data    []string `json:"data,omitempty"`
+	Value   string   `json:"value,omitempty"`
+	Content string   `json:"content,omitempty"`
 }
 
 func InitializeSecretsStore(filePath string) error {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		store := &SecretsStore{
-			Secrets:    make(map[string]string),
-			Parameters: make(map[string]string),
+			Secrets: make(map[string]string),
 		}
 		if err := saveSecretsStore(store, filePath); err != nil {
 			return fmt.Errorf("failed to create secrets store: %w", err)
 		}
 	}
 	return nil
-}
-
-func loadSecretsStoreStructure(filePath string) (*SecretsStore, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read secrets file: %w", err)
-	}
-	store := &SecretsStore{
-		Secrets:    make(map[string]string),
-		Parameters: make(map[string]string),
-	}
-	if err := json.Unmarshal(data, store); err != nil {
-		return nil, fmt.Errorf("failed to parse secrets file: %w", err)
-	}
-	return store, nil
-}
-
-func loadAndDecryptSecret(filePath, secretID string, password string) (string, error) {
-	store, err := loadSecretsStoreStructure(filePath)
-	if err != nil {
-		return "", err
-	}
-	encryptedValue, exists := store.Secrets[secretID]
-	if !exists {
-		return "", fmt.Errorf("secret '%s' not found", secretID)
-	}
-	decryptedBytes, err := decryptString(encryptedValue, password)
-	if err != nil {
-		return "", err
-	}
-	return decryptedBytes, nil
 }
 
 func saveSecretsStore(store *SecretsStore, filePath string) error {
@@ -84,8 +67,50 @@ func saveSecretsStore(store *SecretsStore, filePath string) error {
 	return nil
 }
 
-func encryptAndSaveSecret(filePath, secretID, value, password string) error {
-	store, err := loadSecretsStoreStructure(filePath)
+func GetPassword() (string, error) {
+	password := os.Getenv("ANBUPW")
+	if password != "" {
+		return password, nil
+	}
+	fmt.Print("Enter password for secrets: ")
+	passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
+	fmt.Println()
+	if err != nil {
+		return "", fmt.Errorf("failed to read password: %w", err)
+	}
+	return string(passwordBytes), nil
+}
+
+func ListSecrets(filePath string) ([]string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read secrets file: %w", err)
+	}
+	var store SecretsStore
+	if err := json.Unmarshal(data, &store); err != nil {
+		return nil, fmt.Errorf("failed to parse secrets file: %w", err)
+	}
+	var secrets []string
+	for id := range store.Secrets {
+		secrets = append(secrets, id)
+	}
+	return secrets, nil
+}
+
+func GetSecret(filePath, secretID, password string) (string, error) {
+	store, err := loadSecretsStore(filePath)
+	if err != nil {
+		return "", err
+	}
+	encryptedValue, exists := store.Secrets[secretID]
+	if !exists {
+		return "", fmt.Errorf("secret '%s' not found", secretID)
+	}
+	return decryptString(encryptedValue, password)
+}
+
+func SetSecret(filePath, secretID, value, password string) error {
+	store, err := loadSecretsStore(filePath)
 	if err != nil {
 		return err
 	}
@@ -94,10 +119,386 @@ func encryptAndSaveSecret(filePath, secretID, value, password string) error {
 		return fmt.Errorf("failed to encrypt secret: %w", err)
 	}
 	store.Secrets[secretID] = encryptedValue
-	if err := saveSecretsStore(store, filePath); err != nil {
+	return saveSecretsStore(store, filePath)
+}
+
+func DeleteSecret(filePath, secretID string) error {
+	store, err := loadSecretsStore(filePath)
+	if err != nil {
 		return err
 	}
+	if _, exists := store.Secrets[secretID]; !exists {
+		return fmt.Errorf("secret '%s' not found", secretID)
+	}
+	delete(store.Secrets, secretID)
+	return saveSecretsStore(store, filePath)
+}
+
+func ImportSecrets(filePath, importFilePath string) error {
+	importData, err := os.ReadFile(importFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read import file: %w", err)
+	}
+	var importStore SecretsStore
+	if err := json.Unmarshal(importData, &importStore); err != nil {
+		return fmt.Errorf("failed to parse import file: %w", err)
+	}
+	currentStore, err := loadSecretsStore(filePath)
+	if err != nil {
+		return err
+	}
+	password, err := GetPassword()
+	if err != nil {
+		return err
+	}
+	for secretID, secretValue := range importStore.Secrets {
+		if err := setSecret(currentStore, filePath, secretID, secretValue, password); err != nil {
+			return fmt.Errorf("failed to encrypt and save secret '%s': %w", secretID, err)
+		}
+	}
 	return nil
+}
+
+func ExportSecrets(filePath, exportFilePath string) error {
+	store, err := loadSecretsStore(filePath)
+	if err != nil {
+		return err
+	}
+	exportStore := &SecretsStore{
+		Secrets: make(map[string]string),
+	}
+	password, err := GetPassword()
+	if err != nil {
+		return err
+	}
+	for id, encryptedValue := range store.Secrets {
+		decryptedValue, err := decryptString(encryptedValue, password)
+		if err != nil {
+			return fmt.Errorf("failed to decrypt secret '%s': %w", id, err)
+		}
+		exportStore.Secrets[id] = decryptedValue
+	}
+	exportData, err := json.MarshalIndent(exportStore, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal export data: %w", err)
+	}
+	return os.WriteFile(exportFilePath, exportData, 0600)
+}
+
+func ServeSecrets(filePath string) error {
+	http.HandleFunc("/list", listHandler(filePath))
+	http.HandleFunc("/get", getHandler(filePath))
+	http.HandleFunc("/add", addHandler(filePath))
+	http.HandleFunc("/delete", deleteHandler(filePath))
+	http.HandleFunc("/import", importHandler(filePath))
+	http.HandleFunc("/export", exportHandler(filePath))
+	addr := ":8080"
+	u.PrintSuccess(fmt.Sprintf("secrets server listening on %s", addr))
+	return http.ListenAndServe(addr, nil)
+}
+
+func listHandler(filePath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		secrets, err := ListSecrets(filePath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		resp := APIResponse{Status: "success", Data: secrets}
+		json.NewEncoder(w).Encode(resp)
+	}
+}
+
+func getHandler(filePath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req APIRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		password, err := GetPassword()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		value, err := GetSecret(filePath, req.ID, password)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		resp := APIResponse{Status: "success", Value: value}
+		json.NewEncoder(w).Encode(resp)
+	}
+}
+
+func addHandler(filePath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req APIRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		password, err := GetPassword()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err := SetSecret(filePath, req.ID, req.Value, password); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		resp := APIResponse{Status: "success", Message: fmt.Sprintf("secret '%s' added", req.ID)}
+		json.NewEncoder(w).Encode(resp)
+	}
+}
+
+func deleteHandler(filePath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req APIRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := DeleteSecret(filePath, req.ID); err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		resp := APIResponse{Status: "success", Message: fmt.Sprintf("secret '%s' deleted", req.ID)}
+		json.NewEncoder(w).Encode(resp)
+	}
+}
+
+func importHandler(filePath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req APIRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		var importStore SecretsStore
+		if err := json.Unmarshal([]byte(req.Content), &importStore); err != nil {
+			http.Error(w, "invalid import content", http.StatusBadRequest)
+			return
+		}
+		currentStore, err := loadSecretsStore(filePath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		password, err := GetPassword()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		for secretID, secretValue := range importStore.Secrets {
+			setSecret(currentStore, filePath, secretID, secretValue, password)
+		}
+		resp := APIResponse{Status: "success", Message: "secrets imported"}
+		json.NewEncoder(w).Encode(resp)
+	}
+}
+
+func exportHandler(filePath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		store, err := loadSecretsStore(filePath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		exportStore := &SecretsStore{Secrets: make(map[string]string)}
+		password, err := GetPassword()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		for id, encryptedValue := range store.Secrets {
+			decryptedValue, err := decryptString(encryptedValue, password)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("failed to decrypt secret '%s'", id), http.StatusInternalServerError)
+				return
+			}
+			exportStore.Secrets[id] = decryptedValue
+		}
+		exportData, err := json.MarshalIndent(exportStore, "", "  ")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		resp := APIResponse{Status: "success", Content: string(exportData)}
+		json.NewEncoder(w).Encode(resp)
+	}
+}
+
+// Client-side Remote Functions
+func RemoteCall(host, command string, data map[string]string) ([]byte, error) {
+	requestData := APIRequest{Command: command}
+	if id, ok := data["id"]; ok {
+		requestData.ID = id
+	}
+	if value, ok := data["value"]; ok {
+		requestData.Value = value
+	}
+	if content, ok := data["content"]; ok {
+		requestData.Content = content
+	}
+
+	jsonData, _ := json.Marshal(requestData)
+	resp, err := http.Post(host, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
+}
+
+func RemoteListSecrets(host string) error {
+	body, err := RemoteCall(host+"/list", "list", nil)
+	if err != nil {
+		return err
+	}
+	var resp APIResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return err
+	}
+	if resp.Status != "success" {
+		return fmt.Errorf("server error: %s", resp.Message)
+	}
+	u.PrintSuccess("Remote secrets:")
+	for i, id := range resp.Data {
+		fmt.Printf("  %d. %s\n", i+1, u.FInfo(id))
+	}
+	return nil
+}
+
+func RemoteGetSecret(host, secretID string) error {
+	body, err := RemoteCall(host+"/get", "get", map[string]string{"id": secretID})
+	if err != nil {
+		return err
+	}
+	var resp APIResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return err
+	}
+	if resp.Status != "success" {
+		return fmt.Errorf("server error: %s", resp.Message)
+	}
+	fmt.Println(resp.Value)
+	return nil
+}
+
+func RemoteSetSecret(host, secretID, value string) error {
+	body, err := RemoteCall(host+"/add", "add", map[string]string{"id": secretID, "value": value})
+	if err != nil {
+		return err
+	}
+	var resp APIResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return err
+	}
+	if resp.Status != "success" {
+		return fmt.Errorf("server error: %s", resp.Message)
+	}
+	u.PrintSuccess(fmt.Sprintf("Secret '%s' set on remote server", secretID))
+	return nil
+}
+
+func RemoteDeleteSecret(host, secretID string) error {
+	body, err := RemoteCall(host+"/delete", "delete", map[string]string{"id": secretID})
+	if err != nil {
+		return err
+	}
+	var resp APIResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return err
+	}
+	if resp.Status != "success" {
+		return fmt.Errorf("server error: %s", resp.Message)
+	}
+	u.PrintSuccess(fmt.Sprintf("Secret '%s' deleted from remote server", secretID))
+	return nil
+}
+
+func RemoteImportSecrets(host, importFilePath string) error {
+	content, err := os.ReadFile(importFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read import file: %w", err)
+	}
+	body, err := RemoteCall(host+"/import", "import", map[string]string{"content": string(content)})
+	if err != nil {
+		return err
+	}
+	var resp APIResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return err
+	}
+	if resp.Status != "success" {
+		return fmt.Errorf("server error: %s", resp.Message)
+	}
+	u.PrintSuccess("Secrets imported to remote server")
+	return nil
+}
+
+func RemoteExportSecrets(host, exportFilePath string) error {
+	body, err := RemoteCall(host+"/export", "export", nil)
+	if err != nil {
+		return err
+	}
+	var resp APIResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return err
+	}
+	if resp.Status != "success" {
+		return fmt.Errorf("server error: %s", resp.Message)
+	}
+	if err := os.WriteFile(exportFilePath, []byte(resp.Content), 0600); err != nil {
+		return fmt.Errorf("failed to write export file: %w", err)
+	}
+	u.PrintSuccess(fmt.Sprintf("Secrets exported from remote to %s", exportFilePath))
+	return nil
+}
+
+func ReadMultilineInput() (string, error) {
+	var sb strings.Builder
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Enter value (type 'EOF' on a new line to finish):")
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "EOF" {
+			break
+		}
+		sb.WriteString(line)
+		sb.WriteString("\n")
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error reading input: %w", err)
+	}
+	text := sb.String()
+	if len(text) > 0 {
+		text = text[:len(text)-1]
+	}
+	return text, nil
+}
+
+func ReadSingleLineInput() (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	text, err := reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("error reading input: %w", err)
+	}
+	return strings.TrimSpace(text), nil
+}
+
+// Private helper methods for encryption/decryption
+func loadSecretsStore(filePath string) (*SecretsStore, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read secrets file: %w", err)
+	}
+	var store SecretsStore
+	if err := json.Unmarshal(data, &store); err != nil {
+		return nil, fmt.Errorf("failed to parse secrets file: %w", err)
+	}
+	return &store, nil
 }
 
 func encryptString(value, password string) (string, error) {
@@ -162,198 +563,11 @@ func decryptData(data []byte, key []byte) ([]byte, error) {
 	return gcm.Open(nil, nonce, ciphertext, nil)
 }
 
-func getPassword() (string, error) {
-	password := os.Getenv("ANBUPW")
-	if password != "" {
-		return password, nil
-	}
-	fmt.Print("Enter password for secrets: ")
-	passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
-	fmt.Println() // Add a newline after input
+func setSecret(store *SecretsStore, filePath, secretID, value, password string) error {
+	encryptedValue, err := encryptString(value, password)
 	if err != nil {
-		return "", fmt.Errorf("failed to read password: %w", err)
+		return fmt.Errorf("failed to encrypt secret: %w", err)
 	}
-	return string(passwordBytes), nil
-}
-
-func ListSecrets(filePath string) error {
-	store, err := loadSecretsStoreStructure(filePath)
-	if err != nil {
-		return err
-	}
-	table := u.NewTable([]string{"Secrets", "Parameters"})
-	maxRows := max(len(store.Secrets), len(store.Parameters))
-	secretKeys := make([]string, 0, len(store.Secrets))
-	for id := range store.Secrets {
-		secretKeys = append(secretKeys, id)
-	}
-	paramKeys := make([]string, 0, len(store.Parameters))
-	for id := range store.Parameters {
-		paramKeys = append(paramKeys, id)
-	}
-	for i := range maxRows {
-		var secretID, paramID string
-		if i < len(secretKeys) {
-			secretID = secretKeys[i]
-		}
-		if i < len(paramKeys) {
-			paramID = paramKeys[i]
-		}
-		table.Rows = append(table.Rows, []string{secretID, paramID})
-	}
-	fmt.Println()
-	table.PrintTable(false)
-	fmt.Printf("\nTotal: %d secrets, %d parameters\n", len(store.Secrets), len(store.Parameters))
-	return nil
-}
-
-func GetSecret(filePath, secretID string) error {
-	password, err := getPassword()
-	if err != nil {
-		return err
-	}
-	value, err := loadAndDecryptSecret(filePath, secretID, password)
-	if err != nil {
-		return err
-	}
-	fmt.Println(value)
-	return nil
-}
-
-func readMultilineInput() (string, error) {
-	var sb strings.Builder
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("Enter value (type 'EOF' on a new line to finish):")
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "EOF" {
-			break
-		}
-		sb.WriteString(line)
-		sb.WriteString("\n")
-	}
-	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("error reading input: %w", err)
-	}
-	text := sb.String()
-	if len(text) > 0 {
-		text = text[:len(text)-1]
-	}
-	return text, nil
-}
-
-func readSingleLineInput() (string, error) {
-	reader := bufio.NewReader(os.Stdin)
-	text, err := reader.ReadString('\n')
-	if err != nil {
-		return "", fmt.Errorf("error reading input: %w", err)
-	}
-	return strings.TrimSpace(text), nil
-}
-
-func SetSecret(filePath, secretID string, multiline bool) error {
-	fmt.Printf("Enter value for secret '%s': ", secretID)
-	var value string
-	var err error
-	if multiline {
-		value, err = readMultilineInput()
-	} else {
-		value, err = readSingleLineInput()
-	}
-	if err != nil {
-		return fmt.Errorf("failed to read secret value: %w", err)
-	}
-	password, err := getPassword()
-	if err != nil {
-		return err
-	}
-	if err := encryptAndSaveSecret(filePath, secretID, value, password); err != nil {
-		return err
-	}
-	u.PrintSuccess(fmt.Sprintf("Secret '%s' set successfully", secretID))
-	return nil
-}
-
-func DeleteSecret(filePath, secretID string) error {
-	store, err := loadSecretsStoreStructure(filePath)
-	if err != nil {
-		return err
-	}
-	if _, exists := store.Secrets[secretID]; !exists {
-		return fmt.Errorf("secret '%s' not found", secretID)
-	}
-	delete(store.Secrets, secretID)
-	if err := saveSecretsStore(store, filePath); err != nil {
-		return err
-	}
-	u.PrintSuccess(fmt.Sprintf("Secret '%s' deleted successfully", secretID))
-	return nil
-}
-
-func ImportSecrets(filePath, importFilePath string) error {
-	importData, err := os.ReadFile(importFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to read import file: %w", err)
-	}
-	var importStore SecretsStore
-	if err := json.Unmarshal(importData, &importStore); err != nil {
-		return fmt.Errorf("failed to parse import file: %w", err)
-	}
-	currentStore, err := loadSecretsStoreStructure(filePath)
-	if err != nil {
-		return err
-	}
-	if currentStore.Parameters == nil {
-		currentStore.Parameters = make(map[string]string)
-	}
-	maps.Copy(currentStore.Parameters, importStore.Parameters)
-	if err := saveSecretsStore(currentStore, filePath); err != nil {
-		return err
-	}
-	password, err := getPassword()
-	if err != nil {
-		return err
-	}
-	for secretID, secretValue := range importStore.Secrets {
-		if err := encryptAndSaveSecret(filePath, secretID, secretValue, password); err != nil {
-			return fmt.Errorf("failed to encrypt and save secret '%s': %w", secretID, err)
-		}
-	}
-	u.PrintSuccess(fmt.Sprintf("Imported %d secrets and %d parameters successfully", len(importStore.Secrets), len(importStore.Parameters)))
-	return nil
-}
-
-func ExportSecrets(filePath, exportFilePath string) error {
-	store, err := loadSecretsStoreStructure(filePath)
-	if err != nil {
-		return err
-	}
-	exportStore := &SecretsStore{
-		Secrets:    make(map[string]string),
-		Parameters: store.Parameters,
-	}
-	password, err := getPassword()
-	if err != nil {
-		return err
-	}
-	for id := range store.Secrets {
-		decryptedValue, err := loadAndDecryptSecret(filePath, id, password)
-		if err != nil {
-			return fmt.Errorf("failed to decrypt secret '%s': %w", id, err)
-		}
-		exportStore.Secrets[id] = decryptedValue
-	}
-	exportData, err := json.MarshalIndent(exportStore, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal export data: %w", err)
-	}
-	if err := os.WriteFile(exportFilePath, exportData, 0600); err != nil {
-		return fmt.Errorf("failed to write export file: %w", err)
-	}
-	u.PrintSuccess(fmt.Sprintf("Exported %d secrets and %d parameters to %s", len(exportStore.Secrets), len(exportStore.Parameters), exportFilePath))
-	return nil
-}
-
-func ServeSecrets(filePath string) error {
-	return nil
+	store.Secrets[secretID] = encryptedValue
+	return saveSecretsStore(store, filePath)
 }

@@ -1,6 +1,7 @@
 package cryptoCmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -20,15 +21,29 @@ s
 
 var secretsFile string
 var multilineFlag bool
+var remoteHost string
 
 var secretsListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List IDs of all secrets and parameters",
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuCrypto.ListSecrets(secretsFile); err != nil {
+		if remoteHost != "" {
+			if err := anbuCrypto.RemoteListSecrets(remoteHost); err != nil {
+				u.PrintError(err.Error())
+				os.Exit(1)
+			}
+			return
+		}
+		secrets, err := anbuCrypto.ListSecrets(secretsFile)
+		if err != nil {
 			u.PrintError(err.Error())
 			os.Exit(1)
 		}
+		u.PrintSuccess("Stored secrets:")
+		for i, id := range secrets {
+			fmt.Printf("  %d. %s\n", i+1, u.FInfo(id))
+		}
+		fmt.Printf("\nTotal: %d secrets\n", len(secrets))
 	},
 }
 var secretsGetCmd = &cobra.Command{
@@ -36,10 +51,24 @@ var secretsGetCmd = &cobra.Command{
 	Short: "Print value of a specific secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuCrypto.GetSecret(secretsFile, args[0]); err != nil {
+		if remoteHost != "" {
+			if err := anbuCrypto.RemoteGetSecret(remoteHost, args[0]); err != nil {
+				u.PrintError(err.Error())
+				os.Exit(1)
+			}
+			return
+		}
+		password, err := anbuCrypto.GetPassword()
+		if err != nil {
 			u.PrintError(err.Error())
 			os.Exit(1)
 		}
+		value, err := anbuCrypto.GetSecret(secretsFile, args[0], password)
+		if err != nil {
+			u.PrintError(err.Error())
+			os.Exit(1)
+		}
+		fmt.Println(value)
 	},
 }
 var secretsSetCmd = &cobra.Command{
@@ -47,10 +76,36 @@ var secretsSetCmd = &cobra.Command{
 	Short: "Set value for a secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuCrypto.SetSecret(secretsFile, args[0], multilineFlag); err != nil {
+		secretID := args[0]
+		fmt.Printf("Enter value for secret '%s': ", secretID)
+		var value string
+		var err error
+		if multilineFlag {
+			value, err = anbuCrypto.ReadMultilineInput()
+		} else {
+			value, err = anbuCrypto.ReadSingleLineInput()
+		}
+		if err != nil {
+			u.PrintError(fmt.Sprintf("failed to read secret value: %v", err))
+			os.Exit(1)
+		}
+		if remoteHost != "" {
+			if err := anbuCrypto.RemoteSetSecret(remoteHost, secretID, value); err != nil {
+				u.PrintError(err.Error())
+				os.Exit(1)
+			}
+			return
+		}
+		password, err := anbuCrypto.GetPassword()
+		if err != nil {
 			u.PrintError(err.Error())
 			os.Exit(1)
 		}
+		if err := anbuCrypto.SetSecret(secretsFile, secretID, value, password); err != nil {
+			u.PrintError(err.Error())
+			os.Exit(1)
+		}
+		u.PrintSuccess(fmt.Sprintf("Secret '%s' set successfully", secretID))
 	},
 }
 var secretsDeleteCmd = &cobra.Command{
@@ -58,10 +113,18 @@ var secretsDeleteCmd = &cobra.Command{
 	Short: "Delete a secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		if remoteHost != "" {
+			if err := anbuCrypto.RemoteDeleteSecret(remoteHost, args[0]); err != nil {
+				u.PrintError(err.Error())
+				os.Exit(1)
+			}
+			return
+		}
 		if err := anbuCrypto.DeleteSecret(secretsFile, args[0]); err != nil {
 			u.PrintError(err.Error())
 			os.Exit(1)
 		}
+		u.PrintSuccess(fmt.Sprintf("Secret '%s' deleted successfully", args[0]))
 	},
 }
 var secretsImportCmd = &cobra.Command{
@@ -70,10 +133,18 @@ var secretsImportCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		importFile := args[0]
+		if remoteHost != "" {
+			if err := anbuCrypto.RemoteImportSecrets(remoteHost, importFile); err != nil {
+				u.PrintError(err.Error())
+				os.Exit(1)
+			}
+			return
+		}
 		if err := anbuCrypto.ImportSecrets(secretsFile, importFile); err != nil {
 			u.PrintError(err.Error())
 			os.Exit(1)
 		}
+		u.PrintSuccess(fmt.Sprintf("Imported secrets from %s successfully", importFile))
 	},
 }
 var secretsExportCmd = &cobra.Command{
@@ -82,10 +153,18 @@ var secretsExportCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		exportFile := args[0]
+		if remoteHost != "" {
+			if err := anbuCrypto.RemoteExportSecrets(remoteHost, exportFile); err != nil {
+				u.PrintError(err.Error())
+				os.Exit(1)
+			}
+			return
+		}
 		if err := anbuCrypto.ExportSecrets(secretsFile, exportFile); err != nil {
 			u.PrintError(err.Error())
 			os.Exit(1)
 		}
+		u.PrintSuccess(fmt.Sprintf("Exported secrets to %s successfully", exportFile))
 	},
 }
 
@@ -97,10 +176,11 @@ Start the server with: a p serve
 `,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		filePath := secretsFile
 		if len(args) > 0 {
-			secretsFile = args[0]
+			filePath = args[0]
 		}
-		if err := anbuCrypto.ServeSecrets(secretsFile); err != nil {
+		if err := anbuCrypto.ServeSecrets(filePath); err != nil {
 			u.PrintError(err.Error())
 			os.Exit(1)
 		}
@@ -119,6 +199,7 @@ func init() {
 		os.Exit(1)
 	}
 
+	SecretsCmd.PersistentFlags().StringVar(&remoteHost, "remote", "", "Remote server URL to make API calls to")
 	secretsSetCmd.Flags().BoolVarP(&multilineFlag, "multiline", "m", false, "Enable multiline input (end with `EOF` on a new line)")
 
 	SecretsCmd.AddCommand(secretsListCmd)
@@ -127,4 +208,5 @@ func init() {
 	SecretsCmd.AddCommand(secretsDeleteCmd)
 	SecretsCmd.AddCommand(secretsImportCmd)
 	SecretsCmd.AddCommand(secretsExportCmd)
+	SecretsCmd.AddCommand(secretsServe)
 }

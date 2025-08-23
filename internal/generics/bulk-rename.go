@@ -10,8 +10,7 @@ import (
 	u "github.com/tanq16/anbu/utils"
 )
 
-// BulkRename renames files/directories based on a regex pattern and replacement string
-func BulkRename(pattern string, replacement string, renameDirectories bool) {
+func BulkRename(pattern string, replacement string, renameDirectories bool, dryRun bool) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		u.PrintError(fmt.Sprintf("Invalid regex pattern: %v", err))
@@ -36,7 +35,7 @@ func BulkRename(pattern string, replacement string, renameDirectories bool) {
 		newName := replacement
 		for i, match := range matches {
 			if i == 0 {
-				continue // Skip the full match
+				continue
 			}
 			placeholder := fmt.Sprintf("\\%d", i)
 			newName = strings.ReplaceAll(newName, placeholder, match)
@@ -44,21 +43,28 @@ func BulkRename(pattern string, replacement string, renameDirectories bool) {
 		if oldName == newName {
 			continue
 		}
-		err := os.Rename(filepath.Join(currentDir, oldName), filepath.Join(currentDir, newName))
-		if err != nil {
-			u.PrintError(fmt.Sprintf("Failed to rename %s to %s: %v", oldName, newName, err))
-			continue
+		if dryRun {
+			fmt.Printf("Dry Run: Renaming %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName))
+		} else {
+			err := os.Rename(filepath.Join(currentDir, oldName), filepath.Join(currentDir, newName))
+			if err != nil {
+				u.PrintError(fmt.Sprintf("Failed to rename %s to %s: %v", oldName, newName, err))
+				continue
+			}
+			fmt.Printf("Renamed: %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName))
 		}
-		fmt.Printf("Renamed: %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName))
 		renameCount++
 	}
-
-	// Provide a summary
 	fmt.Println()
 	if renameCount == 0 {
 		u.PrintWarning("No items were renamed")
 	} else {
-		fmt.Printf("%s %s\n", u.FDebug("Operation completed: Renamed"),
-			u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories])))
+		operationType := "renamed"
+		if dryRun {
+			operationType = "would have renamed"
+		}
+		fmt.Printf("%s %s %s\n", u.FDebug("Operation completed:"),
+			u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories])),
+			operationType)
 	}
 }

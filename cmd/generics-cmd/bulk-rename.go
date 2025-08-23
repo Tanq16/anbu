@@ -7,6 +7,7 @@ import (
 
 var bulkRenameFlags struct {
 	renameDirectories bool
+	dryRun            bool
 }
 
 var BulkRenameCmd = &cobra.Command{
@@ -18,10 +19,11 @@ var BulkRenameCmd = &cobra.Command{
 `,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		anbuGenerics.BulkRename(args[0], args[1], bulkRenameFlags.renameDirectories)
+		anbuGenerics.BulkRename(args[0], args[1], bulkRenameFlags.renameDirectories, bulkRenameFlags.dryRun)
 	},
 }
 
 func init() {
 	BulkRenameCmd.Flags().BoolVarP(&bulkRenameFlags.renameDirectories, "directories", "d", false, "Rename directories instead of files")
+	BulkRenameCmd.Flags().BoolVarP(&bulkRenameFlags.dryRun, "dry-run", "r", false, "Simulate the rename operation without actually renaming files")
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/charmbracelet/log"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
@@ -32,12 +32,10 @@ func Execute() {
 }
 
 func setupLogs() {
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if debugFlag {
-		log.SetLevel(log.DebugLevel)
-		log.Debug("Debug logging enabled")
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		utils.GlobalDebugFlag = true
-	} else {
-		log.SetLevel(log.InfoLevel)
 	}
 }
 
