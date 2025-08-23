@@ -139,28 +139,6 @@ func (m *Manager) ReportError(name string, err error) {
 	}
 }
 
-// func (m *Manager) UpdateStreamOutput(name string, output []string) {
-// 	m.mutex.Lock()
-// 	defer m.mutex.Unlock()
-// 	if info, exists := m.outputs[name]; exists {
-// 		currentLen := len(info.StreamLines)
-// 		if currentLen+len(output) > m.maxStreams {
-// 			startIndex := currentLen + len(output) - m.maxStreams
-// 			if startIndex > currentLen {
-// 				startIndex = 0
-// 			}
-// 			newLines := append(info.StreamLines[startIndex:], output...)
-// 			if len(newLines) > m.maxStreams {
-// 				newLines = newLines[len(newLines)-m.maxStreams:]
-// 			}
-// 			info.StreamLines = newLines
-// 		} else {
-// 			info.StreamLines = append(info.StreamLines, output...)
-// 		}
-// 		info.LastUpdated = time.Now()
-// 	}
-// }
-
 func (m *Manager) AddStreamLine(name string, line string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()

@@ -10,8 +10,12 @@ import (
 )
 
 var SecretsCmd = &cobra.Command{
-	Use:   "secrets",
-	Short: "Manage secrets and parameters securely",
+	Use:     "pass",
+	Aliases: []string{"p"},
+	Short:   "Manage secrets and parameters securely",
+	Long: `Examples:
+s
+`,
 }
 
 var secretsFile string
@@ -85,39 +89,18 @@ var secretsExportCmd = &cobra.Command{
 	},
 }
 
-// Parameter commands
-var secretsParamCmd = &cobra.Command{
-	Use:   "p",
-	Short: "Manage parameters",
-}
-var secretsParamGetCmd = &cobra.Command{
-	Use:   "get",
-	Short: "Print value of a specific parameter",
-	Args:  cobra.ExactArgs(1),
+var secretsServe = &cobra.Command{
+	Use:   "serve",
+	Short: "Use a server to handle secrets on a remote server via a simple web API",
+	Long: `Example:
+Start the server with: a p serve
+`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuCrypto.GetParameter(secretsFile, args[0]); err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
+		if len(args) > 0 {
+			secretsFile = args[0]
 		}
-	},
-}
-var secretsParamSetCmd = &cobra.Command{
-	Use:   "add",
-	Short: "Set value for a parameter",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuCrypto.SetParameter(secretsFile, args[0], multilineFlag); err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
-		}
-	},
-}
-var secretsParamDeleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a parameter",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuCrypto.DeleteParameter(secretsFile, args[0]); err != nil {
+		if err := anbuCrypto.ServeSecrets(secretsFile); err != nil {
 			u.PrintError(err.Error())
 			os.Exit(1)
 		}
@@ -137,7 +120,6 @@ func init() {
 	}
 
 	secretsSetCmd.Flags().BoolVarP(&multilineFlag, "multiline", "m", false, "Enable multiline input (end with `EOF` on a new line)")
-	secretsParamSetCmd.Flags().BoolVarP(&multilineFlag, "multiline", "m", false, "Enable multiline input (end with `EOF` on a new line)")
 
 	SecretsCmd.AddCommand(secretsListCmd)
 	SecretsCmd.AddCommand(secretsGetCmd)
@@ -145,10 +127,4 @@ func init() {
 	SecretsCmd.AddCommand(secretsDeleteCmd)
 	SecretsCmd.AddCommand(secretsImportCmd)
 	SecretsCmd.AddCommand(secretsExportCmd)
-
-	SecretsCmd.AddCommand(secretsParamCmd)
-
-	secretsParamCmd.AddCommand(secretsParamGetCmd)
-	secretsParamCmd.AddCommand(secretsParamSetCmd)
-	secretsParamCmd.AddCommand(secretsParamDeleteCmd)
 }

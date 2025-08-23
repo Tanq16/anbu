@@ -7,8 +7,9 @@ import (
 )
 
 var ConvertCmd = &cobra.Command{
-	Use:   "convert [converter] [data or file]",
-	Short: "Convert data between different formats",
+	Use:     "convert [converter] [data or file]",
+	Aliases: []string{"c"},
+	Short:   "Convert data between different formats",
 	Long: `Convert data between different formats.
 
 Converters:
@@ -28,6 +29,7 @@ Encoding Formats:
 - hex-b64: Convert hex encoded string to base64 encoded string
 - url:     Convert plain text to URL encoded string
 - urld:    Convert URL encoded string to plain text
+- jwtd:    Convert JWT to decoded struct
 `,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {

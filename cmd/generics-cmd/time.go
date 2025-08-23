@@ -13,8 +13,9 @@ var timeCmdFlags struct {
 }
 
 var TimeCmd = &cobra.Command{
-	Use:   "time",
-	Short: "time related commands to print or analyze time",
+	Use:     "time",
+	Aliases: []string{"t"},
+	Short:   "time related commands to print or analyze time",
 	Long: `Arguments:
 - now: print the current time in various formats
 - purple: print the current time in purple team format (includes public ip)

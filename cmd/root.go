@@ -46,7 +46,6 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Enable debug logging")
 	cobra.OnInitialize(setupLogs)
 
-	rootCmd.AddCommand(genericsCmd.LoopCmd)
 	rootCmd.AddCommand(genericsCmd.StringCmd)
 	rootCmd.AddCommand(genericsCmd.TimeCmd)
 	rootCmd.AddCommand(genericsCmd.BulkRenameCmd)
@@ -54,7 +53,6 @@ func init() {
 
 	rootCmd.AddCommand(cryptoCmd.FileCryptoCmd)
 	rootCmd.AddCommand(cryptoCmd.KeyPairCmd)
-	rootCmd.AddCommand(cryptoCmd.JwtDecodeCmd)
 	rootCmd.AddCommand(cryptoCmd.SecretsScanCmd)
 	rootCmd.AddCommand(cryptoCmd.SecretsCmd)
 

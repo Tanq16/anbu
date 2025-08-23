@@ -10,9 +10,13 @@ var bulkRenameFlags struct {
 }
 
 var BulkRenameCmd = &cobra.Command{
-	Use:   "rename",
-	Short: "Bulk rename files/directories using regex pattern and replacement as args",
-	Args:  cobra.ExactArgs(2),
+	Use:     "rename",
+	Aliases: []string{},
+	Short:   "Bulk rename files/directories using regex pattern and replacement as args",
+	Long: `Examples:
+- s
+`,
+	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		anbuGenerics.BulkRename(args[0], args[1], bulkRenameFlags.renameDirectories)
 	},

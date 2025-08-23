@@ -89,14 +89,11 @@ func encryptAndSaveSecret(filePath, secretID, value, password string) error {
 	if err != nil {
 		return err
 	}
-	// Encrypt the value
 	encryptedValue, err := encryptString(value, password)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt secret: %w", err)
 	}
-	// Update the store
 	store.Secrets[secretID] = encryptedValue
-	// Save the store
 	if err := saveSecretsStore(store, filePath); err != nil {
 		return err
 	}
@@ -105,25 +102,20 @@ func encryptAndSaveSecret(filePath, secretID, value, password string) error {
 
 func encryptString(value, password string) (string, error) {
 	key := generateKeyFromPassword(password)
-	// Encrypt the value
 	encryptedBytes, err := encryptData([]byte(value), key)
 	if err != nil {
 		return "", fmt.Errorf("failed to encrypt string: %w", err)
 	}
-	// Encode to base64
 	encodedValue := base64.StdEncoding.EncodeToString(encryptedBytes)
 	return encodedValue, nil
 }
 
 func decryptString(encryptedValue, password string) (string, error) {
-	// Decode from base64
 	encryptedBytes, err := base64.StdEncoding.DecodeString(encryptedValue)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode string: %w", err)
 	}
-	// Generate key from password
 	key := generateKeyFromPassword(password)
-	// Decrypt the value
 	decryptedBytes, err := decryptData(encryptedBytes, key)
 	if err != nil {
 		return "", fmt.Errorf("failed to decrypt string: %w", err)
@@ -149,7 +141,6 @@ func encryptData(data []byte, key []byte) ([]byte, error) {
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, fmt.Errorf("failed to generate nonce: %w", err)
 	}
-	// Encrypt and prepend nonce
 	ciphertext := gcm.Seal(nonce, nonce, data, nil)
 	return ciphertext, nil
 }
@@ -229,19 +220,6 @@ func GetSecret(filePath, secretID string) error {
 	return nil
 }
 
-func GetParameter(filePath, paramID string) error {
-	store, err := loadSecretsStoreStructure(filePath)
-	if err != nil {
-		return err
-	}
-	value, exists := store.Parameters[paramID]
-	if !exists {
-		return fmt.Errorf("parameter '%s' not found", paramID)
-	}
-	fmt.Println(value)
-	return nil
-}
-
 func readMultilineInput() (string, error) {
 	var sb strings.Builder
 	scanner := bufio.NewScanner(os.Stdin)
@@ -257,7 +235,6 @@ func readMultilineInput() (string, error) {
 	if err := scanner.Err(); err != nil {
 		return "", fmt.Errorf("error reading input: %w", err)
 	}
-	// Trim the last newline if it exists
 	text := sb.String()
 	if len(text) > 0 {
 		text = text[:len(text)-1]
@@ -297,29 +274,6 @@ func SetSecret(filePath, secretID string, multiline bool) error {
 	return nil
 }
 
-func SetParameter(filePath, paramID string, multiline bool) error {
-	store, err := loadSecretsStoreStructure(filePath)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Enter value for parameter '%s': ", paramID)
-	var value string
-	if multiline {
-		value, err = readMultilineInput()
-	} else {
-		value, err = readSingleLineInput()
-	}
-	if err != nil {
-		return fmt.Errorf("failed to read parameter value: %w", err)
-	}
-	store.Parameters[paramID] = value
-	if err := saveSecretsStore(store, filePath); err != nil {
-		return err
-	}
-	u.PrintSuccess(fmt.Sprintf("Parameter '%s' set successfully", paramID))
-	return nil
-}
-
 func DeleteSecret(filePath, secretID string) error {
 	store, err := loadSecretsStoreStructure(filePath)
 	if err != nil {
@@ -336,22 +290,6 @@ func DeleteSecret(filePath, secretID string) error {
 	return nil
 }
 
-func DeleteParameter(filePath, paramID string) error {
-	store, err := loadSecretsStoreStructure(filePath)
-	if err != nil {
-		return err
-	}
-	if _, exists := store.Parameters[paramID]; !exists {
-		return fmt.Errorf("parameter '%s' not found", paramID)
-	}
-	delete(store.Parameters, paramID)
-	if err := saveSecretsStore(store, filePath); err != nil {
-		return err
-	}
-	u.PrintSuccess(fmt.Sprintf("Parameter '%s' deleted successfully", paramID))
-	return nil
-}
-
 func ImportSecrets(filePath, importFilePath string) error {
 	importData, err := os.ReadFile(importFilePath)
 	if err != nil {
@@ -365,7 +303,6 @@ func ImportSecrets(filePath, importFilePath string) error {
 	if err != nil {
 		return err
 	}
-	// Copy parameters from import to current store
 	if currentStore.Parameters == nil {
 		currentStore.Parameters = make(map[string]string)
 	}
@@ -373,7 +310,6 @@ func ImportSecrets(filePath, importFilePath string) error {
 	if err := saveSecretsStore(currentStore, filePath); err != nil {
 		return err
 	}
-	// Process secrets
 	password, err := getPassword()
 	if err != nil {
 		return err
@@ -415,5 +351,9 @@ func ExportSecrets(filePath, exportFilePath string) error {
 		return fmt.Errorf("failed to write export file: %w", err)
 	}
 	u.PrintSuccess(fmt.Sprintf("Exported %d secrets and %d parameters to %s", len(exportStore.Secrets), len(exportStore.Parameters), exportFilePath))
+	return nil
+}
+
+func ServeSecrets(filePath string) error {
 	return nil
 }

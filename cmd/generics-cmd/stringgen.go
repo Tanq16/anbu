@@ -9,8 +9,9 @@ import (
 )
 
 var StringCmd = &cobra.Command{
-	Use:   "string",
-	Short: "generate a random string, a sequence, a repetition, or password/passphrase",
+	Use:     "string",
+	Aliases: []string{"s"},
+	Short:   "generate a random string, a sequence, a repetition, or password/passphrase",
 	Long: `generate a variety of strings with the following
 Examples:
 	anbu string N                      # generate a random string of length N

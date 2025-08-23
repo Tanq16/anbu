@@ -79,6 +79,11 @@ var supportedConverters = map[string]converterInfo{
 		OutputType: "string",
 		Handler:    textToUrl,
 	},
+	"jwtd": {
+		InputType:  "string",
+		OutputType: "string",
+		Handler:    jwtDecode,
+	},
 }
 
 // Primary Handler
@@ -88,13 +93,14 @@ func ConvertData(converterType string, input string) {
 		u.PrintError(fmt.Sprintf("unsupported converter type: %s", converterType))
 		return
 	}
-	if converter.InputType == "file" {
+	switch converter.InputType {
+	case "file":
 		_, err := os.Stat(input)
 		if os.IsNotExist(err) {
 			u.PrintError(fmt.Sprintf("input file does not exist: %s", input))
 			return
 		}
-	} else if converter.InputType == "string" {
+	case "string":
 		if input == "" {
 			u.PrintError("input string cannot be empty")
 			return

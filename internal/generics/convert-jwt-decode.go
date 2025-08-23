@@ -1,4 +1,4 @@
-package anbuCrypto
+package anbuGenerics
 
 import (
 	"encoding/base64"
@@ -9,7 +9,7 @@ import (
 	u "github.com/tanq16/anbu/utils"
 )
 
-func JwtParse(tokenString string) {
+func jwtDecode(tokenString string) {
 	parts := strings.Split(tokenString, ".")
 	if len(parts) != 3 {
 		u.PrintError("invalid token format")

@@ -15,19 +15,16 @@ A summary of all capabilities that **Anbu** can perform:
 | Operation | Details |
 | --- | --- |
 | **Time Operations** | Display current time in various formats, calculate time differences, and parse time strings |
-| **Secrets & Parameters Management** | Securely store and retrieve secrets and parameters with encryption at rest |
+| **Secrets Management** | Securely store and retrieve secrets and parameters with encryption at rest |
 | **Network Tunneling** | Create TCP and SSH tunnels to securely access remote services through jump hosts |
-| **Command Template Execution** | Run command sequences with variable substitution via YAML configuration |
 | **Simple HTTP/HTTPS Server** | Host a simple webserver over HTTP/HTTPS with optional file upload capability |
-| **JWT Decode** | Decode and display JWT header and payload contents in a readable tabular format |
 | **Secrets Scan** | Find common secrets in file systems using regular expressions, with optional high-noise patterns |
 | **IP Information** | Display local and public IP details (with optional IPv6), including geolocation information |
 | **Bulk Rename** | Batch rename files or directories using regular expression patterns |
 | **Data Conversion** | Convert between data formats like YAML, JSON, and Docker Compose (WIP) |
-| **Encoding Conversion** | Convert text between different encodings: base64, hex, URL encoding |
+| **Encoding Conversion** | Convert/decode text between different encodings: base64, hex, URL encoding |
 | **File Encryption/Decryption** | Secure file encryption and decryption with AES-256-GCM symmetric encryption |
 | **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
-| **Loop Command** | Execute commands in sequence with incrementing index substitution |
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 
 ## Installation
@@ -98,14 +95,6 @@ Anbu supports a large number of operations across the board. The specific detail
     # reverse SSH tunnels
     anbu tunnel rssh -l localhost:3389 -r 0.0.0.0:8080 -s ssh.vm.com:22 -u bob -p "builder"
     ```
-- ***Command Template Execution***
-  - ```bash
-    anbu exec ./path/to/template.yaml  # Execute template file with commands as steps
-    ```
-  - ```bash
-    anbu exec template.yam -v 'pass=P@55w0rd' -v 'uname=4.u53r'
-    # Execute template file with custom variable replacement (see Tips for more information)
-    ```
 - ***Simple HTTP/HTTPS Server***
   - ```bash
     anbu http-server                     # Serves current directory on http://localhost:8000
@@ -161,11 +150,6 @@ Anbu supports a large number of operations across the board. The specific detail
     anbu key-pair -o mykey -k 4096  # 4096 bit RSA key pair
     anbu key-pair --ssh             # 2048 bit RSA SSH key pair called anbu-key.*
     ```
-- ***Loop Command***
-  - ```bash
-    anbu loop 03-112 'echo "$i"' -p 2  # run command for index 3 to 112 as 003, 004, ...
-    anbu loop 20 'echo justprintme'    # run command 20 times linearly
-    ```
 - ***String Generation***
   - ```bash
     anbu string 23               # generate 23 (100 if not specified) random alphanumeric chars
@@ -210,48 +194,6 @@ Now, connecting to `localhost:3389` on Machine B will allow access to Machine A'
 </details>
 
 <details>
-<summary><b>Running a Command Template</b></summary>
-
-A command template needs to be in the form of a YAML template. Variables can be declared inline as well as within the template. A variable `var` for example, should be used as `{{.var}}` in the command string.
-
-An example of a template is as follows:
-
-```yaml
-name: "Project Backup"
-description: "Creates a timestamped backup of a project directory"
-variables:
-  backup_dir: "/home/tanq/testrepo"
-  exclude_patterns: ".git,*.log"
-
-steps:
-  - name: "Clone project"
-    command: "git clone https://github.com/tanq16/danzo {{.backup_dir}}"
-
-  - name: "Build Project"
-    command: "cd {{.backup_dir}} && go build -ldflags='-s -w' ."
-
-  - name: "Get current timestamp"
-    command: "timestamp=$(date +%Y%m%d_%H%M%S) && echo $timestamp > {{.backup_dir}}/anbu_backup_timestamp.txt && echo '{{.exclude_patterns}}' > {{.backup_dir}}/anbu_exclude_patterns.txt"
-
-  - name: "Create backup archive"
-    command: "cd {{.project_dir}} && tar --exclude-from={{.backup_dir}}/anbu_exclude_patterns.txt -czf backup_$(cat {{.backup_dir}}/anbu_backup_timestamp.txt).tar.gz {{.backup_dir}}"
-
-  - name: "List created backup"
-    command: "ls -lh {{.project_dir}}/*.tar.gz"
-
-  - name: "Cleanup temporary files"
-    command: "rm /tmp/anbu_backup_timestamp.txt /tmp/anbu_exclude_patterns.txt" # used non-existent for demo
-    ignore_errors: true
-
-```
-
-The template can then be executed as:
-
-```bash
-anbu exec template.yaml -v 'project_dir=/opt/backups'
-```
-
-</details>
 
 <details>
 <summary><b>Creating a Secure Database (or service) Connection Tunnel</b></summary>
@@ -269,6 +211,29 @@ mysql -u dbuser -p -h localhost -P 3306
 ```
 
 This allows a connection to restricted databases while maintaining security best practices.
+
+</details>
+
+<details>
+<summary><b>Use Anbu within Shell Commands</b></summary>
+
+It's quite helpful to use Anbu within shell commands for simple things like UUIDs or for more sensitive things like secrets. Imagine a shell script that requires a username and password:
+
+```bash
+hypothetical --neo4j-username neo4j --neo4j-password sensitive
+```
+
+Using such commands leaves credentials within the shell history and is not safe for screen sharing. Instead of exposing secrets here, we can use `anbu`:
+
+```bash
+hypothetical --neo4j-username $(anbu pass n4jun) --neo4j-password $(anbu pass neo4jpw)
+```
+
+Furthermore, you can create an alias for `anbu` as `a` and use it to say generate a UUID like so:
+
+```bash
+hypothetical_command --uuid $(a s uuid)
+```
 
 </details>
 
