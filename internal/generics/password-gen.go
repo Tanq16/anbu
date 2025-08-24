@@ -7,17 +7,16 @@ import (
 	"strconv"
 	"strings"
 
-	u "github.com/tanq16/anbu/utils"
+	"github.com/rs/zerolog/log"
 )
 
 func GeneratePassword(lengthS string, simple bool) {
 	length, err := strconv.Atoi(lengthS)
 	if err != nil {
-		u.PrintError("invalid length")
-		return
+		log.Fatal().Msg("invalid length")
 	}
 	if length <= 0 {
-		u.PrintWarning("length must be greater than 0; using 15")
+		log.Warn().Msg("length must be greater than 0; using 15")
 		length = 15
 	}
 	alphabet := "abcdefghijklmnopqrstuvwxyz"
@@ -38,18 +37,17 @@ func GeneratePassword(lengthS string, simple bool) {
 func GeneratePassPhrase(lengthS string, separator string, simple bool) {
 	length, err := strconv.Atoi(lengthS)
 	if err != nil {
-		u.PrintError("invalid length")
-		return
+		log.Fatal().Msg("invalid length")
 	}
 	if length < 2 || length > 50 {
-		u.PrintWarning("length must be between 2 to 50; using 3")
+		log.Warn().Msg("length must be between 2 to 50; using 3")
 		length = 3
 	}
 	if separator == "" {
 		separator = "-"
 	}
 	if len(separator) > 1 {
-		u.PrintWarning("separator must be a single character; using -")
+		log.Warn().Msg("separator must be a single character; using -")
 	}
 	numberList := "0123456789"
 	var result strings.Builder

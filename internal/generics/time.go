@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
 	u "github.com/tanq16/anbu/utils"
 )
@@ -52,7 +53,7 @@ func printTimeTablePurple(concern time.Time) {
 	}
 	ipAddr, err := anbuNetwork.GetPublicIP()
 	if err != nil {
-		u.PrintWarning("could not get public IP address")
+		log.Warn().Msg("could not get public IP address")
 	} else {
 		ipAddress := ipAddr.UnwindString("ip")
 		table.Rows = append(table.Rows, []string{"Public IP", ipAddress})
@@ -178,8 +179,7 @@ func TimePurple() {
 func TimeEpochDiff(epochs []int64) {
 	var epoch1, epoch2 int64
 	if len(epochs) == 0 {
-		u.PrintError("No epochs provided")
-		return
+		log.Fatal().Msg("No epochs provided")
 	} else if len(epochs) == 1 {
 		epoch1, epoch2 = epochs[0], time.Now().Unix()
 	} else {

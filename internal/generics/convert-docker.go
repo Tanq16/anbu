@@ -5,29 +5,23 @@ import (
 	"os"
 	"strings"
 
+	"github.com/goccy/go-yaml"
+	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
-	"gopkg.in/yaml.v3"
 )
 
-// Convert Docker run command to Docker Compose format
 func convertDockerToCompose(input string) {
-	// Trim and clean the input
 	input = strings.TrimSpace(input)
 	if !strings.HasPrefix(input, "docker run") {
-		u.PrintError("Invalid docker run command. Must start with 'docker run'")
+		log.Fatal().Msg("Invalid docker run command. Must start with 'docker run'")
 		return
 	}
-
-	// Parse the docker run command
-	composeConfig := map[string]interface{}{
-		"version": "3",
-		"services": map[string]interface{}{
-			"app": map[string]interface{}{},
+	composeConfig := map[string]any{
+		"services": map[string]any{
+			"app": map[string]any{},
 		},
 	}
-	service := composeConfig["services"].(map[string]interface{})["app"].(map[string]interface{})
-
-	// Split the command by spaces but respect quotes
+	service := composeConfig["services"].(map[string]any)["app"].(map[string]any)
 	parts := splitCommand(input[len("docker run"):])
 
 	// Default command mode
@@ -36,69 +30,56 @@ func convertDockerToCompose(input string) {
 	var volumes []string
 	var environment []string
 	var command []string
-
-	// Process docker run options
 	imageName := ""
 	skipNext := false
 
-	for i := 0; i < len(parts); i++ {
+	for i := range parts {
 		if skipNext {
 			skipNext = false
 			continue
 		}
-
 		part := parts[i]
 		if part == "" {
 			continue
 		}
-
-		// Handle options with values
 		if strings.HasPrefix(part, "-") {
 			switch {
 			case part == "-d" || part == "--detach":
 				detached = true
-
 			case part == "-p" || part == "--publish":
 				if i+1 < len(parts) {
 					ports = append(ports, parts[i+1])
 					skipNext = true
 				}
-
 			case strings.HasPrefix(part, "-p=") || strings.HasPrefix(part, "--publish="):
 				value := strings.Split(part, "=")[1]
 				ports = append(ports, value)
-
 			case part == "-v" || part == "--volume":
 				if i+1 < len(parts) {
 					volumes = append(volumes, parts[i+1])
 					skipNext = true
 				}
-
 			case strings.HasPrefix(part, "-v=") || strings.HasPrefix(part, "--volume="):
 				value := strings.Split(part, "=")[1]
 				volumes = append(volumes, value)
-
 			case part == "-e" || part == "--env":
 				if i+1 < len(parts) {
 					environment = append(environment, parts[i+1])
 					skipNext = true
 				}
-
 			case strings.HasPrefix(part, "-e=") || strings.HasPrefix(part, "--env="):
 				value := strings.Split(part, "=")[1]
 				environment = append(environment, value)
-
 			case part == "--name":
 				if i+1 < len(parts) {
 					// Use container name as service name
 					serviceName := parts[i+1]
-					composeConfig["services"].(map[string]interface{})["app"] = nil
-					composeConfig["services"].(map[string]interface{})[serviceName] = service
+					composeConfig["services"].(map[string]any)["app"] = nil
+					composeConfig["services"].(map[string]any)[serviceName] = service
 					skipNext = true
 				}
-
 			default:
-				// Skip unknown options for simplicity
+				// Skip unknown options
 				if i+1 < len(parts) && !strings.HasPrefix(parts[i+1], "-") {
 					skipNext = true
 				}
@@ -111,28 +92,21 @@ func convertDockerToCompose(input string) {
 			command = append(command, part)
 		}
 	}
-
-	// Set the values in the compose structure
 	if imageName != "" {
 		service["image"] = imageName
 	}
-
 	if detached {
 		// No need to set this in compose as it's the default
 	}
-
 	if len(ports) > 0 {
 		service["ports"] = ports
 	}
-
 	if len(volumes) > 0 {
 		service["volumes"] = volumes
 	}
-
 	if len(environment) > 0 {
 		service["environment"] = environment
 	}
-
 	if len(command) > 0 {
 		service["command"] = strings.Join(command, " ")
 	}
@@ -140,109 +114,78 @@ func convertDockerToCompose(input string) {
 	// Convert to YAML
 	yamlData, err := yaml.Marshal(composeConfig)
 	if err != nil {
-		u.PrintError(fmt.Sprintf("Failed to generate YAML: %s", err))
-		return
+		log.Fatal().Err(err).Msg("failed to generate YAML")
 	}
-
-	// Output the docker-compose.yml file
 	outputFile := "docker-compose.yml"
 	if err := os.WriteFile(outputFile, yamlData, 0644); err != nil {
-		u.PrintError(fmt.Sprintf("Failed to write output file: %s", err))
-		return
+		log.Fatal().Err(err).Msg("Failed to write output file")
 	}
-
 	u.PrintSuccess(fmt.Sprintf("Docker run command converted to Docker Compose: %s", outputFile))
 }
 
-// Convert Docker Compose to Docker run commands
 func convertComposeToDocker(inputFile string) {
 	data, err := os.ReadFile(inputFile)
 	if err != nil {
-		u.PrintError(fmt.Sprintf("Failed to read input file: %s", err))
-		return
+		log.Fatal().Err(err).Msg("Failed to read input file")
 	}
-
-	var composeConfig map[string]interface{}
+	var composeConfig map[string]any
 	if err := yaml.Unmarshal(data, &composeConfig); err != nil {
-		u.PrintError(fmt.Sprintf("Failed to parse YAML: %s", err))
-		return
+		log.Fatal().Err(err).Msg("Failed to parse YAML")
 	}
-
-	services, ok := composeConfig["services"].(map[string]interface{})
+	services, ok := composeConfig["services"].(map[string]any)
 	if !ok {
-		u.PrintError("No services found in the Docker Compose file")
-		return
+		log.Fatal().Msg("No services found in the Docker Compose file")
 	}
 
 	var dockerCommands []string
-
 	for serviceName, serviceConfig := range services {
-		service, ok := serviceConfig.(map[string]interface{})
+		service, ok := serviceConfig.(map[string]any)
 		if !ok {
 			continue
 		}
-
 		var command strings.Builder
 		command.WriteString("docker run -d")
-
-		// Add container name
 		command.WriteString(fmt.Sprintf(" --name %s", serviceName))
-
-		// Add ports
-		if ports, ok := service["ports"].([]interface{}); ok {
+		if ports, ok := service["ports"].([]any); ok {
 			for _, port := range ports {
 				command.WriteString(fmt.Sprintf(" -p %v", port))
 			}
 		}
-
-		// Add volumes
-		if volumes, ok := service["volumes"].([]interface{}); ok {
+		if volumes, ok := service["volumes"].([]any); ok {
 			for _, volume := range volumes {
 				command.WriteString(fmt.Sprintf(" -v %v", volume))
 			}
 		}
-
-		// Add environment variables
-		if env, ok := service["environment"].([]interface{}); ok {
+		if env, ok := service["environment"].([]any); ok {
 			for _, e := range env {
 				command.WriteString(fmt.Sprintf(" -e %v", e))
 			}
-		} else if envMap, ok := service["environment"].(map[string]interface{}); ok {
+		} else if envMap, ok := service["environment"].(map[string]any); ok {
 			for key, value := range envMap {
 				command.WriteString(fmt.Sprintf(" -e %s=%v", key, value))
 			}
 		}
-
-		// Add image
 		if image, ok := service["image"].(string); ok {
 			command.WriteString(fmt.Sprintf(" %s", image))
 		}
-
-		// Add command if exists
 		if cmd, ok := service["command"].(string); ok {
 			command.WriteString(fmt.Sprintf(" %s", cmd))
 		}
-
 		dockerCommands = append(dockerCommands, command.String())
 	}
-
-	// Output results
 	fmt.Println("\nDocker run commands for services in Docker Compose file:")
 	for _, cmd := range dockerCommands {
 		fmt.Println("\n" + u.FSuccess(cmd))
 	}
 }
 
-// Helper function to split a command into parts respecting quotes
 func splitCommand(command string) []string {
 	var parts []string
 	var inQuote bool
 	var quoteChar byte
 	var current strings.Builder
-
 	for i := 0; i < len(command); i++ {
 		c := command[i]
-
 		if (c == '"' || c == '\'') && (i == 0 || command[i-1] != '\\') {
 			if inQuote && quoteChar == c {
 				// End quote
@@ -253,7 +196,6 @@ func splitCommand(command string) []string {
 				// Start quote
 				inQuote = true
 				quoteChar = c
-				// If we have content, add it
 				if current.Len() > 0 {
 					parts = append(parts, current.String())
 					current.Reset()
@@ -273,11 +215,8 @@ func splitCommand(command string) []string {
 			current.WriteByte(c)
 		}
 	}
-
-	// Add the last part if it exists
 	if current.Len() > 0 {
 		parts = append(parts, current.String())
 	}
-
 	return parts
 }

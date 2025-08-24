@@ -2,7 +2,6 @@ package anbuNetwork
 
 import (
 	"crypto/tls"
-	"fmt"
 	"io"
 	"net"
 	"os"
@@ -11,26 +10,21 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tanq16/anbu/utils"
+	"github.com/rs/zerolog/log"
 )
 
-func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) error {
-	logger := utils.NewManager()
-	logger.StartDisplay()
-	defer logger.StopDisplay()
-	funcID := logger.Register("tcp-tunnel")
-	logger.SetMessage(funcID, fmt.Sprintf("TCP tunnel %s → %s", localAddr, remoteAddr))
+func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
+	log.Info().Msgf("TCP tunnel %s → %s", localAddr, remoteAddr)
 
 	// Listen on the local address
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
-		logger.ReportError(funcID, fmt.Errorf("failed to listen on %s: %w", localAddr, err))
-		return err
+		log.Fatal().Err(err).Msgf("failed to listen on %s", localAddr)
 	}
 	defer listener.Close()
-	logger.AddStreamLine(funcID, fmt.Sprintf("Listening on %s", localAddr))
+	log.Info().Msgf("Listening on %s", localAddr)
 	if useTLS {
-		logger.AddStreamLine(funcID, "Using TLS for remote connections")
+		log.Info().Msg("Using TLS for remote connections")
 	}
 
 	// For graceful shutdown
@@ -41,7 +35,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 	go func() {
 		<-sigChan
 		close(done)
-		logger.Complete(funcID, "TCP tunnel stopped gracefully")
+		log.Info().Msg("TCP tunnel stopped gracefully")
 		listener.Close()
 	}()
 
@@ -50,7 +44,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 		select {
 		case <-done:
 			activeConns.Wait()
-			return nil
+			return
 		default:
 			listener.(*net.TCPListener).SetDeadline(time.Now().Add(2 * time.Second))
 			localConn, err := listener.Accept()
@@ -59,9 +53,9 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 					continue
 				}
 				if opErr, ok := err.(*net.OpError); ok && !opErr.Temporary() {
-					return nil
+					return
 				}
-				logger.AddStreamLine(funcID, fmt.Sprintf("Failed to accept connection: %v", err))
+				log.Error().Err(err).Msg("Failed to accept connection")
 				continue
 			}
 
@@ -70,7 +64,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 			go func() {
 				defer activeConns.Done()
 				defer localConn.Close()
-				logger.AddStreamLine(funcID, fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
+				log.Info().Msgf("New connection from %s", localConn.RemoteAddr())
 
 				// Connect to remote
 				var remoteConn net.Conn
@@ -83,11 +77,11 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 					remoteConn, err = net.Dial("tcp", remoteAddr)
 				}
 				if err != nil {
-					logger.AddStreamLine(funcID, fmt.Sprintf("Failed to connect to remote %s: %v", remoteAddr, err))
+					log.Error().Err(err).Msgf("Failed to connect to remote %s", remoteAddr)
 					return
 				}
 				defer remoteConn.Close()
-				logger.AddStreamLine(funcID, fmt.Sprintf("Connected to remote %s", remoteAddr))
+				log.Info().Msgf("Connected to remote %s", remoteAddr)
 
 				// Copy data bidirectionally
 				var wg sync.WaitGroup
@@ -97,21 +91,21 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) er
 					// Local to Remote
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
-						logger.AddStreamLine(funcID, fmt.Sprintf("Error copying data to remote: %v", err))
+						log.Error().Err(err).Msg("Error copying data to remote")
 					}
-					logger.AddStreamLine(funcID, fmt.Sprintf("→ Sent %d bytes to remote", n))
+					log.Debug().Msgf("→ Sent %d bytes to remote", n)
 				}()
 				go func() {
 					defer wg.Done()
 					// Remote to Local
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
-						logger.AddStreamLine(funcID, fmt.Sprintf("Error copying data from remote: %v", err))
+						log.Error().Err(err).Msg("Error copying data from remote")
 					}
-					logger.AddStreamLine(funcID, fmt.Sprintf("← Received %d bytes from remote", n))
+					log.Debug().Msgf("← Received %d bytes from remote", n)
 				}()
 				wg.Wait()
-				logger.AddStreamLine(funcID, fmt.Sprintf("Connection closed from %s", localConn.RemoteAddr()))
+				log.Info().Msgf("Connection closed from %s", localConn.RemoteAddr())
 			}()
 		}
 	}

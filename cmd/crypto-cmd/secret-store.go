@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuCrypto "github.com/tanq16/anbu/internal/crypto"
 	u "github.com/tanq16/anbu/utils"
@@ -59,15 +60,13 @@ var secretsListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if remoteHost != "" {
 			if err := anbuCrypto.RemoteListSecrets(remoteHost); err != nil {
-				u.PrintError(err.Error())
-				os.Exit(1)
+				log.Fatal().Err(err)
 			}
 			return
 		}
 		secrets, err := anbuCrypto.ListSecrets(secretsFile)
 		if err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal().Err(err)
 		}
 		u.PrintSuccess("Stored secrets:")
 		for i, id := range secrets {
@@ -83,20 +82,17 @@ var secretsGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if remoteHost != "" {
 			if err := anbuCrypto.RemoteGetSecret(remoteHost, args[0]); err != nil {
-				u.PrintError(err.Error())
-				os.Exit(1)
+				log.Fatal().Err(err)
 			}
 			return
 		}
 		password, err := anbuCrypto.GetPassword()
 		if err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal().Err(err)
 		}
 		value, err := anbuCrypto.GetSecret(secretsFile, args[0], password)
 		if err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal().Err(err)
 		}
 		fmt.Println(value)
 	},
@@ -116,26 +112,22 @@ var secretsSetCmd = &cobra.Command{
 			value, err = anbuCrypto.ReadSingleLineInput()
 		}
 		if err != nil {
-			u.PrintError(fmt.Sprintf("failed to read secret value: %v", err))
-			os.Exit(1)
+			log.Fatal().Err(err).Msg("failed to read secret value")
 		}
 		if remoteHost != "" {
 			if err := anbuCrypto.RemoteSetSecret(remoteHost, secretID, value); err != nil {
-				u.PrintError(err.Error())
-				os.Exit(1)
+				log.Fatal().Err(err)
 			}
 			return
 		}
 		password, err := anbuCrypto.GetPassword()
 		if err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal().Err(err)
 		}
 		if err := anbuCrypto.SetSecret(secretsFile, secretID, value, password); err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal().Err(err)
 		}
-		u.PrintSuccess(fmt.Sprintf("Secret '%s' set successfully", secretID))
+		log.Info().Msgf("Secret '%s' set successfully", secretID)
 	},
 }
 var secretsDeleteCmd = &cobra.Command{
@@ -145,16 +137,14 @@ var secretsDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if remoteHost != "" {
 			if err := anbuCrypto.RemoteDeleteSecret(remoteHost, args[0]); err != nil {
-				u.PrintError(err.Error())
-				os.Exit(1)
+				log.Fatal().Err(err)
 			}
 			return
 		}
 		if err := anbuCrypto.DeleteSecret(secretsFile, args[0]); err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal().Err(err)
 		}
-		u.PrintSuccess(fmt.Sprintf("Secret '%s' deleted successfully", args[0]))
+		log.Info().Msgf("Secret '%s' deleted successfully", args[0])
 	},
 }
 var secretsImportCmd = &cobra.Command{
@@ -164,12 +154,10 @@ var secretsImportCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		importFile := args[0]
 		if remoteHost != "" {
-			u.PrintError("Cannot use import for remote; perform i/o on server.")
-			return
+			log.Fatal().Msg("Cannot use import for remote; perform i/o on server")
 		}
 		if err := anbuCrypto.ImportSecrets(secretsFile, importFile); err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal().Err(err)
 		}
 		u.PrintSuccess(fmt.Sprintf("Imported secrets from %s successfully", importFile))
 	},
@@ -181,14 +169,12 @@ var secretsExportCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		exportFile := args[0]
 		if remoteHost != "" {
-			u.PrintError("Cannot use export for remote; perform i/o on server.")
-			return
+			log.Fatal().Msg("Cannot use export for remote; perform i/o on server")
 		}
 		if err := anbuCrypto.ExportSecrets(secretsFile, exportFile); err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal().Err(err)
 		}
-		u.PrintSuccess(fmt.Sprintf("Exported secrets to %s successfully", exportFile))
+		log.Info().Msgf("Exported secrets to %s successfully", exportFile)
 	},
 }
 
@@ -204,8 +190,7 @@ This allows other 'anbu' instances to act as clients using the --remote flag.`,
 			filePath = args[0]
 		}
 		if err := anbuCrypto.ServeSecrets(filePath); err != nil {
-			u.PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal().Err(err)
 		}
 	},
 }
@@ -218,8 +203,7 @@ func init() {
 	}
 	err = anbuCrypto.InitializeSecretsStore(secretsFile)
 	if err != nil {
-		u.PrintError(err.Error())
-		os.Exit(1)
+		log.Fatal().Err(err)
 	}
 
 	SecretsCmd.PersistentFlags().StringVar(&remoteHost, "remote", "", "Remote server URL (e.g., http://localhost:8080)")

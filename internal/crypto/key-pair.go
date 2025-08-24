@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 	"golang.org/x/crypto/ssh"
 )
@@ -27,8 +28,7 @@ func GenerateKeyPair(outputDir, name string, keySize int) {
 	err := pem.Encode(privateKeyFile, privateKeyBlock)
 	privateKeyFile.Close()
 	if err != nil {
-		u.PrintError(fmt.Sprintf("failed to write private key to file: %v", err))
-		return
+		log.Fatal().Err(err).Msg("failed to write private key to file")
 	}
 
 	publicKeyBytes, _ := x509.MarshalPKIXPublicKey(publicKey)
@@ -41,8 +41,7 @@ func GenerateKeyPair(outputDir, name string, keySize int) {
 	err = pem.Encode(publicKeyFile, publicKeyBlock)
 	publicKeyFile.Close()
 	if err != nil {
-		u.PrintError(fmt.Sprintf("failed to write public key to file: %v", err))
-		return
+		log.Fatal().Err(err).Msg("failed to write public key to file")
 	}
 
 	fmt.Printf("RSA key pair (%d bits) generated", keySize)
@@ -59,8 +58,7 @@ func GenerateSSHKeyPair(outputDir, name string, keySize int) {
 
 	publicKeyPath := fmt.Sprintf("%s/%s.pub", outputDir, name)
 	if err := os.WriteFile(publicKeyPath, sshPublicKeyBytes, 0644); err != nil {
-		u.PrintError(fmt.Sprintf("failed to write SSH public key file: %v", err))
-		return
+		log.Fatal().Err(err).Msg("failed to write SSH public key file")
 	}
 	privatePEM := &pem.Block{
 		Type:  "RSA PRIVATE KEY",
@@ -71,8 +69,7 @@ func GenerateSSHKeyPair(outputDir, name string, keySize int) {
 	err := pem.Encode(privateKeyFile, privatePEM)
 	privateKeyFile.Close()
 	if err != nil {
-		u.PrintError(fmt.Sprintf("failed to write private key to file: %v", err))
-		return
+		log.Fatal().Err(err).Msg("failed to write private key to file")
 	}
 	os.Chmod(privateKeyPath, 0600)
 

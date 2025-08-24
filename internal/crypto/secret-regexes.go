@@ -123,4 +123,6 @@ var secretSkips = []string{
 	"__pycache__",
 	"site-packages",
 	".venv",
+	"go.mod",
+	"go.sum",
 }

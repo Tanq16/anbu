@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	u "github.com/tanq16/anbu/utils"
+	"github.com/rs/zerolog/log"
 )
 
 type HTTPServerOptions struct {
@@ -33,15 +33,12 @@ type HTTPServer struct {
 }
 
 func (s *HTTPServer) Start() error {
-	// Setup handler with middlewares
 	fileServer := http.FileServer(http.Dir("."))
 	var handler http.Handler = fileServer
 	if s.Options.EnableUpload {
 		handler = s.uploadMiddleware(handler)
 	}
 	handler = s.loggingMiddleware(handler)
-
-	// Setup server & TLS
 	s.Server = &http.Server{
 		Addr:    s.Options.ListenAddress,
 		Handler: handler,
@@ -52,10 +49,10 @@ func (s *HTTPServer) Start() error {
 			return err
 		}
 		s.Server.TLSConfig = tlsConfig
-		u.PrintSuccess(fmt.Sprintf("HTTPS server started on https://%s/", s.Options.ListenAddress))
+		log.Info().Msgf("HTTPS server started on https://%s/", s.Options.ListenAddress)
 		return s.Server.ListenAndServeTLS("", "")
 	}
-	u.PrintSuccess(fmt.Sprintf("HTTP server started on http://%s/", s.Options.ListenAddress))
+	log.Info().Msgf("HTTP server started on http://%s/", s.Options.ListenAddress)
 	return s.Server.ListenAndServe()
 }
 
@@ -68,7 +65,7 @@ func (s *HTTPServer) Stop() error {
 
 func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u.PrintStream(fmt.Sprintf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path))
+		log.Debug().Msgf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -81,19 +78,19 @@ func (s *HTTPServer) uploadMiddleware(next http.Handler) http.Handler {
 			absTargetPath, _ := filepath.Abs(targetPath)
 			serverRoot, _ := filepath.Abs(".")
 			if !strings.HasPrefix(absTargetPath, serverRoot) {
-				u.PrintDebug(fmt.Sprintf("attempted directory traversal: %s", targetPath))
+				log.Error().Msgf("attempted directory traversal: %s", targetPath)
 				http.Error(w, "Forbidden", http.StatusForbidden)
 				return
 			}
 			targetDir := filepath.Dir(targetPath)
 			if err := os.MkdirAll(targetDir, 0755); err != nil {
-				u.PrintDebug("failed to create directory")
+				log.Error().Msg("failed to create directory")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
 			file, err := os.Create(targetPath)
 			if err != nil {
-				u.PrintDebug("failed to create file")
+				log.Error().Msg("failed to create file")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
@@ -101,11 +98,11 @@ func (s *HTTPServer) uploadMiddleware(next http.Handler) http.Handler {
 
 			_, err = io.Copy(file, r.Body)
 			if err != nil {
-				u.PrintDebug("failed to write file")
+				log.Error().Msg("failed to write file")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
-			u.PrintSuccess(fmt.Sprintf("File uploaded to %s", targetPath))
+			log.Info().Msgf("File uploaded to %s", targetPath)
 			w.WriteHeader(http.StatusCreated)
 			return
 		}
@@ -128,6 +125,7 @@ func (s *HTTPServer) generateSelfSignedCert() (tls.Certificate, error) {
 	if err != nil {
 		return tls.Certificate{}, err
 	}
+	log.Debug().Msg("generated private key")
 	domain := s.Options.Domain
 	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
@@ -155,6 +153,7 @@ func (s *HTTPServer) generateSelfSignedCert() (tls.Certificate, error) {
 	if err != nil {
 		return tls.Certificate{}, err
 	}
+	log.Debug().Msg("created certificate")
 	// Encode certificate to PEM
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
@@ -163,6 +162,6 @@ func (s *HTTPServer) generateSelfSignedCert() (tls.Certificate, error) {
 	if err != nil {
 		return tls.Certificate{}, err
 	}
-	u.PrintDebug("generated self-signed certificate")
+	log.Debug().Msg("generated self-signed certificate")
 	return cert, nil
 }

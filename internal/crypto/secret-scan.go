@@ -112,9 +112,6 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 	workers := make(chan struct{}, 30) // Limit to 30
 	errChan := make(chan error, len(filesToScan))
 	for _, file := range filesToScan {
-		// if file == "" {
-		// 	continue
-		// }
 		skipped := false
 		for _, skipMatch := range secretSkips {
 			if strings.Contains(file, skipMatch) {

@@ -7,14 +7,15 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/rs/zerolog/log"
+
 	u "github.com/tanq16/anbu/utils"
 )
 
 func BulkRename(pattern string, replacement string, renameDirectories bool, dryRun bool) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		u.PrintError(fmt.Sprintf("Invalid regex pattern: %v", err))
-		return
+		log.Fatal().Err(err).Msg("Invalid regex pattern")
 	}
 	currentDir, _ := os.Getwd()
 	entries, _ := os.ReadDir(currentDir)
@@ -57,14 +58,9 @@ func BulkRename(pattern string, replacement string, renameDirectories bool, dryR
 	}
 	fmt.Println()
 	if renameCount == 0 {
-		u.PrintWarning("No items were renamed")
+		log.Warn().Msg("no items were renamed")
 	} else {
-		operationType := "renamed"
-		if dryRun {
-			operationType = "would have renamed"
-		}
-		fmt.Printf("%s %s %s\n", u.FDebug("Operation completed:"),
-			u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories])),
-			operationType)
+		fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
+			u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories])))
 	}
 }

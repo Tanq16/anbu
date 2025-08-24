@@ -17,6 +17,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 	"golang.org/x/term"
 )
@@ -187,7 +188,7 @@ func ExportSecrets(filePath, exportFilePath string) error {
 
 func loggingHandler(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		u.PrintStream(fmt.Sprintf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path))
+		log.Debug().Msgf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path)
 		h.ServeHTTP(w, r)
 	}
 }
@@ -198,7 +199,7 @@ func ServeSecrets(filePath string) error {
 	http.HandleFunc("/add", loggingHandler(addHandler(filePath)))
 	http.HandleFunc("/delete", loggingHandler(deleteHandler(filePath)))
 	addr := ":8080"
-	u.PrintSuccess(fmt.Sprintf("secrets server listening on %s", addr))
+	log.Info().Msgf("secrets server listening on %s", addr)
 	return http.ListenAndServe(addr, nil)
 }
 

@@ -1,11 +1,9 @@
 package networkCmd
 
 import (
-	"os"
-
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
-	"github.com/tanq16/anbu/utils"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -47,12 +45,10 @@ var tcpTunnelCmd = &cobra.Command{
 	Short: "Create a TCP tunnel from a local port to a remote address",
 	Run: func(cmd *cobra.Command, args []string) {
 		if tunnelFlags.localAddr == "" {
-			utils.PrintError("Local address is required")
-			os.Exit(1)
+			log.Fatal().Msg("Local address is required")
 		}
 		if tunnelFlags.remoteAddr == "" {
-			utils.PrintError("Remote address is required")
-			os.Exit(1)
+			log.Fatal().Msg("Remote address is required")
 		}
 		anbuNetwork.TCPTunnel(
 			tunnelFlags.localAddr,
@@ -68,20 +64,16 @@ var sshTunnelCmd = &cobra.Command{
 	Short: "Create an SSH forward tunnel through a jump host",
 	Run: func(cmd *cobra.Command, args []string) {
 		if tunnelFlags.remoteAddr == "" {
-			utils.PrintError("Remote address is required")
-			os.Exit(1)
+			log.Fatal().Msg("Remote address is required")
 		}
 		if tunnelFlags.sshAddr == "" {
-			utils.PrintError("SSH server address is required")
-			os.Exit(1)
+			log.Fatal().Msg("SSH server address is required")
 		}
 		if tunnelFlags.sshUser == "" {
-			utils.PrintError("SSH username is required")
-			os.Exit(1)
+			log.Fatal().Msg("SSH username is required")
 		}
 		if tunnelFlags.sshPassword == "" && tunnelFlags.sshKeyPath == "" {
-			utils.PrintError("Either SSH password or key path is required")
-			os.Exit(1)
+			log.Fatal().Msg("Either SSH password or key path is required")
 		}
 		var authMethods []ssh.AuthMethod
 		if tunnelFlags.sshPassword != "" {
@@ -90,8 +82,7 @@ var sshTunnelCmd = &cobra.Command{
 		if tunnelFlags.sshKeyPath != "" {
 			keyAuth, err := anbuNetwork.TunnelSSHPrivateKey(tunnelFlags.sshKeyPath)
 			if err != nil {
-				utils.PrintError("Failed to load SSH key: " + err.Error())
-				os.Exit(1)
+				log.Fatal().Err(err).Msg("Failed to load SSH key")
 			}
 			authMethods = append(authMethods, keyAuth)
 		}
@@ -110,20 +101,16 @@ var reverseSshTunnelCmd = &cobra.Command{
 	Short: "Create a reverse SSH tunnel from a remote host to a local service",
 	Run: func(cmd *cobra.Command, args []string) {
 		if tunnelFlags.remoteAddr == "" {
-			utils.PrintError("Remote address is required")
-			os.Exit(1)
+			log.Fatal().Msg("Remote address is required")
 		}
 		if tunnelFlags.sshAddr == "" {
-			utils.PrintError("SSH server address is required")
-			os.Exit(1)
+			log.Fatal().Msg("SSH server address is required")
 		}
 		if tunnelFlags.sshUser == "" {
-			utils.PrintError("SSH username is required")
-			os.Exit(1)
+			log.Fatal().Msg("SSH username is required")
 		}
 		if tunnelFlags.sshPassword == "" && tunnelFlags.sshKeyPath == "" {
-			utils.PrintError("Either SSH password or key path is required")
-			os.Exit(1)
+			log.Fatal().Msg("Either SSH password or key path is required")
 		}
 		var authMethods []ssh.AuthMethod
 		if tunnelFlags.sshPassword != "" {
@@ -132,8 +119,7 @@ var reverseSshTunnelCmd = &cobra.Command{
 		if tunnelFlags.sshKeyPath != "" {
 			keyAuth, err := anbuNetwork.TunnelSSHPrivateKey(tunnelFlags.sshKeyPath)
 			if err != nil {
-				utils.PrintError("Failed to load SSH key: " + err.Error())
-				os.Exit(1)
+				log.Fatal().Err(err).Msg("Failed to load SSH key")
 			}
 			authMethods = append(authMethods, keyAuth)
 		}

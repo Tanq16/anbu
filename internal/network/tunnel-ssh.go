@@ -10,17 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tanq16/anbu/utils"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
 )
 
-func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) error {
-	logger := utils.NewManager()
-	logger.StartDisplay()
-	defer logger.StopDisplay()
-	funcID := logger.Register("ssh-tunnel")
-	logger.SetMessage(funcID, fmt.Sprintf("SSH tunnel %s → %s via %s", localAddr, remoteAddr, sshAddr))
-
+func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) {
+	log.Info().Msgf("SSH tunnel %s → %s via %s", localAddr, remoteAddr, sshAddr)
 	config := &ssh.ClientConfig{
 		User:            user,
 		Auth:            authMethods,
@@ -29,23 +24,21 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 	}
 
 	// Connect to SSH server
-	logger.AddStreamLine(funcID, fmt.Sprintf("Connecting to SSH server at %s...", sshAddr))
+	log.Info().Msgf("Connecting to SSH server at %s...", sshAddr)
 	sshClient, err := ssh.Dial("tcp", sshAddr, config)
 	if err != nil {
-		logger.ReportError(funcID, fmt.Errorf("failed to connect to SSH server: %w", err))
-		return err
+		log.Fatal().Err(err).Msgf("failed to connect to SSH server: %s", sshAddr)
 	}
 	defer sshClient.Close()
-	logger.AddStreamLine(funcID, fmt.Sprintf("Connected to SSH server as %s", user))
+	log.Info().Msgf("Connected to SSH server as %s", user)
 
 	// Listen on local address
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
-		logger.ReportError(funcID, fmt.Errorf("failed to listen on %s: %w", localAddr, err))
-		return err
+		log.Fatal().Err(err).Msgf("failed to listen on %s", localAddr)
 	}
 	defer listener.Close()
-	logger.AddStreamLine(funcID, fmt.Sprintf("Listening on %s", localAddr))
+	log.Info().Msgf("Listening on %s", localAddr)
 
 	// For graceful shutdown
 	sigChan := make(chan os.Signal, 1)
@@ -55,7 +48,7 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 	go func() {
 		<-sigChan
 		close(done)
-		logger.Complete(funcID, "SSH tunnel stopped gracefully")
+		log.Info().Msg("SSH tunnel stopped gracefully")
 		listener.Close()
 		sshClient.Close()
 	}()
@@ -64,7 +57,7 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 		select {
 		case <-done:
 			activeConns.Wait()
-			return nil
+			return
 		default:
 			listener.(*net.TCPListener).SetDeadline(time.Now().Add(time.Second))
 			localConn, err := listener.Accept()
@@ -73,9 +66,9 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 					continue
 				}
 				if opErr, ok := err.(*net.OpError); ok && !opErr.Temporary() {
-					return nil
+					return
 				}
-				logger.AddStreamLine(funcID, fmt.Sprintf("Failed to accept connection: %v", err))
+				log.Warn().Err(err).Msg("Failed to accept connection")
 				continue
 			}
 
@@ -84,53 +77,46 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 			go func() {
 				defer activeConns.Done()
 				defer localConn.Close()
-				logger.AddStreamLine(funcID, fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
+				log.Info().Msgf("New connection from %s", localConn.RemoteAddr())
 				// Connect to remote through SSH
 				remoteConn, err := sshClient.Dial("tcp", remoteAddr)
 				if err != nil {
-					logger.AddStreamLine(funcID, fmt.Sprintf("Failed to connect to remote via SSH: %v", err))
+					log.Error().Err(err).Msg("Failed to connect to remote via SSH")
 					return
 				}
 				defer remoteConn.Close()
-				logger.AddStreamLine(funcID, fmt.Sprintf("Connected to remote %s via SSH", remoteAddr))
+				log.Info().Msgf("Connected to remote %s via SSH", remoteAddr)
 
 				// Copy data bidirectionally
 				var wg sync.WaitGroup
 				wg.Add(2)
 				go func() {
 					defer wg.Done()
-
 					// Local to Remote (through SSH)
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
-						logger.AddStreamLine(funcID, fmt.Sprintf("Error copying data to remote: %v", err))
+						log.Error().Err(err).Msg("Error copying data to remote")
 					}
-					logger.AddStreamLine(funcID, fmt.Sprintf("→ Sent %d bytes to remote via SSH", n))
+					log.Debug().Msgf("→ Sent %d bytes to remote via SSH", n)
 				}()
 				go func() {
 					defer wg.Done()
-
 					// Remote to Local (through SSH)
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
-						logger.AddStreamLine(funcID, fmt.Sprintf("Error copying data from remote: %v", err))
+						log.Error().Err(err).Msg("Error copying data from remote")
 					}
-					logger.AddStreamLine(funcID, fmt.Sprintf("← Received %d bytes from remote via SSH", n))
+					log.Debug().Msgf("← Received %d bytes from remote via SSH", n)
 				}()
 				wg.Wait()
-				logger.AddStreamLine(funcID, fmt.Sprintf("Connection closed from %s", localConn.RemoteAddr()))
+				log.Info().Msgf("Connection closed from %s", localConn.RemoteAddr())
 			}()
 		}
 	}
 }
 
-func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) error {
-	logger := utils.NewManager()
-	logger.StartDisplay()
-	defer logger.StopDisplay()
-	funcID := logger.Register("reverse-ssh-tunnel")
-	logger.SetMessage(funcID, fmt.Sprintf("Reverse SSH tunnel %s ← %s via %s", localAddr, remoteAddr, sshAddr))
-
+func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) {
+	log.Info().Msgf("Reverse SSH tunnel %s ← %s via %s", localAddr, remoteAddr, sshAddr)
 	config := &ssh.ClientConfig{
 		User:            user,
 		Auth:            authMethods,
@@ -139,24 +125,22 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 	}
 
 	// Connect to SSH server
-	logger.AddStreamLine(funcID, fmt.Sprintf("Connecting to SSH server at %s...", sshAddr))
+	log.Info().Msgf("Connecting to SSH server at %s...", sshAddr)
 	sshClient, err := ssh.Dial("tcp", sshAddr, config)
 	if err != nil {
-		logger.ReportError(funcID, fmt.Errorf("failed to connect to SSH server: %w", err))
-		return err
+		log.Fatal().Err(err).Msg("failed to connect to SSH server")
 	}
 	defer sshClient.Close()
-	logger.AddStreamLine(funcID, fmt.Sprintf("Connected to SSH server as %s", user))
+	log.Info().Msgf("Connected to SSH server as %s", user)
 
 	// Start listening on remote
-	logger.AddStreamLine(funcID, fmt.Sprintf("Setting up listener on remote address %s", remoteAddr))
+	log.Info().Msgf("Setting up listener on remote address %s", remoteAddr)
 	listener, err := sshClient.Listen("tcp", remoteAddr)
 	if err != nil {
-		logger.ReportError(funcID, fmt.Errorf("failed to listen on remote address %s: %w", remoteAddr, err))
-		return err
+		log.Fatal().Err(err).Msgf("failed to listen on remote address %s", remoteAddr)
 	}
 	defer listener.Close()
-	logger.AddStreamLine(funcID, fmt.Sprintf("Listening on remote address %s", remoteAddr))
+	log.Info().Msgf("Listening on remote address %s", remoteAddr)
 
 	// For graceful shutdown
 	sigChan := make(chan os.Signal, 1)
@@ -166,7 +150,7 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 	go func() {
 		<-sigChan
 		close(done)
-		logger.Complete(funcID, "Reverse SSH tunnel stopped gracefully")
+		log.Info().Msg("Reverse SSH tunnel stopped gracefully")
 		listener.Close()
 		sshClient.Close()
 	}()
@@ -175,7 +159,7 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 		select {
 		case <-done:
 			activeConns.Wait()
-			return nil
+			return
 		default:
 			if tcpListener, ok := listener.(*net.TCPListener); ok {
 				tcpListener.SetDeadline(time.Now().Add(time.Second))
@@ -186,10 +170,10 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 					if netErr.Timeout() {
 						continue
 					} else {
-						return nil
+						return
 					}
 				}
-				logger.AddStreamLine(funcID, fmt.Sprintf("Failed to accept connection: %v", err))
+				log.Error().Err(err).Msg("Failed to accept connection")
 				continue
 			}
 
@@ -198,42 +182,40 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 			go func() {
 				defer activeConns.Done()
 				defer remoteConn.Close()
-				logger.AddStreamLine(funcID, fmt.Sprintf("New connection from remote %s", remoteConn.RemoteAddr()))
+				log.Info().Msgf("New connection from remote %s", remoteConn.RemoteAddr())
 
 				// Connect to the local service
 				localConn, err := net.Dial("tcp", localAddr)
 				if err != nil {
-					logger.AddStreamLine(funcID, fmt.Sprintf("Failed to connect to local service at %s: %v", localAddr, err))
+					log.Error().Err(err).Msgf("Failed to connect to local service at %s", localAddr)
 					return
 				}
 				defer localConn.Close()
-				logger.AddStreamLine(funcID, fmt.Sprintf("Connected to local service %s", localAddr))
+				log.Info().Msgf("Connected to local service %s", localAddr)
 
 				// Copy data bidirectionally
 				var wg sync.WaitGroup
 				wg.Add(2)
 				go func() {
 					defer wg.Done()
-
 					// Local to Remote (through SSH)
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
-						logger.AddStreamLine(funcID, fmt.Sprintf("Error copying data to remote: %v", err))
+						log.Error().Err(err).Msgf("Error copying data to remote")
 					}
-					logger.AddStreamLine(funcID, fmt.Sprintf("→ Sent %d bytes to remote", n))
+					log.Debug().Msgf("→ Sent %d bytes to remote", n)
 				}()
 				go func() {
 					defer wg.Done()
-
 					// Remote to Local (through SSH)
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
-						logger.AddStreamLine(funcID, fmt.Sprintf("Error copying data from remote: %v", err))
+						log.Error().Err(err).Msgf("Error copying data from remote")
 					}
-					logger.AddStreamLine(funcID, fmt.Sprintf("← Received %d bytes from remote", n))
+					log.Debug().Msgf("← Received %d bytes from remote", n)
 				}()
 				wg.Wait()
-				logger.AddStreamLine(funcID, "Connection closed")
+				log.Info().Msg("Connection closed")
 			}()
 		}
 	}

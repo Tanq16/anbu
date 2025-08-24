@@ -4,12 +4,13 @@ go 1.24.1
 
 require (
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/goccy/go-yaml v1.18.0
 	github.com/google/uuid v1.6.0
+	github.com/neo4j/neo4j-go-driver/v5 v5.28.2
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1
 	golang.org/x/crypto v0.37.0
 	golang.org/x/term v0.31.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

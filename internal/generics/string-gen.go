@@ -8,10 +8,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	u "github.com/tanq16/anbu/utils"
+	"github.com/rs/zerolog/log"
 )
 
-// generates a random string of specified length
 func GenerateRandomString(length int) {
 	if length <= 0 {
 		length = 100
@@ -19,8 +18,7 @@ func GenerateRandomString(length int) {
 	randomBytes := make([]byte, length)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
-		u.PrintError(fmt.Sprintf("failed to generate random bytes: %v", err))
-		return
+		log.Fatal().Err(err).Msg("failed to generate random bytes")
 	}
 	encoded := base64.StdEncoding.EncodeToString(randomBytes)
 	encoded = strings.Map(func(r rune) rune {
@@ -37,10 +35,9 @@ func GenerateRandomString(length int) {
 	fmt.Println(encoded)
 }
 
-// generates a sequence of alphabetic characters
 func GenerateSequenceString(length int) {
 	if length <= 0 {
-		u.PrintWarning("length must be greater than 0; using 100")
+		log.Warn().Msg("length must be greater than 0; using 100")
 		length = 100
 	}
 	alphabet := "abcdefghijklmnopqrstuvxyz"
@@ -51,10 +48,9 @@ func GenerateSequenceString(length int) {
 	fmt.Println(result.String()[:length])
 }
 
-// repeats a string a specified number of times
 func GenerateRepetitionString(count int, str string) {
 	if count <= 0 {
-		u.PrintWarning("count must be greater than 0; using 10")
+		log.Warn().Msg("count must be greater than 0; using 10")
 		count = 10
 	}
 	var result strings.Builder
@@ -64,7 +60,6 @@ func GenerateRepetitionString(count int, str string) {
 	fmt.Println(result.String())
 }
 
-// use google/uuid package to generate a UUID
 func GenerateUUIDString() {
 	uuid, _ := uuid.NewRandom()
 	fmt.Println(uuid.String())
@@ -74,11 +69,10 @@ func GenerateUUIDString() {
 func GenerateRUIDString(len string) {
 	length, err := strconv.Atoi(len)
 	if err != nil {
-		u.PrintError("not a valid length")
-		return
+		log.Fatal().Msg("not a valid length")
 	}
 	if length <= 0 || length > 30 {
-		u.PrintWarning("length must be between 1 and 30; using 18")
+		log.Warn().Msg("length must be between 1 and 30; using 18")
 		length = 18
 	}
 	uuid, _ := uuid.NewRandom()

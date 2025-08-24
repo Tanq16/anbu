@@ -1,12 +1,9 @@
 package networkCmd
 
 import (
-	"fmt"
-	"os"
-
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
-	u "github.com/tanq16/anbu/utils"
 )
 
 var httpServerFlags struct {
@@ -50,8 +47,7 @@ Examples:
 		}
 		err := server.Start()
 		if err != nil {
-			u.PrintError(fmt.Sprintf("Failed to start HTTP server: %v", err))
-			os.Exit(1)
+			log.Fatal().Err(err).Msg("Failed to start HTTP server")
 		}
 		defer server.Stop()
 	},

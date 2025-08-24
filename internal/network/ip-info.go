@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -23,10 +24,9 @@ type NetworkInterface struct {
 }
 
 func GetLocalIPInfo(includeIPv6 bool) {
-	// Get network interfaces
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		u.PrintError(fmt.Sprintf("failed to get network interfaces: %v", err))
+		log.Error().Err(err).Msg("failed to get network interfaces")
 		return
 	}
 	ipv4Table := u.NewTable([]string{"Interface", "IP Address", "Subnet Mask", "MAC Address", "Status"})
@@ -120,7 +120,7 @@ func GetLocalIPInfo(includeIPv6 bool) {
 		pubIPTable.Rows = append(pubIPTable.Rows, []string{"geography", fmt.Sprintf("%s, %s, %s, %s (TZ: %s)", geography.Postal, geography.City, geography.Region, geography.Country, geography.Timezone)})
 		pubIPTable.PrintTable(false)
 	} else {
-		u.PrintWarning("Could not retrieve public IP")
+		log.Warn().Msg("Could not retrieve public IP")
 	}
 }
 
@@ -129,6 +129,7 @@ func GetPublicIP() (u.Dictionary, error) {
 		Timeout: 5 * time.Second,
 	}
 	resp, err := client.Get("https://ipinfo.io")
+	log.Debug().Msg("requested IP info from IP-Info.io")
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to ipinfo.io: %w", err)
 	}

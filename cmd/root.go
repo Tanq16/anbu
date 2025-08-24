@@ -3,11 +3,14 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
+	interactionsCmd "github.com/tanq16/anbu/cmd/interactions-cmd"
 	networkCmd "github.com/tanq16/anbu/cmd/network-cmd"
 	"github.com/tanq16/anbu/utils"
 )
@@ -32,6 +35,13 @@ func Execute() {
 }
 
 func setupLogs() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	output := zerolog.ConsoleWriter{
+		Out:        os.Stdout,
+		TimeFormat: time.DateTime,
+		NoColor:    false, // Enable color output
+	}
+	log.Logger = zerolog.New(output).With().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if debugFlag {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -57,4 +67,6 @@ func init() {
 	rootCmd.AddCommand(networkCmd.TunnelCmd)
 	rootCmd.AddCommand(networkCmd.HTTPServerCmd)
 	rootCmd.AddCommand(networkCmd.IPInfoCmd)
+
+	rootCmd.AddCommand(interactionsCmd.Neo4jCmd)
 }
