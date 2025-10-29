@@ -26,6 +26,7 @@ A summary of all capabilities that **Anbu** can perform:
 | **File Encryption/Decryption** | Secure file encryption and decryption with AES-256-GCM symmetric encryption |
 | **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
+| **Google Drive Interaction** | Interact with Google Drive to list, upload, and download files and folders |
 
 ## Installation
 
@@ -190,6 +191,25 @@ Anbu supports a large number of operations across the board. The specific detail
   anbu string passphrase 4 '@'         # generate a 4-word passphrase with a custom separator
   ```
 
+- ***Google Drive Interaction*** (alias: `gd`)
+
+  ```bash
+  # Set up credentials by placing credentials.json at ~/.anbu-gdrive-credentials.json or pass with --credentials flag
+  anbu gdrive -c path/to/credentials.json list
+
+  # List files and folders (defaults to root 'My Drive')
+  anbu gdrive list
+  anbu gd ls "My Folder"
+
+  # Upload a file or folder (defaults uploading to root 'My Drive' when not specified)
+  anbu gdrive upload local-file.txt "My Folder"
+  anbu gd up-f local-folder # uploads to root
+
+  # Download a file or folder to the current working directory
+  anbu gdrive download "My Drive Folder/remote-file.txt"
+  anbu gd dl-f "My Drive Folder/remote-folder"
+  ```
+
 ## Tips & Tricks
 
 <details>
@@ -248,6 +268,39 @@ Furthermore, you can create an alias for `anbu` as `a` and use it to say generat
 ```bash
 hypothetical_command --uuid $(a s uuid)
 ```
+
+</details>
+
+<details>
+<summary><b>Creating Google Drive API Credentials</b></summary>
+
+To use the `gdrive` command, you need to create OAuth 2.0 credentials. Here’s how to do it:
+
+1.  **Go to the Google Cloud Console:** Navigate to [https://console.cloud.google.com/](https://console.cloud.google.com/) and create a new project (or select an existing one).
+2.  **Enable the Google Drive API:** In the project dashboard, search for "Google Drive API" and enable it.
+3.  **Create OAuth Credentials:**
+    - Go to **APIs & Services > Credentials**.
+    - Click **Create Credentials > OAuth client ID**.
+    - Select **Desktop app** as the application type.
+    - Give it a name and click **Create**.
+4.  **Download Credentials:**
+    - After creation, a dialog will show your client ID and secret. Click **Download JSON** to save the `credentials.json` file.
+    - Place this file at `~/.anbu-gdrive-credentials.json` or provide its path using the `--credentials` flag.
+5.  **Publish the App:**
+    - In the **OAuth consent screen** tab, you need to configure the consent screen. For personal use, you can keep it in "Testing" mode and add your Google account as a test user.
+    - If you want to allow other users, you must publish the app, which may require verification by Google.
+
+**Authentication Flow:**
+
+When you run a `gdrive` command for the first time, `anbu` will:
+1.  Print a URL to your console.
+2.  Open this URL in your web browser. You will be prompted to sign in with your Google account.
+3.  Since the app is not verified by Google, you will see a warning screen. Click **Advanced** and then **Go to (unsafe)** to proceed.
+4.  After you grant permission, the browser will redirect to a `localhost` address, which will likely fail to load. This is expected.
+5.  Copy the authorization code from the URL in your browser’s address bar (it will be a long string in the `code` parameter).
+6.  Paste this code back into the terminal where `anbu` is waiting.
+
+`anbu` will then use this code to get an access token and refresh token, which it will store for future use.
 
 </details>
 

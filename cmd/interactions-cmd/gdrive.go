@@ -91,32 +91,27 @@ var gdriveUploadCmd = &cobra.Command{
 	Aliases: []string{"up"},
 	Short:   "Upload a local file to Google Drive",
 	Long:    `Uploads a single local file. If [drive-folder] is provided, uploads to that folder. Otherwise, uploads to the root 'My Drive'.`,
-	Args:    cobra.ExactArgs(1),
+	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		localPath := args[0]
 		driveFolder := "root"
 		if len(args) > 1 {
 			driveFolder = args[1]
+		} else if len(args) > 2 {
+			log.Fatal().Msg("Too many arguments. Please provide only the local file and optionally the drive folder.")
 		}
 
 		srv, err := interactions.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
-
 		u.PrintInfo(fmt.Sprintf("Starting upload of %s to %s...", u.FDebug(localPath), u.FDebug(driveFolder)))
 
 		driveFile, err := interactions.UploadFile(srv, localPath, driveFolder)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to upload file")
 		}
-
-		fmt.Printf("Successfully uploaded %s %s %s (ID: %s)\n",
-			u.FDebug(localPath),
-			u.FInfo(u.StyleSymbols["arrow"]),
-			u.FSuccess(driveFile.Name),
-			u.FDebug(driveFile.Id),
-		)
+		fmt.Printf("Successfully uploaded %s %s %s (ID: %s)\n", u.FDebug(localPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(driveFile.Name), u.FDebug(driveFile.Id))
 	},
 }
 
@@ -128,24 +123,17 @@ var gdriveDownloadCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		drivePath := args[0]
-
 		srv, err := interactions.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
-
 		u.PrintInfo(fmt.Sprintf("Starting download of %s...", u.FDebug(drivePath)))
 
 		downloadedPath, err := interactions.DownloadFile(srv, drivePath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to download file")
 		}
-
-		fmt.Printf("Successfully downloaded %s %s %s\n",
-			u.FDebug(drivePath),
-			u.FInfo(u.StyleSymbols["arrow"]),
-			u.FSuccess(downloadedPath),
-		)
+		fmt.Printf("Successfully downloaded %s %s %s\n", u.FDebug(drivePath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(downloadedPath))
 	},
 }
 
@@ -154,25 +142,25 @@ var gdriveUploadFolderCmd = &cobra.Command{
 	Aliases: []string{"up-f"},
 	Short:   "Upload a local folder recursively to Google Drive",
 	Long:    `Uploads a local folder recursively. If [drive-folder] is provided, uploads into that folder. Otherwise, creates the new folder in the root 'My Drive'.`,
-	Args:    cobra.ExactArgs(1),
+	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		localPath := args[0]
 		driveFolder := "root"
 		if len(args) > 1 {
 			driveFolder = args[1]
+		} else if len(args) > 2 {
+			log.Fatal().Msg("Too many arguments. Please provide only the local folder and optionally the drive folder.")
 		}
 
 		srv, err := interactions.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
-
 		u.PrintInfo(fmt.Sprintf("Starting folder upload of %s to %s...", u.FDebug(localPath), u.FDebug(driveFolder)))
 
 		if err := interactions.UploadFolder(srv, localPath, driveFolder); err != nil {
 			log.Fatal().Err(err).Msg("Failed to upload folder")
 		}
-
 		u.PrintSuccess(fmt.Sprintf("Successfully uploaded folder %s", localPath))
 	},
 }
@@ -185,18 +173,15 @@ var gdriveDownloadFolderCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		drivePath := args[0]
-
 		srv, err := interactions.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
-
 		u.PrintInfo(fmt.Sprintf("Starting folder download of %s...", u.FDebug(drivePath)))
 
 		if err := interactions.DownloadFolder(srv, drivePath); err != nil {
 			log.Fatal().Err(err).Msg("Failed to download folder")
 		}
-
 		u.PrintSuccess(fmt.Sprintf("Successfully downloaded folder %s", drivePath))
 	},
 }
