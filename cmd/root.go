@@ -69,4 +69,5 @@ func init() {
 	rootCmd.AddCommand(networkCmd.IPInfoCmd)
 
 	rootCmd.AddCommand(interactionsCmd.Neo4jCmd)
+	rootCmd.AddCommand(interactionsCmd.GDriveCmd)
 }
