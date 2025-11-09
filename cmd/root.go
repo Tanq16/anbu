@@ -70,4 +70,5 @@ func init() {
 
 	rootCmd.AddCommand(interactionsCmd.Neo4jCmd)
 	rootCmd.AddCommand(interactionsCmd.GDriveCmd)
+	rootCmd.AddCommand(interactionsCmd.FSSyncCmd)
 }
