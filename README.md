@@ -27,6 +27,7 @@ A summary of all capabilities that **Anbu** can perform:
 | **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 | **Google Drive Interaction** | Interact with Google Drive to list, upload, and download files and folders |
+| **File System Synchronization** | Synchronize files between client and server using WebSocket with real-time change propagation |
 
 ## Installation
 
@@ -208,6 +209,18 @@ Anbu supports a large number of operations across the board. The specific detail
   # Download a file or folder to the current working directory
   anbu gdrive download "My Drive Folder/remote-file.txt"
   anbu gd dl-f "My Drive Folder/remote-folder"
+  ```
+
+- ***File System Synchronization***
+
+  ```bash
+  # Run the fs-sync server (maintains source of truth)
+  anbu fs-sync server -p 8080 -d /path/to/sync/dir
+  anbu fs-sync server --port 8080 --dir ./sync-dir --ignore ".git/*,*.tmp"
+
+  # Run the fs-sync client (connects to server and syncs)
+  anbu fs-sync client -a ws://server.example.com:8080/ws -d /path/to/local/dir
+  anbu fs-sync client --addr wss://file.sync.com/ws --dir ./local-dir --ignore "node_modules/*,*.log"
   ```
 
 ## Tips & Tricks
