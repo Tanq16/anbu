@@ -52,6 +52,9 @@ func (c *Client) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			log.Info().Msgf("Client shutting down...")
+			if c.conn != nil && c.conn.Conn != nil {
+				c.conn.Conn.Close()
+			}
 			return
 		default:
 		}
@@ -94,6 +97,13 @@ func (c *Client) connect() error {
 
 func (c *Client) listenToServer(ctx context.Context) {
 	defer c.conn.Conn.Close()
+	go func() {
+		<-ctx.Done()
+		if c.conn != nil && c.conn.Conn != nil {
+			c.conn.Conn.Close()
+		}
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -103,21 +113,30 @@ func (c *Client) listenToServer(ctx context.Context) {
 		}
 		var wrapper MessageWrapper
 		if err := c.conn.Conn.ReadJSON(&wrapper); err != nil {
-			log.Error().Err(err).Msgf("Error reading from server")
+			// Don't log error if context was cancelled (expected shutdown)
+			if ctx.Err() == nil {
+				log.Error().Err(err).Msgf("Error reading from server")
+			}
 			return
 		}
-		c.setSyncing(true)
 		switch wrapper.Type {
 		case TypeManifest:
-			c.handleManifest(wrapper.Payload)
+			go func() {
+				c.setSyncing(true)
+				c.handleManifest(wrapper.Payload)
+				c.setSyncing(false)
+			}()
 		case TypeFileContent:
+			c.setSyncing(true)
 			c.handleFileContent(wrapper.Payload)
+			c.setSyncing(false)
 		case TypeFileOperation:
+			c.setSyncing(true)
 			c.handleFileOperation(wrapper.Payload)
+			c.setSyncing(false)
 		default:
 			log.Warn().Msgf("Received unknown message type from server: %s", string(wrapper.Type))
 		}
-		c.setSyncing(false)
 	}
 }
 

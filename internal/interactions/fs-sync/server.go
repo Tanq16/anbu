@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -31,11 +32,14 @@ type fileOperationEnvelope struct {
 }
 
 type Server struct {
-	cfg       ServerConfig
-	clients   sync.Map
-	ignorer   *PathIgnorer
-	opChan    chan fileOperationEnvelope
-	diskMutex sync.Mutex
+	cfg            ServerConfig
+	clients        sync.Map
+	ignorer        *PathIgnorer
+	opChan         chan fileOperationEnvelope
+	diskMutex      sync.Mutex
+	queueProcessor sync.WaitGroup
+	serverCtx      context.Context
+	serverCancel   context.CancelFunc
 }
 
 func NewServer(cfg ServerConfig) (*Server, error) {
@@ -50,7 +54,14 @@ func NewServer(cfg ServerConfig) (*Server, error) {
 }
 
 func (s *Server) Run(ctx context.Context) error {
-	go s.processOperationQueue(ctx)
+	s.serverCtx, s.serverCancel = context.WithCancel(ctx)
+	defer s.serverCancel()
+
+	s.queueProcessor.Add(1)
+	go func() {
+		defer s.queueProcessor.Done()
+		s.processOperationQueue(s.serverCtx)
+	}()
 	http.HandleFunc("/ws", s.handleConnections)
 	addr := fmt.Sprintf(":%d", s.cfg.Port)
 	server := &http.Server{
@@ -65,7 +76,14 @@ func (s *Server) Run(ctx context.Context) error {
 	}()
 	<-ctx.Done()
 	log.Info().Msgf("Shutting down server...")
-	shutdownCtx := context.Background()
+
+	// Cancel server context to signal all handlers
+	s.serverCancel()
+	s.closeAllClients()
+	close(s.opChan)
+	s.queueProcessor.Wait()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msgf("Error during server shutdown")
 		return err
@@ -120,7 +138,15 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		log.Error().Err(err).Msgf("Failed to send initial manifest: client_id=%s", client.id)
 		return
 	}
-	s.handleClientMessages(client)
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+	if s.serverCtx != nil {
+		go func() {
+			<-s.serverCtx.Done()
+			cancel()
+		}()
+	}
+	s.handleClientMessages(ctx, client)
 }
 
 func (s *Server) sendInitialManifest(client *clientConnection) error {
@@ -137,18 +163,32 @@ func (s *Server) sendInitialManifest(client *clientConnection) error {
 	return client.conn.WriteJSON(msg)
 }
 
-func (s *Server) handleClientMessages(client *clientConnection) {
+func (s *Server) handleClientMessages(ctx context.Context, client *clientConnection) {
+	go func() {
+		<-ctx.Done()
+		if client.conn != nil && client.conn.Conn != nil {
+			client.conn.Conn.Close()
+		}
+	}()
+
 	for {
+		select {
+		case <-ctx.Done():
+			log.Info().Msgf("Stopping message handler due to shutdown: client_id=%s", client.id)
+			return
+		default:
+		}
 		var wrapper MessageWrapper
 		if err := client.conn.Conn.ReadJSON(&wrapper); err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			// Don't log error if context was cancelled (expected shutdown)
+			if ctx.Err() == nil && websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Error().Err(err).Msgf("Client read error: client_id=%s", client.id)
 			}
 			break
 		}
 		switch wrapper.Type {
 		case TypeFileRequest:
-			s.handleFileRequest(client, wrapper.Payload)
+			go s.handleFileRequest(client, wrapper.Payload)
 		case TypeFileOperation:
 			s.handleFileOperation(client, wrapper.Payload)
 		default:
@@ -211,6 +251,16 @@ func (s *Server) applyChangeLocally(op *FileOperationMessage) {
 	}
 }
 
+func (s *Server) closeAllClients() {
+	s.clients.Range(func(key, value any) bool {
+		client := value.(*clientConnection)
+		if client.conn != nil && client.conn.Conn != nil {
+			client.conn.Conn.Close()
+		}
+		return true
+	})
+}
+
 func (s *Server) broadcastOperation(senderID string, op *FileOperationMessage) {
 	payload, _ := json.Marshal(op)
 	msg := MessageWrapper{
@@ -221,9 +271,12 @@ func (s *Server) broadcastOperation(senderID string, op *FileOperationMessage) {
 		id := key.(string)
 		client := value.(*clientConnection)
 		if id != senderID {
-			if err := client.conn.WriteJSON(msg); err != nil {
-				log.Error().Err(err).Msgf("Failed to broadcast operation: client_id=%s", id)
-			}
+			// Send each broadcast in a goroutine to avoid blocking on slow clients
+			go func(clientID string, conn *SafeConn) {
+				if err := conn.WriteJSON(msg); err != nil {
+					log.Error().Err(err).Msgf("Failed to broadcast operation: client_id=%s", clientID)
+				}
+			}(id, client.conn)
 		}
 		return true
 	})
