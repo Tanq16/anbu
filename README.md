@@ -28,6 +28,7 @@ A summary of all capabilities that **Anbu** can perform:
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 | **Google Drive Interaction** | Interact with Google Drive to list, upload, and download files and folders |
 | **File System Synchronization** | Synchronize files between client and server using WebSocket with real-time change propagation |
+| **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
 
 ## Installation
 
@@ -45,7 +46,9 @@ A summary of all capabilities that **Anbu** can perform:
 
 ## Usage
 
-Anbu supports a large number of operations across the board. The specific details of each are:
+Anbu supports a large number of operations across the board. All commands support the `--debug` flag to enable debug logging.
+
+The specific details of each are:
 
 - ***Time Operations*** (alias: `t`)
 
@@ -54,15 +57,8 @@ Anbu supports a large number of operations across the board. The specific detail
   anbu time now      # prints time in various formats
   anbu time purple   # print time and public IP for purple teams
   anbu time diff -e 1744192475 -e 1744497775  # print time difference between 2 epochs
-  anbu time diff -e 1744192475 -e 1744497775  # print time difference between 2 epochs
-  ```
-
-  ```bash
-  anbu time diff -e 1744192475 -e 1744497775  # print time difference between 2 epochs
-  ```
-
-  ```bash
   anbu time parse -t "13 Apr 25 16:30 EDT"  # read given time and print in multiple formats
+  anbu time parse -t "13 Apr 25 16:30 EDT" -p purple  # parse time and print in purple team format
   anbu time until -t "13 Apr 25 16:30 EDT"  # read time and print difference from now
   ```
 
@@ -221,6 +217,23 @@ Anbu supports a large number of operations across the board. The specific detail
   # Run the fs-sync client (connects to server and syncs)
   anbu fs-sync client -a ws://server.example.com:8080/ws -d /path/to/local/dir
   anbu fs-sync client --addr wss://file.sync.com/ws --dir ./local-dir --ignore "node_modules/*,*.log"
+  ```
+
+- ***Neo4j Database Interaction***
+
+  ```bash
+  # Execute a single Cypher query
+  anbu neo4j -q "MATCH (n) RETURN n LIMIT 5"
+  anbu neo4j -r neo4j://localhost:7687 -u neo4j -p password -d neo4j -q "MATCH (n) RETURN count(n)"
+
+  # Execute queries from a YAML file (multi-line queries supported using '|' in YAML)
+  anbu neo4j --query-file ./queries.yaml --output-file results.json
+
+  # Execute write queries (CREATE, UPDATE, DELETE, etc.)
+  anbu neo4j --write -q "CREATE (n:Person {name: 'Alice'}) RETURN n"
+
+  # Custom connection settings
+  anbu neo4j -r neo4j+s://example.com:7687 -u admin -p secret -d mydb -q "MATCH (n) RETURN n" -o output.json
   ```
 
 ## Tips & Tricks
