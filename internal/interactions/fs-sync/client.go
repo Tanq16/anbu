@@ -22,12 +22,10 @@ type ClientConfig struct {
 }
 
 type Client struct {
-	cfg          ClientConfig
-	conn         *SafeConn
-	watcher      *fsnotify.Watcher
-	ignorer      *PathIgnorer
-	syncingMutex sync.Mutex
-	isSyncing    bool
+	cfg     ClientConfig
+	conn    *SafeConn
+	watcher *fsnotify.Watcher
+	ignorer *PathIgnorer
 }
 
 func NewClient(cfg ClientConfig) (*Client, error) {
@@ -121,19 +119,11 @@ func (c *Client) listenToServer(ctx context.Context) {
 		}
 		switch wrapper.Type {
 		case TypeManifest:
-			go func() {
-				c.setSyncing(true)
-				c.handleManifest(wrapper.Payload)
-				c.setSyncing(false)
-			}()
+			go c.handleManifest(wrapper.Payload)
 		case TypeFileContent:
-			c.setSyncing(true)
 			c.handleFileContent(wrapper.Payload)
-			c.setSyncing(false)
 		case TypeFileOperation:
-			c.setSyncing(true)
 			c.handleFileOperation(wrapper.Payload)
-			c.setSyncing(false)
 		default:
 			log.Warn().Msgf("Received unknown message type from server: %s", string(wrapper.Type))
 		}
@@ -241,9 +231,6 @@ func (c *Client) watchFilesystem(ctx context.Context) {
 			if !ok {
 				return
 			}
-			if c.isSyncing {
-				continue
-			}
 			c.handleFsEvent(event)
 		case err, ok := <-c.watcher.Errors:
 			if !ok {
@@ -296,10 +283,4 @@ func (c *Client) handleFsEvent(event fsnotify.Event) {
 	if err := c.conn.WriteJSON(msg); err != nil {
 		log.Error().Err(err).Msgf("Failed to send file operation to server")
 	}
-}
-
-func (c *Client) setSyncing(status bool) {
-	c.syncingMutex.Lock()
-	defer c.syncingMutex.Unlock()
-	c.isSyncing = status
 }
