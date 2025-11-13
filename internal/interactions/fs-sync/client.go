@@ -2,6 +2,8 @@ package fssync
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -22,10 +24,12 @@ type ClientConfig struct {
 }
 
 type Client struct {
-	cfg     ClientConfig
-	conn    *SafeConn
-	watcher *fsnotify.Watcher
-	ignorer *PathIgnorer
+	cfg              ClientConfig
+	conn             *SafeConn
+	watcher          *fsnotify.Watcher
+	ignorer          *PathIgnorer
+	serverOpsMutex   sync.Mutex
+	serverOpsHashes  map[string]string
 }
 
 func NewClient(cfg ClientConfig) (*Client, error) {
@@ -37,9 +41,10 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
 	}
 	return &Client{
-		cfg:     cfg,
-		watcher: watcher,
-		ignorer: NewPathIgnorer(cfg.IgnorePaths),
+		cfg:             cfg,
+		watcher:         watcher,
+		ignorer:         NewPathIgnorer(cfg.IgnorePaths),
+		serverOpsHashes: make(map[string]string),
 	}, nil
 }
 
@@ -177,6 +182,8 @@ func (c *Client) handleFileContent(payload []byte) {
 		return
 	}
 	log.Info().Msgf("Received file content from server: %s", msg.Path)
+	hash := computeContentHash(msg.Content)
+	c.trackServerOperation(msg.Path, hash)
 	fullPath := filepath.Join(c.cfg.SyncDir, msg.Path)
 	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 		log.Error().Err(err).Msgf("Failed to create parent directories: %s", fullPath)
@@ -194,6 +201,17 @@ func (c *Client) handleFileOperation(payload []byte) {
 		return
 	}
 	log.Info().Msgf("Received file operation from server: op=%s path=%s", string(op.Op), op.Path)
+	
+	var hash string
+	if op.Op == OpRemove {
+		hash = "__REMOVED__"
+	} else if op.IsDir {
+		hash = "__DIR__"
+	} else {
+		hash = computeContentHash(op.Content)
+	}
+	c.trackServerOperation(op.Path, hash)
+	
 	if err := ApplyOperation(c.cfg.SyncDir, &op); err != nil {
 		log.Error().Err(err).Msgf("Failed to apply file operation: %s", op.Path)
 	}
@@ -246,9 +264,13 @@ func (c *Client) handleFsEvent(event fsnotify.Event) {
 	if err != nil || c.ignorer.IsIgnored(relPath) {
 		return
 	}
+	
 	op := FileOperationMessage{Path: relPath}
+	var currentHash string
+	
 	if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
 		op.Op = OpRemove
+		currentHash = "__REMOVED__"
 		c.watcher.Remove(event.Name)
 	} else if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
 		info, err := os.Stat(event.Name)
@@ -260,6 +282,7 @@ func (c *Client) handleFsEvent(event fsnotify.Event) {
 			if event.Op&fsnotify.Create == fsnotify.Create {
 				c.watcher.Add(event.Name)
 				op.IsDir = true
+				currentHash = "__DIR__"
 			} else {
 				return
 			}
@@ -270,10 +293,17 @@ func (c *Client) handleFsEvent(event fsnotify.Event) {
 				return
 			}
 			op.Content = content
+			currentHash = computeContentHash(content)
 		}
 	} else {
 		return
 	}
+	
+	if c.checkAndClearServerOperation(relPath, currentHash) {
+		log.Debug().Msgf("Skipping filesystem event from server operation: path=%s", relPath)
+		return
+	}
+	
 	log.Info().Msgf("Detected local change, sending to server: op=%s path=%s", string(op.Op), relPath)
 	payload, _ := json.Marshal(op)
 	msg := MessageWrapper{
@@ -283,4 +313,25 @@ func (c *Client) handleFsEvent(event fsnotify.Event) {
 	if err := c.conn.WriteJSON(msg); err != nil {
 		log.Error().Err(err).Msgf("Failed to send file operation to server")
 	}
+}
+
+func (c *Client) trackServerOperation(path string, hash string) {
+	c.serverOpsMutex.Lock()
+	defer c.serverOpsMutex.Unlock()
+	c.serverOpsHashes[path] = hash
+}
+
+func (c *Client) checkAndClearServerOperation(path string, hash string) bool {
+	c.serverOpsMutex.Lock()
+	defer c.serverOpsMutex.Unlock()
+	if storedHash, exists := c.serverOpsHashes[path]; exists && storedHash == hash {
+		delete(c.serverOpsHashes, path)
+		return true
+	}
+	return false
+}
+
+func computeContentHash(content []byte) string {
+	hash := sha256.Sum256(content)
+	return hex.EncodeToString(hash[:])
 }
