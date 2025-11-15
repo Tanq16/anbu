@@ -11,7 +11,7 @@
 
 </div>
 
-A summary of all capabilities that **Anbu** can perform:
+A summary of everything that **Anbu** can perform:
 
 | Operation | Details |
 | --- | --- |
@@ -27,6 +27,7 @@ A summary of all capabilities that **Anbu** can perform:
 | **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 | **Google Drive Interaction** | Interact with Google Drive to list, upload, and download files and folders |
+| **Box Interaction** | Interact with Box.com to list, upload, and download files and folders |
 | **File System Synchronization** | Synchronize files between client and server using WebSocket with real-time change propagation |
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
 
@@ -207,6 +208,25 @@ The specific details of each are:
   anbu gd dl-f "My Drive Folder/remote-folder"
   ```
 
+- ***Box Interaction***
+
+  ```bash
+  # Set up credentials by placing credentials.json at ~/.anbu-box-credentials.json or pass with --credentials flag
+  anbu box -c path/to/credentials.json list
+
+  # List files and folders (defaults to root folder)
+  anbu box list
+  anbu box ls "My Folder"
+
+  # Upload a file or folder (defaults uploading to root when not specified)
+  anbu box upload local-file.txt "My Folder"
+  anbu box up-f local-folder # uploads to root
+
+  # Download a file or folder to the current working directory
+  anbu box download "My Folder/remote-file.txt"
+  anbu box dl-f "My Folder/remote-folder"
+  ```
+
 - ***File System Synchronization***
 
   ```bash
@@ -302,31 +322,67 @@ hypothetical_command --uuid $(a s uuid)
 
 To use the `gdrive` command, you need to create OAuth 2.0 credentials. Here’s how to do it:
 
-1.  **Go to the Google Cloud Console:** Navigate to [https://console.cloud.google.com/](https://console.cloud.google.com/) and create a new project (or select an existing one).
-2.  **Enable the Google Drive API:** In the project dashboard, search for "Google Drive API" and enable it.
-3.  **Create OAuth Credentials:**
+1. **Go to the Google Cloud Console:** Navigate to [https://console.cloud.google.com/](https://console.cloud.google.com/) and create a new project (or select an existing one).
+2. **Enable the Google Drive API:** In the project dashboard, search for "Google Drive API" and enable it.
+3. **Create OAuth Credentials:**
     - Go to **APIs & Services > Credentials**.
     - Click **Create Credentials > OAuth client ID**.
     - Select **Desktop app** as the application type.
     - Give it a name and click **Create**.
-4.  **Download Credentials:**
+4. **Download Credentials:**
     - After creation, a dialog will show your client ID and secret. Click **Download JSON** to save the `credentials.json` file.
     - Place this file at `~/.anbu-gdrive-credentials.json` or provide its path using the `--credentials` flag.
-5.  **Publish the App:**
+5. **Publish the App:**
     - In the **OAuth consent screen** tab, you need to configure the consent screen. For personal use, you can keep it in "Testing" mode and add your Google account as a test user.
     - If you want to allow other users, you must publish the app, which may require verification by Google.
 
 **Authentication Flow:**
 
 When you run a `gdrive` command for the first time, `anbu` will:
-1.  Print a URL to your console.
-2.  Open this URL in your web browser. You will be prompted to sign in with your Google account.
-3.  Since the app is not verified by Google, you will see a warning screen. Click **Advanced** and then **Go to (unsafe)** to proceed.
-4.  After you grant permission, the browser will redirect to a `localhost` address, which will likely fail to load. This is expected.
-5.  Copy the authorization code from the URL in your browser’s address bar (it will be a long string in the `code` parameter).
-6.  Paste this code back into the terminal where `anbu` is waiting.
+1. Print a URL to your console.
+2. Open this URL in your web browser. You will be prompted to sign in with your Google account.
+3. Since the app is not verified by Google, you will see a warning screen. Click **Advanced** and then **Go to (unsafe)** to proceed.
+4. After you grant permission, the browser will redirect to a `localhost` address, which will likely fail to load. This is expected.
+5. Copy the authorization code from the URL in your browser’s address bar (it will be a long string in the `code` parameter).
+6. Paste this code back into the terminal where `anbu` is waiting.
 
 `anbu` will then use this code to get an access token and refresh token, which it will store for future use.
+
+</details>
+
+<details>
+<summary><b>Creating Box API Credentials</b></summary>
+
+To use the `box` command, you need to create OAuth 2.0 credentials. Here's how to do it:
+
+1. **Go to the Box Developer Console:** Navigate to [Developer Console](https://app.box.com/developers/console) and sign in with your Box account.
+2. **Create a New App:**
+    - Click **Create Platform App** and then **Custom App**,
+    - Name it and choose **User Authentication (OAuth 2.0)**.
+3. **Configure OAuth Settings:**
+    - Go to the **Configuration** tab of the new app.
+    - Under **OAuth 2.0 Credentials**, copy and store your **Client ID** and **Client Secret**.
+    - Add `http://localhost:8080` as a **Redirect URI**.
+    - Enable the option for **Write all files and folders stored in Box**.
+4. **Create Credentials File:**
+    - Create a JSON file with the following structure:
+      ```json
+      {
+        "client_id": "your_client_id",
+        "client_secret": "your_client_secret"
+      }
+      ```
+    - Save this file as `~/.anbu-box-credentials.json` or provide its path using the `--credentials` flag.
+
+**Authentication Flow:**
+
+When you run a `box` command for the first time, `anbu` will:
+1. Print a URL to your console. Open this in your web browser. You will be prompted to sign in with Box.
+2. After granting permission, the browser will redirect to a `localhost` address, which will fail to load. This is expected.
+3. Copy the full redirect URL from the address bar (it looks like `http://localhost:8080/?code=...&state=...`).
+4. Paste the URL back into the terminal where `anbu` is waiting.
+
+`anbu` will then use this URL to extract the authorization code and exchange it for an access token and refresh token, which will be stored for future use. Future commands will not require the credentials flag.
 
 </details>
 
