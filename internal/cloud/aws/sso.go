@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/rs/zerolog/log"
+	u "github.com/tanq16/anbu/utils"
 )
 
 type SSOConfig struct {
@@ -95,8 +96,8 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 	if err != nil {
 		return err
 	}
-	log.Info().Str("url", aws.ToString(deviceAuth.VerificationUriComplete)).Msg("Visit this URL to sign in")
-	log.Info().Msg("Hit enter when done signing in!")
+	fmt.Printf("Visit this URL to sign in: %s\n", u.FSuccess(aws.ToString(deviceAuth.VerificationUriComplete)))
+	u.PrintInfo("Hit enter when done signing in!")
 
 	bufio.NewReader(os.Stdin).ReadString('\n')
 	tokenResp, err := getAccessToken(oidcClient, regResp, deviceAuth.DeviceCode)

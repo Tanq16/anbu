@@ -1,9 +1,12 @@
 package cloudCmd
 
 import (
+	"fmt"
+
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuCloud "github.com/tanq16/anbu/internal/cloud/aws"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var awsIidcLoginFlags struct {
@@ -59,8 +62,8 @@ var awsCliUiCmd = &cobra.Command{
 			log.Fatal().Err(err).Str("profile", awsCliUiFlags.profile).Msg("failed to generate console URL")
 		}
 
-		log.Info().Str("profile", awsCliUiFlags.profile).Str("url", consoleURL).Msg("Console URL")
-		log.Info().Msg("URL valid for 12 hours")
+		fmt.Printf("%s\n", u.FSuccess(consoleURL))
+		u.PrintInfo("URL valid for 12 hours")
 	},
 }
 
