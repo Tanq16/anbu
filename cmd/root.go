@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	cloudCmd "github.com/tanq16/anbu/cmd/cloud-cmd"
 	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
 	interactionsCmd "github.com/tanq16/anbu/cmd/interactions-cmd"
@@ -72,4 +73,6 @@ func init() {
 	rootCmd.AddCommand(interactionsCmd.GDriveCmd)
 	rootCmd.AddCommand(interactionsCmd.BoxCmd)
 	rootCmd.AddCommand(interactionsCmd.FSSyncCmd)
+
+	rootCmd.AddCommand(cloudCmd.AwsCmd)
 }
