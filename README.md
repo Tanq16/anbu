@@ -386,6 +386,22 @@ When you run a `box` command for the first time, `anbu` will:
 
 </details>
 
+<details>
+<summary><b>Path Shortcuts for Box and Google Drive</b></summary>
+
+You can define path shortcuts to simplify remote paths. For Box, create `~/.anbu-box-shortcuts.json`, and for Google Drive, create `~/.anbu-gdrive-shortcuts.json`. Use `%shortcut%` syntax in remote paths (not local paths for Google Drive) to automatically expand shortcuts. Use `%%` for a literal percent sign.
+
+```json
+{
+  "project": "MyProject/2024/Documents",
+  "reports": "Shared/Reports"
+}
+```
+
+Example: `anbu box download %project%/file.pdf` or `anbu gdrive upload local.txt %reports%` will expand to the full paths.
+
+</details>
+
 ## Acknowledgements
 
 Anbu takes inspiration from the following projects:
