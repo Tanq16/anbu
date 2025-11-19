@@ -165,7 +165,7 @@ func UploadFile(srv *drive.Service, localPath string, driveFolder string) (*driv
 	return driveFile, nil
 }
 
-func DownloadFile(srv *drive.Service, drivePath string) (string, error) {
+func DownloadFile(srv *drive.Service, drivePath string, localPath string) (string, error) {
 	file, err := getItemIdByPath(srv, drivePath)
 	if err != nil {
 		return "", err
@@ -173,7 +173,9 @@ func DownloadFile(srv *drive.Service, drivePath string) (string, error) {
 	if file.MimeType == googleFolderMimeType {
 		return "", errors.New("path is a folder, not a file. Use 'download-folder' instead")
 	}
-	localPath := filepath.Base(file.Name)
+	if localPath == "" {
+		localPath = filepath.Base(file.Name)
+	}
 	if err := downloadFileById(srv, file, localPath); err != nil {
 		return "", err
 	}

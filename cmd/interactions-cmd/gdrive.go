@@ -116,20 +116,24 @@ var gdriveUploadCmd = &cobra.Command{
 }
 
 var gdriveDownloadCmd = &cobra.Command{
-	Use:     "download <drive-path>",
+	Use:     "download <drive-path> [local-path]",
 	Aliases: []string{"dl"},
 	Short:   "Download a file from Google Drive",
-	Long:    `Downloads a file from Google Drive to the current directory. <drive-path> is the full path to the file (e.g., 'MyFolder/MyFile.txt').`,
-	Args:    cobra.ExactArgs(1),
+	Long:    `Downloads a file from Google Drive to the current directory. If [local-path] is provided, saves to that path. Otherwise, uses the file name from Google Drive. <drive-path> is the full path to the file (e.g., 'MyFolder/MyFile.txt').`,
+	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		drivePath, _ := gdrive.ResolvePath(args[0])
+		localPath := ""
+		if len(args) > 1 {
+			localPath = args[1]
+		}
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
 		u.PrintInfo(fmt.Sprintf("Starting download of %s...", u.FDebug(drivePath)))
 
-		downloadedPath, err := gdrive.DownloadFile(srv, drivePath)
+		downloadedPath, err := gdrive.DownloadFile(srv, drivePath, localPath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to download file")
 		}
