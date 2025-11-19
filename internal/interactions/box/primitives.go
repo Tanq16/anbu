@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
+	"regexp"
 )
 
 const (
@@ -67,33 +67,15 @@ func ResolvePath(path string) (string, error) {
 	if err := json.Unmarshal(data, &shortcuts); err != nil {
 		return path, nil
 	}
-	result := strings.Builder{}
-	i := 0
-	for i < len(path) {
-		if path[i] == '%' {
-			if i+1 < len(path) && path[i+1] == '%' {
-				result.WriteByte('%')
-				i += 2
-				continue
-			}
-			j := i + 1
-			for j < len(path) && (path[j] >= 'a' && path[j] <= 'z' || path[j] >= 'A' && path[j] <= 'Z' || path[j] >= '0' && path[j] <= '9' || path[j] == '_') {
-				j++
-			}
-			if j > i+1 {
-				key := path[i+1 : j]
-				if val, ok := shortcuts[key]; ok {
-					result.WriteString(val)
-					i = j
-					continue
-				}
-			}
-			result.WriteByte('%')
-			i++
-		} else {
-			result.WriteByte(path[i])
-			i++
+	result := path
+	result = regexp.MustCompile(`%%`).ReplaceAllString(result, "%")
+	pattern := regexp.MustCompile(`%([^%]+)%`)
+	result = pattern.ReplaceAllStringFunc(result, func(match string) string {
+		key := match[1 : len(match)-1]
+		if val, ok := shortcuts[key]; ok {
+			return val
 		}
-	}
-	return result.String(), nil
+		return match
+	})
+	return result, nil
 }

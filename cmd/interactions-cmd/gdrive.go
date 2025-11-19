@@ -46,7 +46,7 @@ var gdriveListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		folderName := "root"
 		if len(args) > 0 {
-			folderName = args[0]
+			folderName, _ = gdrive.ResolvePath(args[0])
 		}
 
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
@@ -96,7 +96,7 @@ var gdriveUploadCmd = &cobra.Command{
 		localPath := args[0]
 		driveFolder := "root"
 		if len(args) > 1 {
-			driveFolder = args[1]
+			driveFolder, _ = gdrive.ResolvePath(args[1])
 		} else if len(args) > 2 {
 			log.Fatal().Msg("Too many arguments. Please provide only the local file and optionally the drive folder.")
 		}
@@ -122,7 +122,7 @@ var gdriveDownloadCmd = &cobra.Command{
 	Long:    `Downloads a file from Google Drive to the current directory. <drive-path> is the full path to the file (e.g., 'MyFolder/MyFile.txt').`,
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		drivePath := args[0]
+		drivePath, _ := gdrive.ResolvePath(args[0])
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
@@ -147,7 +147,7 @@ var gdriveUploadFolderCmd = &cobra.Command{
 		localPath := args[0]
 		driveFolder := "root"
 		if len(args) > 1 {
-			driveFolder = args[1]
+			driveFolder, _ = gdrive.ResolvePath(args[1])
 		} else if len(args) > 2 {
 			log.Fatal().Msg("Too many arguments. Please provide only the local folder and optionally the drive folder.")
 		}
@@ -172,7 +172,7 @@ var gdriveDownloadFolderCmd = &cobra.Command{
 	Long:    `Downloads a folder recursively from Google Drive to the current directory. <drive-path> is the full path to the folder (e.g., 'MyFolder/MySubFolder').`,
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		drivePath := args[0]
+		drivePath, _ := gdrive.ResolvePath(args[0])
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
