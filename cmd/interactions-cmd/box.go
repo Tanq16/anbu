@@ -45,7 +45,7 @@ var boxListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		folderPath := ""
 		if len(args) > 0 {
-			folderPath = args[0]
+			folderPath, _ = box.ResolvePath(args[0])
 		}
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
@@ -90,7 +90,7 @@ var boxUploadCmd = &cobra.Command{
 		localPath := args[0]
 		boxFolderPath := ""
 		if len(args) > 1 {
-			boxFolderPath = args[1]
+			boxFolderPath, _ = box.ResolvePath(args[1])
 		}
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
@@ -110,7 +110,7 @@ var boxDownloadCmd = &cobra.Command{
 	Long:    `Downloads a file from Box to the current directory. If [local-path] is provided, saves to that path. Otherwise, uses the file name from Box.`,
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		boxFilePath := args[0]
+		boxFilePath, _ := box.ResolvePath(args[0])
 		localPath := ""
 		if len(args) > 1 {
 			localPath = args[1]
@@ -138,7 +138,7 @@ var boxUploadFolderCmd = &cobra.Command{
 		localPath := args[0]
 		boxFolderPath := ""
 		if len(args) > 1 {
-			boxFolderPath = args[1]
+			boxFolderPath, _ = box.ResolvePath(args[1])
 		}
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
@@ -159,7 +159,7 @@ var boxDownloadFolderCmd = &cobra.Command{
 	Long:    `Downloads a folder recursively from Box to the current directory. <box-folder-path> is the full path to the folder (e.g., 'MyFolder/MySubFolder').`,
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		boxFolderPath := args[0]
+		boxFolderPath, _ := box.ResolvePath(args[0])
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
