@@ -1,8 +1,6 @@
-package interactions
+package gdrive
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -15,121 +13,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/option"
 )
-
-const (
-	gdriveTokenFile      = ".anbu-gdrive-token.json"
-	googleFolderMimeType = "application/vnd.google-apps.folder"
-)
-
-type DriveItem struct {
-	Name         string
-	ModifiedTime string
-	Size         int64
-}
-
-func GetDriveService(credentialsFile string) (*drive.Service, error) {
-	ctx := context.Background()
-	b, err := os.ReadFile(credentialsFile)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read credentials file: %v", err)
-	}
-	config, err := google.ConfigFromJSON(b, drive.DriveScope)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse client secret file: %v", err)
-	}
-	token, err := getOAuthToken(config)
-	if err != nil {
-		return nil, fmt.Errorf("unable to get OAuth token: %v", err)
-	}
-	client := config.Client(ctx, token)
-	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve Drive client: %v", err)
-	}
-	return srv, nil
-}
-
-func getOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
-	tokenFile, err := getTokenFilePath()
-	if err != nil {
-		return nil, err
-	}
-	token, err := tokenFromFile(tokenFile)
-	if err == nil {
-		if token.Valid() {
-			log.Debug().Str("op", "google-drive/auth").Msgf("existing token retrieved and valid")
-			return token, nil
-		}
-		if token.RefreshToken != "" {
-			log.Debug().Str("op", "google-drive/auth").Msgf("refreshing expired token")
-			tokenSource := config.TokenSource(context.Background(), token)
-			newToken, err := tokenSource.Token()
-			if err != nil {
-				return nil, fmt.Errorf("unable to refresh token: %v", err)
-			}
-			token = newToken
-			if err := saveToken(tokenFile, token); err != nil {
-				log.Warn().Str("op", "google-drive/auth").Msgf("unable to save refreshed token: %v", err)
-			}
-			return token, nil
-		}
-	}
-	log.Debug().Str("op", "google-drive/auth").Msgf("no valid token, starting new OAuth flow")
-	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
-	fmt.Printf("\nVisit this URL to authorize Anbu:\n\n%s\n", u.FInfo(authURL))
-	fmt.Printf("\nAfter authorizing, enter the authorization code: ")
-
-	var authCode string
-	if _, err := fmt.Scan(&authCode); err != nil {
-		return nil, fmt.Errorf("unable to read authorization code: %v", err)
-	}
-	token, err = config.Exchange(context.Background(), authCode)
-	if err != nil {
-		return nil, fmt.Errorf("unable to exchange auth code for token: %v", err)
-	}
-	if err := saveToken(tokenFile, token); err != nil {
-		log.Warn().Str("op", "google-drive/auth").Msgf("unable to save new token: %v", err)
-	}
-	fmt.Println(u.FSuccess("\nAuthentication successful. Token saved."))
-	return token, nil
-}
-
-func getTokenFilePath() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get user home directory: %w", err)
-	}
-	return filepath.Join(homeDir, gdriveTokenFile), nil
-}
-
-func tokenFromFile(file string) (*oauth2.Token, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	token := &oauth2.Token{}
-	err = json.NewDecoder(f).Decode(token)
-	return token, err
-}
-
-func saveToken(file string, token *oauth2.Token) error {
-	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return fmt.Errorf("unable to cache oauth token: %v", err)
-	}
-	defer f.Close()
-	err = json.NewEncoder(f).Encode(token)
-	if err != nil {
-		return fmt.Errorf("unable to encode token: %v", err)
-	}
-	return nil
-}
 
 func getFolderIdByName(srv *drive.Service, name string, parentId string) (string, error) {
 	if name == "root" || name == "" {
@@ -180,7 +65,7 @@ func getItemIdByPath(srv *drive.Service, drivePath string) (*drive.File, error) 
 func findOrCreateFolder(srv *drive.Service, folderName string, parentId string) (string, error) {
 	folderId, err := getFolderIdByName(srv, folderName, parentId)
 	if err == nil {
-		return folderId, nil // Folder exists
+		return folderId, nil
 	}
 	log.Debug().Msgf("Folder '%s' not found, creating it...", folderName)
 	folderMetadata := &drive.File{
@@ -200,7 +85,6 @@ func ListDriveContents(srv *drive.Service, folderName string) ([]DriveItem, []Dr
 	folderId, err := getFolderIdByName(srv, folderName, "root")
 	if err != nil {
 		if folderName != "root" {
-			// Try finding by path if name fails
 			file, err := getItemIdByPath(srv, folderName)
 			if err != nil {
 				return nil, nil, err
@@ -252,7 +136,6 @@ func UploadFile(srv *drive.Service, localPath string, driveFolder string) (*driv
 	folderId, err := getFolderIdByName(srv, driveFolder, "root")
 	if err != nil {
 		if driveFolder != "root" {
-			// Try finding by path if name fails
 			file, err := getItemIdByPath(srv, driveFolder)
 			if err != nil {
 				return nil, err
@@ -301,7 +184,6 @@ func downloadFileById(srv *drive.Service, file *drive.File, localPath string) er
 	var resp *http.Response
 	var err error
 	if strings.HasPrefix(file.MimeType, "application/vnd.google-apps") {
-		// Handle Google Doc formats (Docs, Sheets, Slides)
 		var exportMimeType string
 		switch file.MimeType {
 		case "application/vnd.google-apps.document":
@@ -314,14 +196,12 @@ func downloadFileById(srv *drive.Service, file *drive.File, localPath string) er
 			exportMimeType = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 			localPath += ".pptx"
 		default:
-			// Try to export as PDF for other types like Drawings
 			exportMimeType = "application/pdf"
 			localPath += ".pdf"
 		}
 		log.Debug().Msgf("Exporting Google Doc %s as %s", file.Name, exportMimeType)
 		resp, err = srv.Files.Export(file.Id, exportMimeType).Download()
 	} else {
-		// Handle regular binary files
 		log.Debug().Msgf("Downloading binary file %s", file.Name)
 		resp, err = srv.Files.Get(file.Id).Download()
 	}
@@ -341,11 +221,7 @@ func downloadFileById(srv *drive.Service, file *drive.File, localPath string) er
 	if err != nil {
 		return fmt.Errorf("failed to write to local file %s: %v", localPath, err)
 	}
-	fmt.Printf("Downloaded %s %s %s\n",
-		u.FDebug(file.Name),
-		u.FInfo(u.StyleSymbols["arrow"]),
-		u.FSuccess(localPath),
-	)
+	fmt.Printf("Downloaded %s %s %s\n", u.FDebug(file.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(localPath))
 	return nil
 }
 
@@ -377,7 +253,7 @@ func UploadFolder(srv *drive.Service, localPath string, driveFolder string) erro
 			return err
 		}
 		if currentLocalPath == localPath {
-			return nil // Skip the root folder itself
+			return nil
 		}
 		parentLocalDir := filepath.Dir(currentLocalPath)
 		parentDriveId, ok := folderIdMap[parentLocalDir]
@@ -407,11 +283,7 @@ func UploadFolder(srv *drive.Service, localPath string, driveFolder string) erro
 				log.Error().Err(err).Msgf("Failed to upload file %s, skipping...", currentLocalPath)
 				return nil
 			}
-			fmt.Printf("Uploaded %s %s %s\n",
-				u.FDebug(currentLocalPath),
-				u.FInfo(u.StyleSymbols["arrow"]),
-				u.FSuccess(d.Name()),
-			)
+			fmt.Printf("Uploaded %s %s %s\n", u.FDebug(currentLocalPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(d.Name()))
 		}
 		return nil
 	})

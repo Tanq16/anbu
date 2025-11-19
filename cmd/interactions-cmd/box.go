@@ -7,7 +7,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"github.com/tanq16/anbu/internal/interactions"
+	"github.com/tanq16/anbu/internal/interactions/box"
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -47,11 +47,11 @@ var boxListCmd = &cobra.Command{
 		if len(args) > 0 {
 			folderPath = args[0]
 		}
-		client, err := interactions.GetBoxClient(boxFlags.credentialsFile)
+		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
-		folders, files, err := interactions.ListBoxContents(client, folderPath)
+		folders, files, err := box.ListBoxContents(client, folderPath)
 		if err != nil {
 			log.Fatal().Err(err).Msgf("Failed to list contents for '%s'", folderPath)
 		}
@@ -68,7 +68,7 @@ var boxListCmd = &cobra.Command{
 			table.Rows = append(table.Rows, []string{
 				u.FDebug("F"),
 				f.Name,
-				interactions.HumanReadableBoxSize(f.Size),
+				box.HumanReadableBoxSize(f.Size),
 				f.ModifiedTime,
 			})
 		}
@@ -92,12 +92,12 @@ var boxUploadCmd = &cobra.Command{
 		if len(args) > 1 {
 			boxFolderPath = args[1]
 		}
-		client, err := interactions.GetBoxClient(boxFlags.credentialsFile)
+		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
 		u.PrintInfo(fmt.Sprintf("Starting upload of %s to %s...", u.FDebug(localPath), u.FDebug(boxFolderPath)))
-		if err := interactions.UploadBoxFile(client, localPath, boxFolderPath); err != nil {
+		if err := box.UploadBoxFile(client, localPath, boxFolderPath); err != nil {
 			log.Fatal().Err(err).Msg("Failed to upload file")
 		}
 	},
@@ -115,12 +115,12 @@ var boxDownloadCmd = &cobra.Command{
 		if len(args) > 1 {
 			localPath = args[1]
 		}
-		client, err := interactions.GetBoxClient(boxFlags.credentialsFile)
+		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
 		u.PrintInfo(fmt.Sprintf("Starting download of %s...", u.FDebug(boxFilePath)))
-		downloadedPath, err := interactions.DownloadBoxFile(client, boxFilePath, localPath)
+		downloadedPath, err := box.DownloadBoxFile(client, boxFilePath, localPath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to download file")
 		}
@@ -140,12 +140,12 @@ var boxUploadFolderCmd = &cobra.Command{
 		if len(args) > 1 {
 			boxFolderPath = args[1]
 		}
-		client, err := interactions.GetBoxClient(boxFlags.credentialsFile)
+		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
 		u.PrintInfo(fmt.Sprintf("Starting folder upload of %s to %s...", u.FDebug(localPath), u.FDebug(boxFolderPath)))
-		if err := interactions.UploadBoxFolder(client, localPath, boxFolderPath); err != nil {
+		if err := box.UploadBoxFolder(client, localPath, boxFolderPath); err != nil {
 			log.Fatal().Err(err).Msg("Failed to upload folder")
 		}
 		u.PrintSuccess(fmt.Sprintf("Successfully uploaded folder %s", localPath))
@@ -160,12 +160,12 @@ var boxDownloadFolderCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		boxFolderPath := args[0]
-		client, err := interactions.GetBoxClient(boxFlags.credentialsFile)
+		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
 		u.PrintInfo(fmt.Sprintf("Starting folder download of %s...", u.FDebug(boxFolderPath)))
-		if err := interactions.DownloadBoxFolder(client, boxFolderPath); err != nil {
+		if err := box.DownloadBoxFolder(client, boxFolderPath); err != nil {
 			log.Fatal().Err(err).Msg("Failed to download folder")
 		}
 		u.PrintSuccess(fmt.Sprintf("Successfully downloaded folder %s", boxFolderPath))

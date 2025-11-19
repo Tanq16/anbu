@@ -7,7 +7,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"github.com/tanq16/anbu/internal/interactions"
+	"github.com/tanq16/anbu/internal/interactions/gdrive"
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -49,12 +49,12 @@ var gdriveListCmd = &cobra.Command{
 			folderName = args[0]
 		}
 
-		srv, err := interactions.GetDriveService(gdriveFlags.credentialsFile)
+		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
 
-		folders, files, err := interactions.ListDriveContents(srv, folderName)
+		folders, files, err := gdrive.ListDriveContents(srv, folderName)
 		if err != nil {
 			log.Fatal().Err(err).Msgf("Failed to list contents for '%s'", folderName)
 		}
@@ -72,7 +72,7 @@ var gdriveListCmd = &cobra.Command{
 			table.Rows = append(table.Rows, []string{
 				u.FDebug("F"),
 				f.Name,
-				interactions.HumanReadableSize(f.Size),
+				gdrive.HumanReadableSize(f.Size),
 				f.ModifiedTime,
 			})
 		}
@@ -101,13 +101,13 @@ var gdriveUploadCmd = &cobra.Command{
 			log.Fatal().Msg("Too many arguments. Please provide only the local file and optionally the drive folder.")
 		}
 
-		srv, err := interactions.GetDriveService(gdriveFlags.credentialsFile)
+		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
 		u.PrintInfo(fmt.Sprintf("Starting upload of %s to %s...", u.FDebug(localPath), u.FDebug(driveFolder)))
 
-		driveFile, err := interactions.UploadFile(srv, localPath, driveFolder)
+		driveFile, err := gdrive.UploadFile(srv, localPath, driveFolder)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to upload file")
 		}
@@ -123,13 +123,13 @@ var gdriveDownloadCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		drivePath := args[0]
-		srv, err := interactions.GetDriveService(gdriveFlags.credentialsFile)
+		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
 		u.PrintInfo(fmt.Sprintf("Starting download of %s...", u.FDebug(drivePath)))
 
-		downloadedPath, err := interactions.DownloadFile(srv, drivePath)
+		downloadedPath, err := gdrive.DownloadFile(srv, drivePath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to download file")
 		}
@@ -152,13 +152,13 @@ var gdriveUploadFolderCmd = &cobra.Command{
 			log.Fatal().Msg("Too many arguments. Please provide only the local folder and optionally the drive folder.")
 		}
 
-		srv, err := interactions.GetDriveService(gdriveFlags.credentialsFile)
+		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
 		u.PrintInfo(fmt.Sprintf("Starting folder upload of %s to %s...", u.FDebug(localPath), u.FDebug(driveFolder)))
 
-		if err := interactions.UploadFolder(srv, localPath, driveFolder); err != nil {
+		if err := gdrive.UploadFolder(srv, localPath, driveFolder); err != nil {
 			log.Fatal().Err(err).Msg("Failed to upload folder")
 		}
 		u.PrintSuccess(fmt.Sprintf("Successfully uploaded folder %s", localPath))
@@ -173,13 +173,13 @@ var gdriveDownloadFolderCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		drivePath := args[0]
-		srv, err := interactions.GetDriveService(gdriveFlags.credentialsFile)
+		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
 		u.PrintInfo(fmt.Sprintf("Starting folder download of %s...", u.FDebug(drivePath)))
 
-		if err := interactions.DownloadFolder(srv, drivePath); err != nil {
+		if err := gdrive.DownloadFolder(srv, drivePath); err != nil {
 			log.Fatal().Err(err).Msg("Failed to download folder")
 		}
 		u.PrintSuccess(fmt.Sprintf("Successfully downloaded folder %s", drivePath))
