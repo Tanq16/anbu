@@ -30,6 +30,7 @@ A summary of everything that **Anbu** can perform:
 | **Box Interaction** | Interact with Box.com to list, upload, and download files and folders |
 | **File System Synchronization** | Synchronize files between client and server using WebSocket with real-time change propagation |
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
+| **Markdown Viewer** | Start a web server to view rendered markdown files with syntax highlighting, navigation, and Mermaid support |
 
 ## Installation
 
@@ -254,6 +255,13 @@ The specific details of each are:
 
   # Custom connection settings
   anbu neo4j -r neo4j+s://example.com:7687 -u admin -p secret -d mydb -q "MATCH (n) RETURN n" -o output.json
+  ```
+
+- ***Markdown Viewer*** (alias: `md`)
+
+  ```bash
+  anbu markdown          # Start markdown viewer on default address (0.0.0.0:8080)
+  anbu md -l :3000       # Start on port 3000 on all interfaces
   ```
 
 ## Tips & Tricks
