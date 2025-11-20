@@ -1,7 +1,7 @@
 package anbuGenerics
 
 import (
-	_ "embed"
+	"embed"
 	"encoding/json"
 	"io/fs"
 	"net/http"
@@ -14,6 +14,9 @@ import (
 
 //go:embed markdown-viewer.html
 var markdownViewerHTML []byte
+
+//go:embed static/*
+var staticFiles embed.FS
 
 type FileNode struct {
 	IsDir    bool                `json:"isDir,omitempty"`
@@ -41,6 +44,11 @@ func StartMarkdownServer(listenAddr string) error {
 		},
 	}
 	mux := http.NewServeMux()
+	staticFS, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		return err
+	}
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.HandleFunc("/", server.serveHTML)
 	mux.HandleFunc("/api/tree", server.serveFileTree)
 	mux.HandleFunc("/api/blob", server.serveFileContent)
