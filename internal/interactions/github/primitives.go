@@ -1,8 +1,12 @@
 package github
 
+import (
+	"fmt"
+	"strings"
+)
+
 const (
 	githubTokenFile = ".anbu-github-token.json"
-	apiBaseURL      = "https://api.github.com"
 )
 
 type RepoPath struct {
@@ -12,5 +16,16 @@ type RepoPath struct {
 }
 
 func ParsePath(path string) (*RepoPath, error) {
-	return nil, nil
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid path format: expected owner/repo/path")
+	}
+	rp := &RepoPath{
+		Owner: parts[0],
+		Repo:  parts[1],
+	}
+	if len(parts) > 2 {
+		rp.Path = strings.Join(parts[2:], "/")
+	}
+	return rp, nil
 }

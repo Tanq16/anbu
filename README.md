@@ -28,6 +28,7 @@ A summary of everything that **Anbu** can perform:
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 | **Google Drive Interaction** | Interact with Google Drive to list, upload, and download files and folders |
 | **Box Interaction** | Interact with Box.com to list, upload, and download files and folders |
+| **GitHub Interaction** | Interact with GitHub to list issues, PRs, workflow runs, add comments, and create issues/PRs |
 | **File System Synchronization** | Synchronize files between client and server using WebSocket with real-time change propagation |
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
 | **Markdown Viewer** | Start a web server to view rendered markdown files with syntax highlighting, navigation, and Mermaid support |
@@ -228,6 +229,34 @@ The specific details of each are:
   anbu box dl-f "My Folder/remote-folder"
   ```
 
+- ***GitHub Interaction*** (alias: `gh`)
+
+  ```bash
+  # Put OAuth app client ID at ~/.anbu-github-credentials.json or pass another file with --credentials flag
+  anbu github -c path/to/credentials.json list owner/repo/i
+
+  anbu gh ls owner/repo/i # List issues
+  anbu gh ls owner/repo/i/23 # List comments for an issue
+  anbu gh ls owner/repo/pr # List pull requests
+  anbu gh ls owner/repo/pr/24 # List comments for a PR
+  anbu gh ls owner/repo/a # List workflows
+  anbu gh ls owner/repo/a/3 # List jobs in a workflow run (3rd run)
+  
+  # Get info about a job (4th job in 3rd workflow run)
+  anbu gh ls owner/repo/a/3/4
+
+  # Download logs for a job to anbu-github.log
+  anbu gh ls owner/repo/a/3/4/logs
+
+  # Add comment to an issue or pr (end with 'EOF' on a new line)
+  anbu gh add owner/repo/i/23
+  anbu gh add owner/repo/pr/24
+
+  anbu gh make owner/repo/i # Create a new issue
+  anbu gh make owner/repo/pr/newfeat # Create a PR from branch to main
+  anbu gh make owner/repo/pr/newfeat/develop # Create a PR from branch to base branch
+  ```
+
 - ***File System Synchronization***
 
   ```bash
@@ -391,6 +420,41 @@ When you run a `box` command for the first time, `anbu` will:
 4. Paste the URL back into the terminal where `anbu` is waiting.
 
 `anbu` will then use this URL to extract the authorization code and exchange it for an access token and refresh token, which will be stored for future use. Future commands will not require the credentials flag.
+
+</details>
+
+<details>
+<summary><b>Creating GitHub API Credentials</b></summary>
+
+To use the `github` command, you need to create a GitHub OAuth App. Here's how to do it:
+
+1. Navigate to [GitHub Developer Settings](https://github.com/settings/developers).
+2. **Create a New OAuth App:**
+   - Click **OAuth Apps** in the left sidebar, then click **New OAuth App**.
+   - Fill in the application details:
+     - **Application name:** Anbu
+     - **Homepage URL:** `http://localhost`
+     - **Authorization callback URL:** `http://localhost:8080` (not used for device flow, but required)
+   - Click **Register application**.
+3. Get Client ID for the app and copy the value. Client Secret is not required for device code login.
+4. **Create Credentials File:**
+   - Put the client ID in as follows:
+     ```json
+     {
+       "client_id": "your_client_id"
+     }
+     ```
+   - Save this file as `~/.anbu-github-credentials.json` or provide its path using the `--credentials` flag.
+
+**Authentication Flow:**
+
+When you run a `github` command for the first time, `anbu` will:
+1. Print a verification URL and a user code to your console.
+2. Open the URL in your web browser and enter the user code when prompted.
+3. Authorize the application in your browser, then return to the terminal and press Enter.
+4. `anbu` will then check authorization and retrieve an access token.
+
+The access token is saved at `~/.anbu-github-token.json` and will be reused for subsequent commands.
 
 </details>
 
