@@ -16,7 +16,7 @@ A summary of everything that **Anbu** can perform:
 | Operation | Details |
 | --- | --- |
 | **Time Operations** | Display current time in various formats, calculate time differences, and parse time strings |
-| **Secrets Management** | Securely store, retrieve, and serve secrets with encryption at rest |
+| **Secrets Management** | Securely store and retrieve secrets with encryption at rest |
 | **Network Tunneling** | Create TCP and SSH tunnels (forward and reverse) to securely access remote services |
 | **Simple HTTP/HTTPS Server** | Host a simple webserver over HTTP/HTTPS with optional file upload capability |
 | **Secrets Scan** | Find common secrets in file systems using regular expressions |
@@ -79,11 +79,6 @@ The specific details of each are:
   # Import and Export to file
   anbu pass export backup.json  # Export to a file (secrets are decrypted)
   anbu pass import backup.json  # Import from a file
-
-  # Serve secrets over an API
-  anbu pass serve
-  # Interact with a remote server
-  anbu pass --remote http://127.0.0.1:8080 list
   ```
 
 - ***Network Tunneling***

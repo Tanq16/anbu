@@ -94,9 +94,11 @@ Examples:
 			} else if len(args) == 2 {
 				anbuGenerics.GeneratePassPhrase(args[1], "-", false)
 			} else if len(args) == 3 {
-				anbuGenerics.GeneratePassPhrase(args[1], args[2], false)
-			} else if len(args) == 4 {
-				anbuGenerics.GeneratePassPhrase(args[1], args[2], true)
+				if args[2] == "simple" {
+					anbuGenerics.GeneratePassPhrase(args[1], "-", true)
+				} else {
+					anbuGenerics.GeneratePassPhrase(args[1], args[2], false)
+				}
 			}
 			return
 		}
