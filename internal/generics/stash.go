@@ -315,6 +315,9 @@ func StashPop(id int) error {
 	if !removeEntryByID(index, id) {
 		return fmt.Errorf("failed to remove entry from index")
 	}
+	if len(index.Entries) == 0 {
+		index.NextID = 1
+	}
 	if err := saveIndex(index); err != nil {
 		return err
 	}
@@ -341,6 +344,9 @@ func StashClear(id int) error {
 	}
 	if !removeEntryByID(index, id) {
 		return fmt.Errorf("failed to remove entry from index")
+	}
+	if len(index.Entries) == 0 {
+		index.NextID = 1
 	}
 	if err := saveIndex(index); err != nil {
 		return err
