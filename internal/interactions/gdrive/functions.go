@@ -54,6 +54,7 @@ func getItemIdByPath(srv *drive.Service, drivePath string) (*drive.File, error) 
 			return nil, fmt.Errorf("failed to search for path part '%s': %v", part, err)
 		}
 		if len(r.Files) == 0 {
+			log.Debug().Str("part", part).Str("path", drivePath).Str("parentID", currentParentId).Msg("path segment not found during traversal")
 			return nil, fmt.Errorf("path not found: '%s' (at part '%s')", drivePath, part)
 		}
 		currentFile = r.Files[0]

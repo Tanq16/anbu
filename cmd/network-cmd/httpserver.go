@@ -10,7 +10,6 @@ var httpServerFlags struct {
 	listenAddress string
 	enableUpload  bool
 	enableTLS     bool
-	domain        string
 }
 
 var HTTPServerCmd = &cobra.Command{
@@ -31,16 +30,12 @@ Examples:
   anbu http-server -u
 
   # Serve over HTTPS with a self-signed certificate
-  anbu http-server -t
-
-  # Serve HTTPS for a specific domain in the cert
-  anbu http-server -t --domain my.local.dev`,
+  anbu http-server -t`,
 	Run: func(cmd *cobra.Command, args []string) {
 		options := &anbuNetwork.HTTPServerOptions{
 			ListenAddress: httpServerFlags.listenAddress,
 			EnableUpload:  httpServerFlags.enableUpload,
 			EnableTLS:     httpServerFlags.enableTLS,
-			Domain:        httpServerFlags.domain,
 		}
 		server := &anbuNetwork.HTTPServer{
 			Options: options,
@@ -57,5 +52,4 @@ func init() {
 	HTTPServerCmd.Flags().StringVarP(&httpServerFlags.listenAddress, "listen", "l", "0.0.0.0:8000", "Address and port to listen on")
 	HTTPServerCmd.Flags().BoolVarP(&httpServerFlags.enableUpload, "upload", "u", false, "Enable file uploads via PUT requests")
 	HTTPServerCmd.Flags().BoolVarP(&httpServerFlags.enableTLS, "tls", "t", false, "Enable HTTPS with a self-signed certificate")
-	HTTPServerCmd.Flags().StringVar(&httpServerFlags.domain, "domain", "localhost", "Domain to use for the self-signed certificate")
 }

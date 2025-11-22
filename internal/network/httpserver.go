@@ -24,7 +24,6 @@ type HTTPServerOptions struct {
 	ListenAddress string
 	EnableUpload  bool
 	EnableTLS     bool
-	Domain        string
 }
 
 type HTTPServer struct {
@@ -74,10 +73,10 @@ func (s *HTTPServer) uploadMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut {
 			targetPath := filepath.Join(".", r.URL.Path)
-			// Ensure the path is within the server folder (prevent directory traversal)
 			absTargetPath, _ := filepath.Abs(targetPath)
 			serverRoot, _ := filepath.Abs(".")
 			if !strings.HasPrefix(absTargetPath, serverRoot) {
+				log.Debug().Str("targetPath", targetPath).Str("absTargetPath", absTargetPath).Str("serverRoot", serverRoot).Msg("directory traversal attempt detected")
 				log.Error().Msgf("attempted directory traversal: %s", targetPath)
 				http.Error(w, "Forbidden", http.StatusForbidden)
 				return
@@ -126,7 +125,7 @@ func (s *HTTPServer) generateSelfSignedCert() (tls.Certificate, error) {
 		return tls.Certificate{}, err
 	}
 	log.Debug().Msg("generated private key")
-	domain := s.Options.Domain
+	domain := "localhost"
 	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
 		return tls.Certificate{}, err

@@ -26,6 +26,7 @@ A summary of everything that **Anbu** can perform:
 | **File Encryption/Decryption** | Secure file encryption and decryption with AES-256-GCM symmetric encryption |
 | **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
+| **Stash** | Persistent clipboard for files, folders, and text snippets with apply, pop, and clear operations, almost similar to `git` stash |
 | **Google Drive Interaction** | Interact with Google Drive to list, upload, download, and sync files and folders |
 | **Box.com Interaction** | Interact with Box.com to list, upload, download, and sync files and folders |
 | **GitHub Interaction** | Interact with GitHub to list issues, PRs, workflow runs, add comments, and create issues/PRs |
@@ -101,7 +102,6 @@ The specific details of each are:
   ```bash
   anbu http-server                     # Serves current directory on http://localhost:8000
   anbu http-server -l 0.0.0.0:8080 -t  # Serve HTTPS on given add:port with a self-signed cert
-  anbu http-server -t --domain my.dev  # Serve HTTPS with a specific domain in the cert
   anbu http-server -u                  # Enables file upload via PUT requests
   ```
 
@@ -184,6 +184,33 @@ The specific details of each are:
   anbu string passphrase               # generate a 3-word passphrase with hyphens
   anbu string passphrase 5             # generate a 5-word passphrase with hyphens
   anbu string passphrase 4 '@'         # generate a 4-word passphrase with a custom separator
+  ```
+
+- ***Stash***
+
+  ```bash
+  # Stash a file or folder (keeps original, unlike git stash)
+  anbu stash fs /path/to/file.txt
+  anbu stash fs ./my-folder
+
+  # Stash text from stdin
+  echo "my text" | anbu stash text my-snippet
+  anbu stash text notes <<EOF
+  Multi-line text
+  goes here
+  EOF
+
+  # List all stashed entries
+  anbu stash list
+
+  # Apply a stash without removing it (text prints to stdout, files/folders extracted to current directory)
+  anbu stash apply 1
+
+  # Apply a stash and remove it (pop operation)
+  anbu stash pop 1
+
+  # Remove a stash without applying it
+  anbu stash clear 1
   ```
 
 - ***Google Drive Interaction*** (alias: `gd`)

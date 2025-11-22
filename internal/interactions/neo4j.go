@@ -53,6 +53,7 @@ func ExecuteNeo4jQueries(ctx context.Context, uri, user, password, database stri
 	if writeMode {
 		mode = neo4j.AccessModeWrite
 	}
+	log.Debug().Str("database", database).Bool("writeMode", writeMode).Msg("creating neo4j session")
 	session := driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: database,
 		AccessMode:   mode,

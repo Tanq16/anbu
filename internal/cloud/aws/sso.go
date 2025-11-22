@@ -160,6 +160,7 @@ func processAccounts(client *sso.Client, accessToken *string, accounts sso.ListA
 			log.Debug().Str("id", accountID).Str("name", accountName).Msg("processing account")
 			roles, err := listAccountRoles(client, accessToken, accountID)
 			if err != nil {
+				log.Debug().Err(err).Str("account", accountID).Str("accountName", accountName).Msg("role listing failed for account")
 				log.Warn().Err(err).Str("account", accountID).Msg("failed to list roles")
 				return
 			}
@@ -167,9 +168,11 @@ func processAccounts(client *sso.Client, accessToken *string, accounts sso.ListA
 				roleName := aws.ToString(role.RoleName)
 				profileName := accountName
 				mu.Lock()
+				originalProfileName := profileName
 				for _, profile := range configData.Profiles {
 					if profile.Name == profileName {
 						profileName = fmt.Sprintf("%s-%s-%s", profileName, accountID, roleName)
+						log.Debug().Str("originalName", originalProfileName).Str("resolvedName", profileName).Msg("profile name conflict resolved")
 						break
 					}
 				}

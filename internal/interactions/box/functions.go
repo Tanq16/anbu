@@ -62,11 +62,13 @@ func resolvePathToID(client *http.Client, path string, expectedType string) (str
 			}
 		}
 		if !found {
+			log.Debug().Str("segment", segment).Str("path", path).Str("currentID", currentID).Msg("path segment not found during traversal")
 			return "", "", fmt.Errorf("path not found: '%s' in '%s'", segment, path)
 		}
 		isLastSegment := (i == len(segments)-1)
 		if isLastSegment {
 			if expectedType != "" && currentType != expectedType {
+				log.Debug().Str("segment", segment).Str("actualType", currentType).Str("expectedType", expectedType).Msg("type mismatch in path resolution")
 				return "", "", fmt.Errorf("path error: '%s' is a %s, but expected a %s", segment, currentType, expectedType)
 			}
 			return currentID, currentType, nil

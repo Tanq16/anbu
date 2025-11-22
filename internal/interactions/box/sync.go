@@ -243,6 +243,7 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 				log.Error().Err(err).Msgf("Failed to upload %s", localFile.Path)
 			}
 		} else if localFile.Hash != remoteFile.Hash {
+			log.Debug().Str("path", localFile.Path).Msg("file hash mismatch, update needed")
 			fmt.Printf("Updating %s\n", u.FDebug(localFile.Path))
 			if err := deleteBoxFile(client, remoteFile.ID); err != nil {
 				log.Error().Err(err).Msgf("Failed to delete %s for update", localFile.Path)
@@ -265,6 +266,7 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 		remoteSubTree, exists := remoteTree.Dirs[dirName]
 		var subFolderID string
 		if !exists {
+			log.Debug().Str("dir", dirName).Msg("folder not found in remote tree, creating new folder")
 			folderJSON := fmt.Sprintf(`{"name":"%s", "parent":{"id":"%s"}}`, dirName, remoteFolderID)
 			req, err := http.NewRequest("POST", uploadFolderURL, bytes.NewBufferString(folderJSON))
 			if err != nil {
@@ -315,6 +317,8 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 			if subFolderID == "" {
 				log.Error().Msgf("Failed to find folder ID for %s", dirName)
 				continue
+			} else {
+				log.Debug().Str("dir", dirName).Str("folderID", subFolderID).Msg("folder found in remote tree")
 			}
 		}
 		subLocalBase := filepath.Join(localBase, dirName)

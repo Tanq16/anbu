@@ -45,24 +45,25 @@ func getOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
 	token, err := tokenFromFile(tokenFile)
 	if err == nil {
 		if token.Valid() {
-			log.Debug().Str("op", "google-drive/auth").Msgf("existing token retrieved and valid")
+			log.Debug().Msgf("existing token retrieved and valid")
 			return token, nil
 		}
 		if token.RefreshToken != "" {
-			log.Debug().Str("op", "google-drive/auth").Msgf("refreshing expired token")
+			log.Debug().Msgf("refreshing expired token")
 			tokenSource := config.TokenSource(context.Background(), token)
 			newToken, err := tokenSource.Token()
 			if err != nil {
+				log.Debug().Err(err).Msg("token refresh failed, will fall back to new OAuth flow")
 				return nil, fmt.Errorf("unable to refresh token: %v", err)
 			}
 			token = newToken
 			if err := saveToken(tokenFile, token); err != nil {
-				log.Warn().Str("op", "google-drive/auth").Msgf("unable to save refreshed token: %v", err)
+				log.Warn().Msgf("unable to save refreshed token: %v", err)
 			}
 			return token, nil
 		}
 	}
-	log.Debug().Str("op", "google-drive/auth").Msgf("no valid token, starting new OAuth flow")
+	log.Debug().Msgf("no valid token, starting new OAuth flow")
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 	fmt.Printf("\nVisit this URL to authorize Anbu:\n\n%s\n", u.FInfo(authURL))
 	fmt.Printf("\nAfter authorizing, enter the authorization code: ")
@@ -76,7 +77,7 @@ func getOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
 		return nil, fmt.Errorf("unable to exchange auth code for token: %v", err)
 	}
 	if err := saveToken(tokenFile, token); err != nil {
-		log.Warn().Str("op", "google-drive/auth").Msgf("unable to save new token: %v", err)
+		log.Warn().Msgf("unable to save new token: %v", err)
 	}
 	fmt.Println(u.FSuccess("\nAuthentication successful. Token saved."))
 	return token, nil

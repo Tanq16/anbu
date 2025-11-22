@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v79/github"
+	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -442,6 +443,7 @@ func StreamActionJobLogs(client *http.Client, owner, repo string, runID, jobID i
 		return err
 	}
 	if logsURL == nil {
+		log.Debug().Str("owner", owner).Str("repo", repo).Int("runID", runID).Int("jobID", jobID).Msg("logs URL is nil or invalid")
 		return fmt.Errorf("logs URL is nil")
 	}
 	req, err := http.NewRequest("GET", logsURL.String(), nil)

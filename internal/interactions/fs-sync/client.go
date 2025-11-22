@@ -24,12 +24,12 @@ type ClientConfig struct {
 }
 
 type Client struct {
-	cfg              ClientConfig
-	conn             *SafeConn
-	watcher          *fsnotify.Watcher
-	ignorer          *PathIgnorer
-	serverOpsMutex   sync.Mutex
-	serverOpsHashes  map[string]string
+	cfg             ClientConfig
+	conn            *SafeConn
+	watcher         *fsnotify.Watcher
+	ignorer         *PathIgnorer
+	serverOpsMutex  sync.Mutex
+	serverOpsHashes map[string]string
 }
 
 func NewClient(cfg ClientConfig) (*Client, error) {
@@ -158,8 +158,10 @@ func (c *Client) handleManifest(payload []byte) {
 		}
 	}
 
+	var toRemove []string
 	for path := range localManifest {
 		if !serverFiles[path] {
+			toRemove = append(toRemove, path)
 			fullPath := filepath.Join(c.cfg.SyncDir, path)
 			log.Info().Msgf("Removing local file not present on server: %s", path)
 			if err := os.RemoveAll(fullPath); err != nil {
@@ -167,6 +169,7 @@ func (c *Client) handleManifest(payload []byte) {
 			}
 		}
 	}
+	log.Debug().Int("filesToRequest", len(toRequest)).Int("filesToRemove", len(toRemove)).Msg("sync comparison summary")
 	if len(toRequest) > 0 {
 		log.Info().Msgf("Requesting %d files from server", len(toRequest))
 		c.requestFiles(toRequest)
@@ -201,7 +204,6 @@ func (c *Client) handleFileOperation(payload []byte) {
 		return
 	}
 	log.Info().Msgf("Received file operation from server: op=%s path=%s", string(op.Op), op.Path)
-	
 	var hash string
 	if op.Op == OpRemove {
 		hash = "__REMOVED__"
@@ -211,7 +213,6 @@ func (c *Client) handleFileOperation(payload []byte) {
 		hash = computeContentHash(op.Content)
 	}
 	c.trackServerOperation(op.Path, hash)
-	
 	if err := ApplyOperation(c.cfg.SyncDir, &op); err != nil {
 		log.Error().Err(err).Msgf("Failed to apply file operation: %s", op.Path)
 	}
@@ -264,10 +265,9 @@ func (c *Client) handleFsEvent(event fsnotify.Event) {
 	if err != nil || c.ignorer.IsIgnored(relPath) {
 		return
 	}
-	
 	op := FileOperationMessage{Path: relPath}
 	var currentHash string
-	
+
 	if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
 		op.Op = OpRemove
 		currentHash = "__REMOVED__"
@@ -298,12 +298,11 @@ func (c *Client) handleFsEvent(event fsnotify.Event) {
 	} else {
 		return
 	}
-	
+
 	if c.checkAndClearServerOperation(relPath, currentHash) {
 		log.Debug().Msgf("Skipping filesystem event from server operation: path=%s", relPath)
 		return
 	}
-	
 	log.Info().Msgf("Detected local change, sending to server: op=%s path=%s", string(op.Op), relPath)
 	payload, _ := json.Marshal(op)
 	msg := MessageWrapper{
