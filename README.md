@@ -7,7 +7,7 @@
 
 <p><b>Anbu</b> is a CLI tool that helps perform everyday tasks in an expert way. Just like the Anbu Black Ops division in Naruto, this tool helps carry out all the shadow-operations in your daily workflow.</p><br>
 
-<a href="\#installation">Installation</a> • <a href="\#usage">Usage</a> • <a href="\#acknowledgements">Acknowledgements</a> • <a href="\#tips--tricks">Tips & Tricks</a><br>
+<a href="\#installation">Installation</a> • <a href="\#usage">Usage</a> • <a href="\#tips--tricks">Tips & Tricks</a><br>
 
 </div>
 
@@ -483,11 +483,3 @@ You can define path shortcuts to simplify remote paths. For Box, create `~/.anbu
 Example: `anbu box download %project%/file.pdf` or `anbu gdrive upload local.txt %reports%` will expand to the full paths.
 
 </details>
-
-## Acknowledgements
-
-Anbu takes inspiration from the following projects:
-
-- [GoST](https://github.com/ginuerzh/gost)
-- [SimpleHTTPServer](https://github.com/projectdiscovery/simplehttpserver)
-- [TruffleHog](https://github.com/trufflesecurity/trufflehog), [GitLeaks](https://github.com/gitleaks/gitleaks), and [NoseyParker](https://github.com/praetorian-inc/noseyparker) for secret regular expressions
