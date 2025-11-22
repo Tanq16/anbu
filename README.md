@@ -200,14 +200,15 @@ The specific details of each are:
   # List files and folders (defaults to root 'My Drive')
   anbu gdrive list
   anbu gd ls "My Folder"
+  anbu gd ls "My Folder/file.txt"  # Shows info for a specific file
 
   # Upload a file or folder (defaults uploading to root 'My Drive' when not specified)
   anbu gdrive upload local-file.txt "My Folder"
-  anbu gd up-f local-folder # uploads to root
+  anbu gd up local-folder  # uploads folder recursively to root
 
   # Download a file or folder to the current working directory
   anbu gdrive download "My Drive Folder/remote-file.txt"
-  anbu gd dl-f "My Drive Folder/remote-folder"
+  anbu gd dl "My Drive Folder/remote-folder"  # downloads folder recursively
   ```
 
 - ***Box Interaction***
@@ -219,14 +220,15 @@ The specific details of each are:
   # List files and folders (defaults to root folder)
   anbu box list
   anbu box ls "My Folder"
+  anbu box ls "My Folder/file.txt"  # Shows info for a specific file
 
   # Upload a file or folder (defaults uploading to root when not specified)
   anbu box upload local-file.txt "My Folder"
-  anbu box up-f local-folder # uploads to root
+  anbu box up local-folder  # uploads folder recursively to root
 
   # Download a file or folder to the current working directory
   anbu box download "My Folder/remote-file.txt"
-  anbu box dl-f "My Folder/remote-folder"
+  anbu box dl "My Folder/remote-folder"  # downloads folder recursively
   ```
 
 - ***GitHub Interaction*** (alias: `gh`)
