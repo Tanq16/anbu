@@ -73,7 +73,7 @@ var boxListCmd = &cobra.Command{
 			})
 		}
 		if len(table.Rows) == 0 {
-			u.PrintInfo(fmt.Sprintf("No items found in '%s'", path))
+			fmt.Printf("No items found in '%s'\n", u.FDebug(path))
 			return
 		}
 		table.PrintTable(false)
@@ -96,10 +96,11 @@ var boxUploadCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
-		u.PrintInfo(fmt.Sprintf("Starting upload of %s to %s...", u.FDebug(localPath), u.FDebug(boxFolderPath)))
+		fmt.Printf("Starting upload of %s to %s...\n", u.FDebug(localPath), u.FDebug(boxFolderPath))
 		if err := box.UploadBoxItem(client, localPath, boxFolderPath); err != nil {
 			log.Fatal().Err(err).Msg("Failed to upload")
 		}
+		fmt.Printf("%s Upload completed successfully\n", u.FSuccess("✓"))
 	},
 }
 
@@ -119,7 +120,7 @@ var boxDownloadCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
-		u.PrintInfo(fmt.Sprintf("Starting download of %s...", u.FDebug(boxPath)))
+		fmt.Printf("Starting download of %s...\n", u.FDebug(boxPath))
 		downloadedPath, err := box.DownloadBoxItem(client, boxPath, localPath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to download")
@@ -127,6 +128,7 @@ var boxDownloadCmd = &cobra.Command{
 		if downloadedPath != "" {
 			fmt.Printf("Successfully downloaded %s %s %s\n", u.FDebug(boxPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(downloadedPath))
 		}
+		fmt.Printf("%s Download completed successfully\n", u.FSuccess("✓"))
 	},
 }
 
@@ -142,11 +144,11 @@ var boxSyncCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
-		u.PrintInfo(fmt.Sprintf("Starting sync of %s to %s...", u.FDebug(localDir), u.FDebug(remotePath)))
+		fmt.Printf("Starting sync of %s to %s...\n", u.FDebug(localDir), u.FDebug(remotePath))
 		if err := box.SyncBoxDirectory(client, localDir, remotePath); err != nil {
 			log.Fatal().Err(err).Msg("Failed to sync")
 		}
-		u.PrintSuccess("Sync completed successfully")
+		fmt.Printf("%s Sync completed successfully\n", u.FSuccess("✓"))
 	},
 }
 

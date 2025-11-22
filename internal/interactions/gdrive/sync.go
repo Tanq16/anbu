@@ -80,7 +80,7 @@ func buildLocalTree(rootDir string) (*FileTree, error) {
 			dirPath := strings.Join(parts[:len(parts)-1], string(filepath.Separator))
 			current := tree
 			if dirPath != "" {
-				for _, part := range strings.Split(dirPath, string(filepath.Separator)) {
+				for part := range strings.SplitSeq(dirPath, string(filepath.Separator)) {
 					if current.Dirs == nil {
 						current.Dirs = make(map[string]*FileTree)
 					}
@@ -185,12 +185,12 @@ func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, loc
 		remoteFile, exists := remoteTree.Files[fileName]
 		localPath := filepath.Join(localBase, fileName)
 		if !exists {
-			u.PrintInfo(fmt.Sprintf("Uploading %s", localFile.Path))
+			fmt.Printf("Uploading %s\n", u.FDebug(localFile.Path))
 			if _, err := uploadDriveFileToFolder(srv, localPath, remoteFolderID); err != nil {
 				log.Error().Err(err).Msgf("Failed to upload %s", localFile.Path)
 			}
 		} else if localFile.Hash != remoteFile.Hash {
-			u.PrintInfo(fmt.Sprintf("Updating %s", localFile.Path))
+			fmt.Printf("Updating %s\n", u.FDebug(localFile.Path))
 			if err := updateDriveFile(srv, remoteFile.ID, localPath); err != nil {
 				log.Error().Err(err).Msgf("Failed to update %s", localFile.Path)
 			}
@@ -198,7 +198,7 @@ func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, loc
 	}
 	for fileName, remoteFile := range remoteTree.Files {
 		if _, exists := localTree.Files[fileName]; !exists {
-			u.PrintInfo(fmt.Sprintf("Deleting %s", remoteFile.Path))
+			fmt.Printf("%s %s\n", u.FError("Deleting"), u.FDebug(remoteFile.Path))
 			if err := deleteDriveFile(srv, remoteFile.ID); err != nil {
 				log.Error().Err(err).Msgf("Failed to delete %s", remoteFile.Path)
 			}
@@ -245,7 +245,7 @@ func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, loc
 				if err := deleteDriveFolderRecursive(srv, r.Files[0].Id); err != nil {
 					log.Error().Err(err).Msgf("Failed to delete folder %s", dirName)
 				} else {
-					u.PrintInfo(fmt.Sprintf("Deleting folder %s", dirName))
+					fmt.Printf("%s %s\n", u.FError("Deleting folder"), u.FDebug(dirName))
 				}
 			}
 		}

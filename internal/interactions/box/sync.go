@@ -238,12 +238,12 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 		remoteFile, exists := remoteTree.Files[fileName]
 		localPath := filepath.Join(localBase, fileName)
 		if !exists {
-			u.PrintInfo(fmt.Sprintf("Uploading %s", localFile.Path))
+			fmt.Printf("Uploading %s\n", u.FDebug(localFile.Path))
 			if err := uploadBoxFileToFolder(client, localPath, remoteFolderID); err != nil {
 				log.Error().Err(err).Msgf("Failed to upload %s", localFile.Path)
 			}
 		} else if localFile.Hash != remoteFile.Hash {
-			u.PrintInfo(fmt.Sprintf("Updating %s", localFile.Path))
+			fmt.Printf("Updating %s\n", u.FDebug(localFile.Path))
 			if err := deleteBoxFile(client, remoteFile.ID); err != nil {
 				log.Error().Err(err).Msgf("Failed to delete %s for update", localFile.Path)
 				continue
@@ -255,7 +255,7 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 	}
 	for fileName, remoteFile := range remoteTree.Files {
 		if _, exists := localTree.Files[fileName]; !exists {
-			u.PrintInfo(fmt.Sprintf("Deleting %s", remoteFile.Path))
+			fmt.Printf("%s %s\n", u.FError("Deleting"), u.FDebug(remoteFile.Path))
 			if err := deleteBoxFile(client, remoteFile.ID); err != nil {
 				log.Error().Err(err).Msgf("Failed to delete %s", remoteFile.Path)
 			}
@@ -348,7 +348,7 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 					if err := deleteBoxFolderRecursive(client, item.ID); err != nil {
 						log.Error().Err(err).Msgf("Failed to delete folder %s", dirName)
 					} else {
-						u.PrintInfo(fmt.Sprintf("Deleting folder %s", dirName))
+						fmt.Printf("%s %s\n", u.FError("Deleting folder"), u.FDebug(dirName))
 					}
 					break
 				}

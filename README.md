@@ -26,8 +26,8 @@ A summary of everything that **Anbu** can perform:
 | **File Encryption/Decryption** | Secure file encryption and decryption with AES-256-GCM symmetric encryption |
 | **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
-| **Google Drive Interaction** | Interact with Google Drive to list, upload, and download files and folders |
-| **Box Interaction** | Interact with Box.com to list, upload, and download files and folders |
+| **Google Drive Interaction** | Interact with Google Drive to list, upload, download, and sync files and folders |
+| **Box.com Interaction** | Interact with Box.com to list, upload, download, and sync files and folders |
 | **GitHub Interaction** | Interact with GitHub to list issues, PRs, workflow runs, add comments, and create issues/PRs |
 | **File System Synchronization** | Synchronize files between client and server using WebSocket with real-time change propagation |
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
@@ -209,6 +209,10 @@ The specific details of each are:
   # Download a file or folder to the current working directory
   anbu gdrive download "My Drive Folder/remote-file.txt"
   anbu gd dl "My Drive Folder/remote-folder"  # downloads folder recursively
+
+  # Sync local directory with remote directory (uploads missing, deletes remote-only, updates changed)
+  anbu gdrive sync ./local-dir "My Drive Folder"
+  anbu gd sync ./local-dir "Backup"  # syncs using MD5 hashes (yes, Google uses this) for comparison
   ```
 
 - ***Box Interaction***
@@ -229,6 +233,10 @@ The specific details of each are:
   # Download a file or folder to the current working directory
   anbu box download "My Folder/remote-file.txt"
   anbu box dl "My Folder/remote-folder"  # downloads folder recursively
+
+  # Sync local directory with remote directory (uploads missing, deletes remote-only, updates changed)
+  anbu box sync ./local-dir "Test Folder"
+  anbu box sync ./local-dir ""  # syncs to root folder using SHA1 hashes (yes, Box uses this) for comparison
   ```
 
 - ***GitHub Interaction*** (alias: `gh`)
