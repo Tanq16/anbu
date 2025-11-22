@@ -92,10 +92,14 @@ func ListDriveContents(srv *drive.Service, path string) ([]DriveItem, []DriveIte
 	if item.MimeType == googleFolderMimeType {
 		return listDriveFolderContents(srv, item.Id)
 	}
-	return listDriveFileInfo(item)
+	return listDriveFileInfo(srv, item.Id)
 }
 
-func listDriveFileInfo(file *drive.File) ([]DriveItem, []DriveItem, error) {
+func listDriveFileInfo(srv *drive.Service, fileId string) ([]DriveItem, []DriveItem, error) {
+	file, err := srv.Files.Get(fileId).Fields("id, name, size, modifiedTime").Do()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get file info: %v", err)
+	}
 	modTime, _ := time.Parse(time.RFC3339, file.ModifiedTime)
 	item := DriveItem{
 		Name:         file.Name,
