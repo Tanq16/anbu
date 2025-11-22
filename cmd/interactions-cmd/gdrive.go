@@ -139,10 +139,31 @@ var gdriveDownloadCmd = &cobra.Command{
 	},
 }
 
+var gdriveSyncCmd = &cobra.Command{
+	Use:   "sync <local-dir> <remote-dir>",
+	Short: "Sync local directory with Google Drive remote directory",
+	Long:  `Synchronizes a local directory with a remote Google Drive directory. Uploads missing files, deletes remote-only files, and updates changed files.`,
+	Args:  cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		localDir := args[0]
+		remotePath, _ := gdrive.ResolvePath(args[1])
+		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
+		}
+		u.PrintInfo(fmt.Sprintf("Starting sync of %s to %s...", u.FDebug(localDir), u.FDebug(remotePath)))
+		if err := gdrive.SyncDriveDirectory(srv, localDir, remotePath); err != nil {
+			log.Fatal().Err(err).Msg("Failed to sync")
+		}
+		u.PrintSuccess("Sync completed successfully")
+	},
+}
+
 func init() {
 	GDriveCmd.PersistentFlags().StringVarP(&gdriveFlags.credentialsFile, "credentials", "c", "", "Path to Google Drive credentials.json file (default ~/.anbu-gdrive-credentials.json)")
 
 	GDriveCmd.AddCommand(gdriveListCmd)
 	GDriveCmd.AddCommand(gdriveUploadCmd)
 	GDriveCmd.AddCommand(gdriveDownloadCmd)
+	GDriveCmd.AddCommand(gdriveSyncCmd)
 }

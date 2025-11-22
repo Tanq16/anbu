@@ -130,10 +130,31 @@ var boxDownloadCmd = &cobra.Command{
 	},
 }
 
+var boxSyncCmd = &cobra.Command{
+	Use:   "sync <local-dir> <remote-dir>",
+	Short: "Sync local directory with Box remote directory",
+	Long:  `Synchronizes a local directory with a remote Box directory. Uploads missing files, deletes remote-only files, and updates changed files.`,
+	Args:  cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		localDir := args[0]
+		remotePath, _ := box.ResolvePath(args[1])
+		client, err := box.GetBoxClient(boxFlags.credentialsFile)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to get Box client")
+		}
+		u.PrintInfo(fmt.Sprintf("Starting sync of %s to %s...", u.FDebug(localDir), u.FDebug(remotePath)))
+		if err := box.SyncBoxDirectory(client, localDir, remotePath); err != nil {
+			log.Fatal().Err(err).Msg("Failed to sync")
+		}
+		u.PrintSuccess("Sync completed successfully")
+	},
+}
+
 func init() {
 	BoxCmd.PersistentFlags().StringVarP(&boxFlags.credentialsFile, "credentials", "c", "", "Path to Box credentials.json file (default ~/.anbu-box-credentials.json)")
 
 	BoxCmd.AddCommand(boxListCmd)
 	BoxCmd.AddCommand(boxUploadCmd)
 	BoxCmd.AddCommand(boxDownloadCmd)
+	BoxCmd.AddCommand(boxSyncCmd)
 }

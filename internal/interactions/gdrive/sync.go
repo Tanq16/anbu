@@ -1,0 +1,307 @@
+package gdrive
+
+import (
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/rs/zerolog/log"
+	u "github.com/tanq16/anbu/utils"
+	"google.golang.org/api/drive/v3"
+)
+
+type FileTree struct {
+	Files map[string]FileInfo
+	Dirs  map[string]*FileTree
+}
+
+type FileInfo struct {
+	Path string
+	Hash string
+	ID   string
+}
+
+func computeLocalHash(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := md5.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func buildLocalTree(rootDir string) (*FileTree, error) {
+	tree := &FileTree{
+		Files: make(map[string]FileInfo),
+		Dirs:  make(map[string]*FileTree),
+	}
+	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		relPath, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return err
+		}
+		if relPath == "." {
+			return nil
+		}
+		if d.IsDir() {
+			parts := strings.Split(relPath, string(filepath.Separator))
+			current := tree
+			for _, part := range parts {
+				if current.Dirs == nil {
+					current.Dirs = make(map[string]*FileTree)
+				}
+				if _, exists := current.Dirs[part]; !exists {
+					current.Dirs[part] = &FileTree{
+						Files: make(map[string]FileInfo),
+						Dirs:  make(map[string]*FileTree),
+					}
+				}
+				current = current.Dirs[part]
+			}
+		} else {
+			hash, err := computeLocalHash(path)
+			if err != nil {
+				log.Error().Err(err).Msgf("Failed to compute hash for %s", path)
+				return nil
+			}
+			parts := strings.Split(relPath, string(filepath.Separator))
+			fileName := parts[len(parts)-1]
+			dirPath := strings.Join(parts[:len(parts)-1], string(filepath.Separator))
+			current := tree
+			if dirPath != "" {
+				for _, part := range strings.Split(dirPath, string(filepath.Separator)) {
+					if current.Dirs == nil {
+						current.Dirs = make(map[string]*FileTree)
+					}
+					if _, exists := current.Dirs[part]; !exists {
+						current.Dirs[part] = &FileTree{
+							Files: make(map[string]FileInfo),
+							Dirs:  make(map[string]*FileTree),
+						}
+					}
+					current = current.Dirs[part]
+				}
+			}
+			current.Files[fileName] = FileInfo{
+				Path: relPath,
+				Hash: hash,
+			}
+		}
+		return nil
+	})
+	return tree, err
+}
+
+func buildRemoteTree(srv *drive.Service, folderID string, basePath string) (*FileTree, error) {
+	tree := &FileTree{
+		Files: make(map[string]FileInfo),
+		Dirs:  make(map[string]*FileTree),
+	}
+	query := fmt.Sprintf("'%s' in parents and trashed = false", folderID)
+	var pageToken string
+	for {
+		r, err := srv.Files.List().Q(query).
+			PageSize(100).
+			Fields("nextPageToken, files(id, name, mimeType, md5Checksum)").
+			PageToken(pageToken).Do()
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range r.Files {
+			itemPath := filepath.Join(basePath, f.Name)
+			if f.MimeType == googleFolderMimeType {
+				subTree, err := buildRemoteTree(srv, f.Id, itemPath)
+				if err != nil {
+					log.Error().Err(err).Msgf("Failed to build tree for folder %s", itemPath)
+					continue
+				}
+				tree.Dirs[f.Name] = subTree
+			} else {
+				hash := f.Md5Checksum
+				if hash == "" {
+					log.Warn().Msgf("No MD5 hash for file %s", itemPath)
+					continue
+				}
+				tree.Files[f.Name] = FileInfo{
+					Path: itemPath,
+					Hash: hash,
+					ID:   f.Id,
+				}
+			}
+		}
+		pageToken = r.NextPageToken
+		if pageToken == "" {
+			break
+		}
+	}
+	return tree, nil
+}
+
+func deleteDriveFile(srv *drive.Service, fileID string) error {
+	return srv.Files.Delete(fileID).Do()
+}
+
+func uploadDriveFileToFolder(srv *drive.Service, localPath string, parentFolderID string) (*drive.File, error) {
+	file, err := os.Open(localPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	fileName := filepath.Base(localPath)
+	fileMetadata := &drive.File{
+		Name:    fileName,
+		Parents: []string{parentFolderID},
+	}
+	driveFile, err := srv.Files.Create(fileMetadata).Media(file).Fields("id, name").Do()
+	if err != nil {
+		return nil, err
+	}
+	return driveFile, nil
+}
+
+func updateDriveFile(srv *drive.Service, fileID string, localPath string) error {
+	file, err := os.Open(localPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = srv.Files.Update(fileID, nil).Media(file).Do()
+	return err
+}
+
+func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, localBase string, remoteFolderID string) error {
+	for fileName, localFile := range localTree.Files {
+		remoteFile, exists := remoteTree.Files[fileName]
+		localPath := filepath.Join(localBase, fileName)
+		if !exists {
+			u.PrintInfo(fmt.Sprintf("Uploading %s", localFile.Path))
+			if _, err := uploadDriveFileToFolder(srv, localPath, remoteFolderID); err != nil {
+				log.Error().Err(err).Msgf("Failed to upload %s", localFile.Path)
+			}
+		} else if localFile.Hash != remoteFile.Hash {
+			u.PrintInfo(fmt.Sprintf("Updating %s", localFile.Path))
+			if err := updateDriveFile(srv, remoteFile.ID, localPath); err != nil {
+				log.Error().Err(err).Msgf("Failed to update %s", localFile.Path)
+			}
+		}
+	}
+	for fileName, remoteFile := range remoteTree.Files {
+		if _, exists := localTree.Files[fileName]; !exists {
+			u.PrintInfo(fmt.Sprintf("Deleting %s", remoteFile.Path))
+			if err := deleteDriveFile(srv, remoteFile.ID); err != nil {
+				log.Error().Err(err).Msgf("Failed to delete %s", remoteFile.Path)
+			}
+		}
+	}
+	for dirName, localSubTree := range localTree.Dirs {
+		remoteSubTree, exists := remoteTree.Dirs[dirName]
+		var subFolderID string
+		if !exists {
+			folderMetadata := &drive.File{
+				Name:     dirName,
+				MimeType: googleFolderMimeType,
+				Parents:  []string{remoteFolderID},
+			}
+			f, err := srv.Files.Create(folderMetadata).Fields("id").Do()
+			if err != nil {
+				log.Error().Err(err).Msgf("Failed to create folder %s", dirName)
+				continue
+			}
+			subFolderID = f.Id
+			remoteSubTree = &FileTree{
+				Files: make(map[string]FileInfo),
+				Dirs:  make(map[string]*FileTree),
+			}
+		} else {
+			query := fmt.Sprintf("name = '%s' and '%s' in parents and mimeType = '%s' and trashed = false", dirName, remoteFolderID, googleFolderMimeType)
+			r, err := srv.Files.List().Q(query).Fields("files(id)").PageSize(1).Do()
+			if err != nil || len(r.Files) == 0 {
+				log.Error().Msgf("Failed to find folder ID for %s", dirName)
+				continue
+			}
+			subFolderID = r.Files[0].Id
+		}
+		subLocalBase := filepath.Join(localBase, dirName)
+		if err := syncTree(srv, localSubTree, remoteSubTree, subLocalBase, subFolderID); err != nil {
+			log.Error().Err(err).Msgf("Failed to sync subtree %s", dirName)
+		}
+	}
+	for dirName := range remoteTree.Dirs {
+		if _, exists := localTree.Dirs[dirName]; !exists {
+			query := fmt.Sprintf("name = '%s' and '%s' in parents and mimeType = '%s' and trashed = false", dirName, remoteFolderID, googleFolderMimeType)
+			r, err := srv.Files.List().Q(query).Fields("files(id)").PageSize(1).Do()
+			if err == nil && len(r.Files) > 0 {
+				if err := deleteDriveFolderRecursive(srv, r.Files[0].Id); err != nil {
+					log.Error().Err(err).Msgf("Failed to delete folder %s", dirName)
+				} else {
+					u.PrintInfo(fmt.Sprintf("Deleting folder %s", dirName))
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func deleteDriveFolderRecursive(srv *drive.Service, folderID string) error {
+	query := fmt.Sprintf("'%s' in parents and trashed = false", folderID)
+	var pageToken string
+	for {
+		r, err := srv.Files.List().Q(query).
+			PageSize(100).
+			Fields("nextPageToken, files(id, mimeType)").
+			PageToken(pageToken).Do()
+		if err != nil {
+			return err
+		}
+		for _, f := range r.Files {
+			if f.MimeType == googleFolderMimeType {
+				if err := deleteDriveFolderRecursive(srv, f.Id); err != nil {
+					return err
+				}
+			} else {
+				if err := srv.Files.Delete(f.Id).Do(); err != nil {
+					return err
+				}
+			}
+		}
+		pageToken = r.NextPageToken
+		if pageToken == "" {
+			break
+		}
+	}
+	return srv.Files.Delete(folderID).Do()
+}
+
+func SyncDriveDirectory(srv *drive.Service, localDir string, remotePath string) error {
+	localTree, err := buildLocalTree(localDir)
+	if err != nil {
+		return fmt.Errorf("failed to build local tree: %v", err)
+	}
+	folderID := "root"
+	if remotePath != "" && remotePath != "/" && remotePath != "root" {
+		item, err := getItemIdByPath(srv, remotePath)
+		if err != nil {
+			return fmt.Errorf("failed to resolve remote path: %v", err)
+		}
+		if item.MimeType != googleFolderMimeType {
+			return fmt.Errorf("remote path is not a folder")
+		}
+		folderID = item.Id
+	}
+	remoteTree, err := buildRemoteTree(srv, folderID, "")
+	if err != nil {
+		return fmt.Errorf("failed to build remote tree: %v", err)
+	}
+	return syncTree(srv, localTree, remoteTree, localDir, folderID)
+}
