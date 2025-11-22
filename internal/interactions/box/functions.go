@@ -78,11 +78,59 @@ func resolvePathToID(client *http.Client, path string, expectedType string) (str
 	return "0", "folder", nil
 }
 
-func ListBoxContents(client *http.Client, folderPath string) ([]BoxItemDisplay, []BoxItemDisplay, error) {
-	folderID, _, err := resolvePathToID(client, folderPath, "folder")
+func ListBoxContents(client *http.Client, path string) ([]BoxItemDisplay, []BoxItemDisplay, error) {
+	if path == "" || path == "/" || path == "root" {
+		return listBoxFolderContents(client, "0")
+	}
+	itemID, itemType, err := resolvePathToID(client, path, "")
 	if err != nil {
 		return nil, nil, err
 	}
+	if itemType == "file" {
+		return listBoxFileInfo(client, itemID)
+	}
+	return listBoxFolderContents(client, itemID)
+}
+
+func listBoxFileInfo(client *http.Client, fileID string) ([]BoxItemDisplay, []BoxItemDisplay, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/files/%s", apiBaseURL, fileID), nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	q := req.URL.Query()
+	q.Add("fields", "type,name,size,modified_at")
+	req.URL.RawQuery = q.Encode()
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get file info: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil, handleBoxAPIError("get file info", resp)
+	}
+	var item BoxItem
+	if err := json.NewDecoder(resp.Body).Decode(&item); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse file response: %v", err)
+	}
+	var modTime string
+	if item.ModifiedAt != nil {
+		t, err := time.Parse(time.RFC3339, *item.ModifiedAt)
+		if err == nil {
+			modTime = t.Format("2006-01-02 15:04")
+		}
+	}
+	display := BoxItemDisplay{
+		Name:         item.Name,
+		ModifiedTime: modTime,
+		Type:         item.Type,
+	}
+	if item.Size != nil {
+		display.Size = *item.Size
+	}
+	return nil, []BoxItemDisplay{display}, nil
+}
+
+func listBoxFolderContents(client *http.Client, folderID string) ([]BoxItemDisplay, []BoxItemDisplay, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, folderID), nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create request: %v", err)
@@ -131,7 +179,18 @@ func ListBoxContents(client *http.Client, folderPath string) ([]BoxItemDisplay, 
 	return folders, files, nil
 }
 
-func UploadBoxFile(client *http.Client, localPath string, boxFolderPath string) error {
+func UploadBoxItem(client *http.Client, localPath string, boxFolderPath string) error {
+	fileInfo, err := os.Stat(localPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat local path '%s': %v", localPath, err)
+	}
+	if fileInfo.IsDir() {
+		return UploadBoxFolder(client, localPath, boxFolderPath)
+	}
+	return uploadBoxFile(client, localPath, boxFolderPath)
+}
+
+func uploadBoxFile(client *http.Client, localPath string, boxFolderPath string) error {
 	parentFolderID := "0"
 	if boxFolderPath != "" {
 		var err error
@@ -185,14 +244,21 @@ func UploadBoxFile(client *http.Client, localPath string, boxFolderPath string) 
 	return nil
 }
 
-func DownloadBoxFile(client *http.Client, boxFilePath string, localPath string) (string, error) {
-	fileID, itemType, err := resolvePathToID(client, boxFilePath, "file")
+func DownloadBoxItem(client *http.Client, boxPath string, localPath string) (string, error) {
+	itemID, itemType, err := resolvePathToID(client, boxPath, "")
 	if err != nil {
-		return "", fmt.Errorf("failed to find file '%s': %v", boxFilePath, err)
+		return "", fmt.Errorf("failed to find item '%s': %v", boxPath, err)
 	}
-	if itemType != "file" {
-		return "", fmt.Errorf("path '%s' is a %s, not a file", boxFilePath, itemType)
+	if itemType == "folder" {
+		if localPath != "" {
+			return "", fmt.Errorf("local path cannot be specified when downloading a folder")
+		}
+		return "", DownloadBoxFolder(client, boxPath)
 	}
+	return downloadBoxFile(client, itemID, boxPath, localPath)
+}
+
+func downloadBoxFile(client *http.Client, fileID string, boxFilePath string, localPath string) (string, error) {
 	if localPath == "" {
 		parts := strings.Split(strings.Trim(boxFilePath, "/"), "/")
 		if len(parts) > 0 {

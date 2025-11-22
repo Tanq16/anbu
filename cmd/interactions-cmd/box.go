@@ -37,23 +37,23 @@ which can be specified via a flag or placed at ~/.anbu-box-credentials.json.`,
 }
 
 var boxListCmd = &cobra.Command{
-	Use:     "list [folder-path]",
+	Use:     "list [path]",
 	Aliases: []string{"ls"},
 	Short:   "List files and folders in Box",
-	Long:    `Lists files and folders. If [folder-path] is provided, lists content of that folder. Otherwise, lists the root folder.`,
+	Long:    `Lists files and folders. If [path] is provided and is a folder, lists its contents. If [path] is a file, shows file info. Otherwise, lists the root folder.`,
 	Args:    cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		folderPath := ""
+		path := ""
 		if len(args) > 0 {
-			folderPath, _ = box.ResolvePath(args[0])
+			path, _ = box.ResolvePath(args[0])
 		}
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
-		folders, files, err := box.ListBoxContents(client, folderPath)
+		folders, files, err := box.ListBoxContents(client, path)
 		if err != nil {
-			log.Fatal().Err(err).Msgf("Failed to list contents for '%s'", folderPath)
+			log.Fatal().Err(err).Msgf("Failed to list contents for '%s'", path)
 		}
 		table := u.NewTable([]string{"Type", "Name", "Size", "Modified"})
 		for _, f := range folders {
@@ -73,7 +73,7 @@ var boxListCmd = &cobra.Command{
 			})
 		}
 		if len(table.Rows) == 0 {
-			u.PrintInfo(fmt.Sprintf("No items found in '%s'", folderPath))
+			u.PrintInfo(fmt.Sprintf("No items found in '%s'", path))
 			return
 		}
 		table.PrintTable(false)
@@ -81,10 +81,10 @@ var boxListCmd = &cobra.Command{
 }
 
 var boxUploadCmd = &cobra.Command{
-	Use:     "upload <local-file> [box-folder-path]",
+	Use:     "upload <local-path> [box-folder-path]",
 	Aliases: []string{"up"},
-	Short:   "Upload a local file to Box",
-	Long:    `Uploads a single local file. If [box-folder-path] is provided, uploads to that folder. Otherwise, uploads to the root folder.`,
+	Short:   "Upload a local file or folder to Box",
+	Long:    `Uploads a local file or folder to Box. If [box-folder-path] is provided, uploads to that folder. Otherwise, uploads to the root folder. Folders are uploaded recursively.`,
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		localPath := args[0]
@@ -97,20 +97,20 @@ var boxUploadCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
 		u.PrintInfo(fmt.Sprintf("Starting upload of %s to %s...", u.FDebug(localPath), u.FDebug(boxFolderPath)))
-		if err := box.UploadBoxFile(client, localPath, boxFolderPath); err != nil {
-			log.Fatal().Err(err).Msg("Failed to upload file")
+		if err := box.UploadBoxItem(client, localPath, boxFolderPath); err != nil {
+			log.Fatal().Err(err).Msg("Failed to upload")
 		}
 	},
 }
 
 var boxDownloadCmd = &cobra.Command{
-	Use:     "download <box-file-path> [local-path]",
+	Use:     "download <box-path> [local-path]",
 	Aliases: []string{"dl"},
-	Short:   "Download a file from Box",
-	Long:    `Downloads a file from Box to the current directory. If [local-path] is provided, saves to that path. Otherwise, uses the file name from Box.`,
+	Short:   "Download a file or folder from Box",
+	Long:    `Downloads a file or folder from Box. If [local-path] is provided for a file, saves to that path. For folders, downloads to current directory with the folder name.`,
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		boxFilePath, _ := box.ResolvePath(args[0])
+		boxPath, _ := box.ResolvePath(args[0])
 		localPath := ""
 		if len(args) > 1 {
 			localPath = args[1]
@@ -119,56 +119,14 @@ var boxDownloadCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
-		u.PrintInfo(fmt.Sprintf("Starting download of %s...", u.FDebug(boxFilePath)))
-		downloadedPath, err := box.DownloadBoxFile(client, boxFilePath, localPath)
+		u.PrintInfo(fmt.Sprintf("Starting download of %s...", u.FDebug(boxPath)))
+		downloadedPath, err := box.DownloadBoxItem(client, boxPath, localPath)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to download file")
+			log.Fatal().Err(err).Msg("Failed to download")
 		}
-		fmt.Printf("Successfully downloaded %s %s %s\n", u.FDebug(boxFilePath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(downloadedPath))
-	},
-}
-
-var boxUploadFolderCmd = &cobra.Command{
-	Use:     "upload-folder <local-folder> [box-folder-path]",
-	Aliases: []string{"up-f"},
-	Short:   "Upload a local folder recursively to Box",
-	Long:    `Uploads a local folder recursively. If [box-folder-path] is provided, uploads into that folder. Otherwise, creates the new folder in the root.`,
-	Args:    cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		localPath := args[0]
-		boxFolderPath := ""
-		if len(args) > 1 {
-			boxFolderPath, _ = box.ResolvePath(args[1])
+		if downloadedPath != "" {
+			fmt.Printf("Successfully downloaded %s %s %s\n", u.FDebug(boxPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(downloadedPath))
 		}
-		client, err := box.GetBoxClient(boxFlags.credentialsFile)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Box client")
-		}
-		u.PrintInfo(fmt.Sprintf("Starting folder upload of %s to %s...", u.FDebug(localPath), u.FDebug(boxFolderPath)))
-		if err := box.UploadBoxFolder(client, localPath, boxFolderPath); err != nil {
-			log.Fatal().Err(err).Msg("Failed to upload folder")
-		}
-		u.PrintSuccess(fmt.Sprintf("Successfully uploaded folder %s", localPath))
-	},
-}
-
-var boxDownloadFolderCmd = &cobra.Command{
-	Use:     "download-folder <box-folder-path>",
-	Aliases: []string{"dl-f"},
-	Short:   "Download a folder recursively from Box",
-	Long:    `Downloads a folder recursively from Box to the current directory. <box-folder-path> is the full path to the folder (e.g., 'MyFolder/MySubFolder').`,
-	Args:    cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		boxFolderPath, _ := box.ResolvePath(args[0])
-		client, err := box.GetBoxClient(boxFlags.credentialsFile)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Box client")
-		}
-		u.PrintInfo(fmt.Sprintf("Starting folder download of %s...", u.FDebug(boxFolderPath)))
-		if err := box.DownloadBoxFolder(client, boxFolderPath); err != nil {
-			log.Fatal().Err(err).Msg("Failed to download folder")
-		}
-		u.PrintSuccess(fmt.Sprintf("Successfully downloaded folder %s", boxFolderPath))
 	},
 }
 
@@ -178,6 +136,4 @@ func init() {
 	BoxCmd.AddCommand(boxListCmd)
 	BoxCmd.AddCommand(boxUploadCmd)
 	BoxCmd.AddCommand(boxDownloadCmd)
-	BoxCmd.AddCommand(boxUploadFolderCmd)
-	BoxCmd.AddCommand(boxDownloadFolderCmd)
 }

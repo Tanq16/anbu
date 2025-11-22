@@ -71,7 +71,7 @@ Example (query file):
 func init() {
 	Neo4jCmd.Flags().StringVarP(&neo4jCmdFlags.uri, "uri", "r", "neo4j://localhost:7687", "Neo4j URI")
 	Neo4jCmd.Flags().StringVarP(&neo4jCmdFlags.user, "user", "u", "neo4j", "Neo4j user")
-	Neo4jCmd.Flags().StringVarP(&neo4jCmdFlags.password, "password", "p", "password", "Neo4j password")
+	Neo4jCmd.Flags().StringVarP(&neo4jCmdFlags.password, "password", "p", "p4SSw0rd", "Neo4j password")
 	Neo4jCmd.Flags().StringVarP(&neo4jCmdFlags.database, "database", "d", "neo4j", "Neo4j database")
 	Neo4jCmd.Flags().StringVarP(&neo4jCmdFlags.query, "query", "q", "", "Single Cypher query to execute")
 	Neo4jCmd.Flags().StringVar(&neo4jCmdFlags.queryFile, "query-file", "", "Path to a YAML file with a list of Cypher queries")

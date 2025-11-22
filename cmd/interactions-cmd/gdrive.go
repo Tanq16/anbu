@@ -38,15 +38,15 @@ or placed at ~/.anbu-gdrive-credentials.json.`,
 }
 
 var gdriveListCmd = &cobra.Command{
-	Use:     "list [folder-name]",
+	Use:     "list [path]",
 	Aliases: []string{"ls"},
 	Short:   "List files and folders in Google Drive",
-	Long:    `Lists files and folders. If [folder-name] is provided, lists content of that folder. Otherwise, lists the root 'My Drive'.`,
+	Long:    `Lists files and folders. If [path] is provided and is a folder, lists its contents. If [path] is a file, shows file info. Otherwise, lists the root 'My Drive'.`,
 	Args:    cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		folderName := "root"
+		path := "root"
 		if len(args) > 0 {
-			folderName, _ = gdrive.ResolvePath(args[0])
+			path, _ = gdrive.ResolvePath(args[0])
 		}
 
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
@@ -54,9 +54,9 @@ var gdriveListCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
 
-		folders, files, err := gdrive.ListDriveContents(srv, folderName)
+		folders, files, err := gdrive.ListDriveContents(srv, path)
 		if err != nil {
-			log.Fatal().Err(err).Msgf("Failed to list contents for '%s'", folderName)
+			log.Fatal().Err(err).Msgf("Failed to list contents for '%s'", path)
 		}
 
 		table := u.NewTable([]string{"Type", "Name", "Size", "Modified"})
@@ -78,7 +78,7 @@ var gdriveListCmd = &cobra.Command{
 		}
 
 		if len(table.Rows) == 0 {
-			u.PrintInfo(fmt.Sprintf("No items found in '%s'", folderName))
+			u.PrintInfo(fmt.Sprintf("No items found in '%s'", path))
 			return
 		}
 
@@ -87,18 +87,16 @@ var gdriveListCmd = &cobra.Command{
 }
 
 var gdriveUploadCmd = &cobra.Command{
-	Use:     "upload <local-file> [drive-folder]",
+	Use:     "upload <local-path> [drive-folder]",
 	Aliases: []string{"up"},
-	Short:   "Upload a local file to Google Drive",
-	Long:    `Uploads a single local file. If [drive-folder] is provided, uploads to that folder. Otherwise, uploads to the root 'My Drive'.`,
+	Short:   "Upload a local file or folder to Google Drive",
+	Long:    `Uploads a local file or folder to Google Drive. If [drive-folder] is provided, uploads to that folder. Otherwise, uploads to the root 'My Drive'. Folders are uploaded recursively.`,
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		localPath := args[0]
 		driveFolder := "root"
 		if len(args) > 1 {
 			driveFolder, _ = gdrive.ResolvePath(args[1])
-		} else if len(args) > 2 {
-			log.Fatal().Msg("Too many arguments. Please provide only the local file and optionally the drive folder.")
 		}
 
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
@@ -107,19 +105,17 @@ var gdriveUploadCmd = &cobra.Command{
 		}
 		u.PrintInfo(fmt.Sprintf("Starting upload of %s to %s...", u.FDebug(localPath), u.FDebug(driveFolder)))
 
-		driveFile, err := gdrive.UploadFile(srv, localPath, driveFolder)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to upload file")
+		if err := gdrive.UploadDriveItem(srv, localPath, driveFolder); err != nil {
+			log.Fatal().Err(err).Msg("Failed to upload")
 		}
-		fmt.Printf("Successfully uploaded %s %s %s (ID: %s)\n", u.FDebug(localPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(driveFile.Name), u.FDebug(driveFile.Id))
 	},
 }
 
 var gdriveDownloadCmd = &cobra.Command{
 	Use:     "download <drive-path> [local-path]",
 	Aliases: []string{"dl"},
-	Short:   "Download a file from Google Drive",
-	Long:    `Downloads a file from Google Drive to the current directory. If [local-path] is provided, saves to that path. Otherwise, uses the file name from Google Drive. <drive-path> is the full path to the file (e.g., 'MyFolder/MyFile.txt').`,
+	Short:   "Download a file or folder from Google Drive",
+	Long:    `Downloads a file or folder from Google Drive. If [local-path] is provided for a file, saves to that path. For folders, downloads to current directory with the folder name.`,
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		drivePath, _ := gdrive.ResolvePath(args[0])
@@ -133,60 +129,13 @@ var gdriveDownloadCmd = &cobra.Command{
 		}
 		u.PrintInfo(fmt.Sprintf("Starting download of %s...", u.FDebug(drivePath)))
 
-		downloadedPath, err := gdrive.DownloadFile(srv, drivePath, localPath)
+		downloadedPath, err := gdrive.DownloadDriveItem(srv, drivePath, localPath)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to download file")
+			log.Fatal().Err(err).Msg("Failed to download")
 		}
-		fmt.Printf("Successfully downloaded %s %s %s\n", u.FDebug(drivePath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(downloadedPath))
-	},
-}
-
-var gdriveUploadFolderCmd = &cobra.Command{
-	Use:     "upload-folder <local-folder> [drive-folder]",
-	Aliases: []string{"up-f"},
-	Short:   "Upload a local folder recursively to Google Drive",
-	Long:    `Uploads a local folder recursively. If [drive-folder] is provided, uploads into that folder. Otherwise, creates the new folder in the root 'My Drive'.`,
-	Args:    cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		localPath := args[0]
-		driveFolder := "root"
-		if len(args) > 1 {
-			driveFolder, _ = gdrive.ResolvePath(args[1])
-		} else if len(args) > 2 {
-			log.Fatal().Msg("Too many arguments. Please provide only the local folder and optionally the drive folder.")
+		if downloadedPath != "" {
+			fmt.Printf("Successfully downloaded %s %s %s\n", u.FDebug(drivePath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(downloadedPath))
 		}
-
-		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
-		}
-		u.PrintInfo(fmt.Sprintf("Starting folder upload of %s to %s...", u.FDebug(localPath), u.FDebug(driveFolder)))
-
-		if err := gdrive.UploadFolder(srv, localPath, driveFolder); err != nil {
-			log.Fatal().Err(err).Msg("Failed to upload folder")
-		}
-		u.PrintSuccess(fmt.Sprintf("Successfully uploaded folder %s", localPath))
-	},
-}
-
-var gdriveDownloadFolderCmd = &cobra.Command{
-	Use:     "download-folder <drive-path>",
-	Aliases: []string{"dl-f"},
-	Short:   "Download a folder recursively from Google Drive",
-	Long:    `Downloads a folder recursively from Google Drive to the current directory. <drive-path> is the full path to the folder (e.g., 'MyFolder/MySubFolder').`,
-	Args:    cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		drivePath, _ := gdrive.ResolvePath(args[0])
-		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
-		}
-		u.PrintInfo(fmt.Sprintf("Starting folder download of %s...", u.FDebug(drivePath)))
-
-		if err := gdrive.DownloadFolder(srv, drivePath); err != nil {
-			log.Fatal().Err(err).Msg("Failed to download folder")
-		}
-		u.PrintSuccess(fmt.Sprintf("Successfully downloaded folder %s", drivePath))
 	},
 }
 
@@ -196,6 +145,4 @@ func init() {
 	GDriveCmd.AddCommand(gdriveListCmd)
 	GDriveCmd.AddCommand(gdriveUploadCmd)
 	GDriveCmd.AddCommand(gdriveDownloadCmd)
-	GDriveCmd.AddCommand(gdriveUploadFolderCmd)
-	GDriveCmd.AddCommand(gdriveDownloadFolderCmd)
 }

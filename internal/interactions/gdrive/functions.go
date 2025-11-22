@@ -81,22 +81,31 @@ func findOrCreateFolder(srv *drive.Service, folderName string, parentId string) 
 	return f.Id, nil
 }
 
-func ListDriveContents(srv *drive.Service, folderName string) ([]DriveItem, []DriveItem, error) {
-	folderId, err := getFolderIdByName(srv, folderName, "root")
-	if err != nil {
-		if folderName != "root" {
-			file, err := getItemIdByPath(srv, folderName)
-			if err != nil {
-				return nil, nil, err
-			}
-			if file.MimeType != googleFolderMimeType {
-				return nil, nil, fmt.Errorf("path provided is not a folder: %s", folderName)
-			}
-			folderId = file.Id
-		} else {
-			return nil, nil, err
-		}
+func ListDriveContents(srv *drive.Service, path string) ([]DriveItem, []DriveItem, error) {
+	if path == "" || path == "root" || path == "/" {
+		return listDriveFolderContents(srv, "root")
 	}
+	item, err := getItemIdByPath(srv, path)
+	if err != nil {
+		return nil, nil, err
+	}
+	if item.MimeType == googleFolderMimeType {
+		return listDriveFolderContents(srv, item.Id)
+	}
+	return listDriveFileInfo(item)
+}
+
+func listDriveFileInfo(file *drive.File) ([]DriveItem, []DriveItem, error) {
+	modTime, _ := time.Parse(time.RFC3339, file.ModifiedTime)
+	item := DriveItem{
+		Name:         file.Name,
+		ModifiedTime: modTime.Format("2006-01-02 15:04"),
+		Size:         file.Size,
+	}
+	return nil, []DriveItem{item}, nil
+}
+
+func listDriveFolderContents(srv *drive.Service, folderId string) ([]DriveItem, []DriveItem, error) {
 	query := fmt.Sprintf("'%s' in parents and trashed = false", folderId)
 	var folders []DriveItem
 	var files []DriveItem
@@ -132,7 +141,26 @@ func ListDriveContents(srv *drive.Service, folderName string) ([]DriveItem, []Dr
 	return folders, files, nil
 }
 
-func UploadFile(srv *drive.Service, localPath string, driveFolder string) (*drive.File, error) {
+func UploadDriveItem(srv *drive.Service, localPath string, driveFolder string) error {
+	fileInfo, err := os.Stat(localPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat local path '%s': %v", localPath, err)
+	}
+	if fileInfo.IsDir() {
+		err := UploadFolder(srv, localPath, driveFolder)
+		if err == nil {
+			u.PrintSuccess(fmt.Sprintf("Successfully uploaded folder %s", localPath))
+		}
+		return err
+	}
+	driveFile, err := uploadDriveFile(srv, localPath, driveFolder)
+	if err == nil {
+		fmt.Printf("Successfully uploaded %s %s %s (ID: %s)\n", u.FDebug(localPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(driveFile.Name), u.FDebug(driveFile.Id))
+	}
+	return err
+}
+
+func uploadDriveFile(srv *drive.Service, localPath string, driveFolder string) (*drive.File, error) {
 	folderId, err := getFolderIdByName(srv, driveFolder, "root")
 	if err != nil {
 		if driveFolder != "root" {
@@ -165,18 +193,21 @@ func UploadFile(srv *drive.Service, localPath string, driveFolder string) (*driv
 	return driveFile, nil
 }
 
-func DownloadFile(srv *drive.Service, drivePath string, localPath string) (string, error) {
-	file, err := getItemIdByPath(srv, drivePath)
+func DownloadDriveItem(srv *drive.Service, drivePath string, localPath string) (string, error) {
+	item, err := getItemIdByPath(srv, drivePath)
 	if err != nil {
 		return "", err
 	}
-	if file.MimeType == googleFolderMimeType {
-		return "", errors.New("path is a folder, not a file. Use 'download-folder' instead")
+	if item.MimeType == googleFolderMimeType {
+		if localPath != "" {
+			return "", errors.New("local path cannot be specified when downloading a folder")
+		}
+		return "", DownloadFolder(srv, drivePath)
 	}
 	if localPath == "" {
-		localPath = filepath.Base(file.Name)
+		localPath = filepath.Base(item.Name)
 	}
-	if err := downloadFileById(srv, file, localPath); err != nil {
+	if err := downloadFileById(srv, item, localPath); err != nil {
 		return "", err
 	}
 	return localPath, nil
