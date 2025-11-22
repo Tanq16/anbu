@@ -3,6 +3,7 @@ package anbuGenerics
 import (
 	"embed"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
@@ -107,8 +108,68 @@ func (s *MarkdownServer) serveFileContent(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Failed to read file", http.StatusInternalServerError)
 		return
 	}
+	ext := strings.ToLower(filepath.Ext(fullPath))
+	if ext != ".md" && ext != ".markdown" {
+		lang := getLanguageFromExtension(ext)
+		if lang != "" {
+			content = fmt.Appendf(nil, "```%s\n%s\n```", lang, string(content))
+		}
+	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write(content)
+}
+
+func getLanguageFromExtension(ext string) string {
+	ext = strings.TrimPrefix(ext, ".")
+
+	// Thanks AI
+	langMap := map[string]string{
+		"go": "go",
+		"py": "python", "pyw": "python", "pyi": "python",
+		"js": "javascript", "jsx": "javascript", "mjs": "javascript", "cjs": "javascript",
+		"ts": "typescript", "tsx": "typescript",
+		"java": "java",
+		"c":    "c", "h": "c",
+		"cpp": "cpp", "cc": "cpp", "cxx": "cpp", "hpp": "cpp", "hxx": "cpp",
+		"rs": "rust",
+		"rb": "ruby", "rake": "ruby",
+		"php": "php", "phtml": "php",
+		"sh": "bash", "bash": "bash", "zsh": "bash",
+		"yaml": "yaml", "yml": "yaml",
+		"json": "json",
+		"xml":  "xml", "html": "html", "htm": "html",
+		"css": "css", "scss": "scss", "sass": "sass", "less": "less",
+		"sql":   "sql",
+		"swift": "swift",
+		"kt":    "kotlin", "kts": "kotlin",
+		"hs": "haskell", "lhs": "haskell",
+		"ml": "ocaml", "mli": "ocaml",
+		"lua": "lua",
+		"r":   "r",
+		"pl":  "perl", "pm": "perl",
+		"vim":        "vim",
+		"dockerfile": "dockerfile",
+		"makefile":   "makefile", "mk": "makefile",
+		"cmake":      "cmake",
+		"toml":       "toml",
+		"ini":        "ini",
+		"properties": "properties",
+		"diff":       "diff", "patch": "diff",
+		"tex":  "latex",
+		"dart": "dart",
+		"cs":   "csharp",
+		"ps1":  "powershell", "psm1": "powershell", "psd1": "powershell",
+		"tf":      "hcl",
+		"hcl":     "hcl",
+		"graphql": "graphql", "gql": "graphql",
+		"proto": "protobuf",
+		"awk":   "awk",
+		"sed":   "sed",
+	}
+	if lang, ok := langMap[ext]; ok {
+		return lang
+	}
+	return ""
 }
 
 func (s *MarkdownServer) buildFileTree(rootPath string) (map[string]FileNode, error) {

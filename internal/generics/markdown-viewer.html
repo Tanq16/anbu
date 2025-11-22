@@ -282,12 +282,7 @@
                     fileLink.className = 'tree-item';
                     fileLink.setAttribute('data-path', fullPath);
                     fileLink.innerHTML = `<span style="opacity:0.5; font-size: 1.2em; line-height: 1;">•</span> ${name}`;
-                    if (name.toLowerCase().endsWith('.md')) {
-                        fileLink.onclick = () => loadFile(fullPath, name, fileLink);
-                    } else {
-                        fileLink.style.opacity = '0.5';
-                        fileLink.style.cursor = 'default';
-                    }
+                    fileLink.onclick = () => loadFile(fullPath, name, fileLink);
                     container.appendChild(fileLink);
                 }
             }
@@ -306,29 +301,48 @@
                 if (!response.ok) throw new Error('Failed to fetch file content');
                 const content = await response.text();
                 const target = document.getElementById('markdown-target');
-                target.innerHTML = marked.parse(content);
-
-                const mermaidBlocks = target.querySelectorAll('.language-mermaid');
-                for (let i = 0; i < mermaidBlocks.length; i++) {
-                    const block = mermaidBlocks[i];
-                    const code = block.textContent;
-                    const id = `mermaid-${i}`;
-                    const div = document.createElement('div');
-                    div.className = 'mermaid';
-                    div.id = id;
-                    div.textContent = code;
+                
+                // Try to parse as markdown (works for .md files and code files wrapped in code blocks)
+                try {
+                    target.innerHTML = marked.parse(content);
                     
-                    block.parentElement.replaceWith(div);
+                    const mermaidBlocks = target.querySelectorAll('.language-mermaid');
+                    for (let i = 0; i < mermaidBlocks.length; i++) {
+                        const block = mermaidBlocks[i];
+                        const code = block.textContent;
+                        const id = `mermaid-${i}`;
+                        const div = document.createElement('div');
+                        div.className = 'mermaid';
+                        div.id = id;
+                        div.textContent = code;
+                        
+                        block.parentElement.replaceWith(div);
+                    }
+                    if (mermaidBlocks.length > 0) {
+                        await mermaid.run();
+                    }
+                    hljs.highlightAll();
+                } catch (parseError) {
+                    // If parsing fails, show the raw content in a code block
+                    console.warn('Failed to parse as markdown, showing as plain text:', parseError);
+                    target.innerHTML = `<pre><code>${escapeHtml(content)}</code></pre>`;
+                    hljs.highlightAll();
                 }
-                if (mermaidBlocks.length > 0) {
-                    await mermaid.run();
-                }
-                hljs.highlightAll();
                 currentPath = path;
             } catch (error) {
                 console.error('Error loading file:', error);
-                document.getElementById('markdown-target').innerHTML = '<p>Error loading file content.</p>';
+                const target = document.getElementById('markdown-target');
+                target.innerHTML = `<div style="padding: 20px; text-align: center;">
+                    <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 10px;">Unable to render file: <strong>${escapeHtml(filename)}</strong></p>
+                    <p style="color: var(--text-muted); font-size: 14px;">${escapeHtml(error.message)}</p>
+                </div>`;
             }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function toggleSidebar() {
