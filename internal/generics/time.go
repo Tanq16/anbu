@@ -176,6 +176,11 @@ func TimePurple() {
 	printTimeTablePurple(currentTime)
 }
 
+func TimeISO() {
+	currentTime := time.Now().UTC()
+	fmt.Println(currentTime.Format(time.RFC3339))
+}
+
 func TimeEpochDiff(epochs []int64) {
 	var epoch1, epoch2 int64
 	if len(epochs) == 0 {

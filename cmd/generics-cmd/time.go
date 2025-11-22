@@ -19,6 +19,7 @@ var TimeCmd = &cobra.Command{
 	Long: `Arguments:
 - now: print the current time in various formats
 - purple: print the current time in purple team format (includes public ip)
+- iso: print the current ISO time string in UTC in plaintext (for scripts)
 - diff: print the difference between two epochs
 - parse: parse a time string across various formats and print as table
 - until: parse a time string and print the difference between now and then`,
@@ -33,6 +34,8 @@ var TimeCmd = &cobra.Command{
 			anbuGenerics.TimeCurrent()
 		case "purple":
 			anbuGenerics.TimePurple()
+		case "iso":
+			anbuGenerics.TimeISO()
 		case "diff":
 			anbuGenerics.TimeEpochDiff(timeCmdFlags.epochs)
 		case "parse":

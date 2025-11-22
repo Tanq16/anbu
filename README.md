@@ -58,12 +58,13 @@ The specific details of each are:
 
   ```bash
   anbu time          # prints time in various formats
-  anbu time now      # prints time in various formats
+  anbu t now         # prints time in various formats
+  anbu t iso         # prints current time in ISO format for script-usage
   anbu time purple   # print time and public IP for purple teams
-  anbu time diff -e 1744192475 -e 1744497775  # print time difference between 2 epochs
-  anbu time parse -t "13 Apr 25 16:30 EDT"  # read given time and print in multiple formats
-  anbu time parse -t "13 Apr 25 16:30 EDT" -p purple  # parse time and print in purple team format
+  anbu t diff -e 1744192475 -e 1744497775   # print time difference between 2 epochs
+  anbu t parse -t "13 Apr 25 16:30 EDT"     # read given time and print in multiple formats
   anbu time until -t "13 Apr 25 16:30 EDT"  # read time and print difference from now
+  anbu t parse -t "13 Apr 25 16:30 EDT" -p purple  # parse time and print in purple team format
   ```
 
 - ***Secrets Management*** (alias: `p`)
