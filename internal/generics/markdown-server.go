@@ -109,12 +109,25 @@ func (s *MarkdownServer) serveFileContent(w http.ResponseWriter, r *http.Request
 		return
 	}
 	ext := strings.ToLower(filepath.Ext(fullPath))
-	if ext != ".md" && ext != ".markdown" {
-		lang := getLanguageFromExtension(ext)
-		if lang != "" {
-			content = fmt.Appendf(nil, "```%s\n%s\n```", lang, string(content))
+	filename := filepath.Base(fullPath)
+	if ext == ".md" || ext == ".markdown" {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write(content)
+		return
+	}
+	lang := getLanguageFromFilename(filename)
+	if lang == "" {
+		if ext == "" {
+			http.Error(w, "File type not supported for rendering", http.StatusUnsupportedMediaType)
+			return
+		}
+		lang = getLanguageFromExtension(ext)
+		if lang == "" {
+			http.Error(w, "File type not supported for rendering", http.StatusUnsupportedMediaType)
+			return
 		}
 	}
+	content = fmt.Appendf(nil, "```%s\n%s\n```", lang, string(content))
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write(content)
 }
@@ -167,6 +180,31 @@ func getLanguageFromExtension(ext string) string {
 		"sed":   "sed",
 	}
 	if lang, ok := langMap[ext]; ok {
+		return lang
+	}
+	return ""
+}
+
+func getLanguageFromFilename(filename string) string {
+	filenameMap := map[string]string{
+		"LICENSE":         "text",
+		"Dockerfile":      "dockerfile",
+		"Makefile":        "makefile",
+		"CMakeLists.txt":  "cmake",
+		"Rakefile":        "ruby",
+		"Gemfile":         "ruby",
+		"Gemfile.lock":    "ruby",
+		"BUILD":           "python",
+		"BUILD.bazel":     "python",
+		"WORKSPACE":       "python",
+		"WORKSPACE.bazel": "python",
+		"Justfile":        "makefile",
+		"justfile":        "makefile",
+	}
+	if lang, ok := filenameMap[filename]; ok {
+		return lang
+	}
+	if lang, ok := filenameMap[strings.ToLower(filename)]; ok {
 		return lang
 	}
 	return ""
