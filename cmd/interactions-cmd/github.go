@@ -21,7 +21,7 @@ var githubFlags struct {
 var GitHubCmd = &cobra.Command{
 	Use:     "github",
 	Aliases: []string{"gh"},
-	Short:   "Interact with GitHub (list, add, make)",
+	Short:   "Interact with GitHub (list, add, make, download)",
 	Long: `Provides commands to interact with GitHub.
 Requires a json file with client_id of Oauth app,
 which can be specified via a flag or placed at
@@ -195,6 +195,31 @@ Examples:
 	},
 }
 
+var githubDownloadCmd = &cobra.Command{
+	Use:     "download [OWNER/REPO/tree/REF/PATH]",
+	Aliases: []string{"dl"},
+	Short:   "Download files or folders from GitHub",
+	Long: `Downloads files or folders from a GitHub repository.
+The URL format is: OWNER/REPO/tree/<BRANCH|COMMIT>/PATH
+
+Examples:
+  anbu gh download owner/repo/tree/main/src/file.go     - download a single file
+  anbu gh download owner/repo/tree/main/src             - download a folder
+  anbu gh download owner/repo/tree/abc123def/path/to/dir - download from specific commit`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		url := args[0]
+		client, err := github.GetGitHubClient(githubFlags.credentialsFile)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to get GitHub client")
+		}
+		if err := github.DownloadFromURL(client, url); err != nil {
+			log.Fatal().Err(err).Msg("Failed to download")
+		}
+		u.PrintSuccess("Download completed successfully")
+	},
+}
+
 func handleList(client *http.Client, owner, repo, resourcePath string) error {
 	parts := strings.Split(resourcePath, "/")
 	if len(parts) == 0 {
@@ -260,4 +285,5 @@ func init() {
 	GitHubCmd.AddCommand(githubListCmd)
 	GitHubCmd.AddCommand(githubAddCmd)
 	GitHubCmd.AddCommand(githubMakeCmd)
+	GitHubCmd.AddCommand(githubDownloadCmd)
 }

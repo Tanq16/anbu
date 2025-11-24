@@ -29,7 +29,7 @@ A summary of everything that **Anbu** can perform:
 | **Stash** | Persistent clipboard for files, folders, and text snippets with apply, pop, and clear operations, almost similar to `git` stash |
 | **Google Drive Interaction** | Interact with Google Drive to list, upload, download, and sync files and folders |
 | **Box.com Interaction** | Interact with Box.com to list, upload, download, and sync files and folders |
-| **GitHub Interaction** | Interact with GitHub to list issues, PRs, workflow runs, add comments, and create issues/PRs |
+| **GitHub Interaction** | Interact with GitHub to list issues, PRs, workflow runs, add comments, create issues/PRs, and download files/folders |
 | **File System Synchronization** | Synchronize files between client and server using WebSocket with real-time change propagation |
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
 | **Markdown Viewer** | Start a web server to view rendered markdown files with syntax highlighting, navigation, and Mermaid support |
@@ -288,6 +288,11 @@ The specific details of each are:
   anbu gh make owner/repo/i # Create a new issue
   anbu gh make owner/repo/pr/newfeat # Create a PR from branch to main
   anbu gh make owner/repo/pr/newfeat/develop # Create a PR from branch to base branch
+
+  # Download files or folders from a repository
+  anbu gh download owner/repo/tree/main/src/file.go      # Download a single file
+  anbu gh dl owner/repo/tree/feature/src                 # Download folder from feature branch
+  anbu gh download owner/repo/tree/abc123def/path/to/dir # Download from specific commit
   ```
 
 - ***File System Synchronization***
