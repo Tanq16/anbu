@@ -33,6 +33,7 @@ A summary of everything that **Anbu** can perform:
 | **File System Synchronization** | Synchronize files between client and server using WebSocket with real-time change propagation |
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
 | **Markdown Viewer** | Start a web server to view rendered markdown files with syntax highlighting, navigation, and Mermaid support |
+| **AWS Helper Utilities** | Configure AWS SSO with IAM Identity Center for multi-role access and generate console URLs from CLI profiles |
 
 ## Installation
 
@@ -265,8 +266,12 @@ The specific details of each are:
 - ***GitHub Interaction*** (alias: `gh`)
 
   ```bash
-  # Put OAuth app client ID at ~/.anbu-github-credentials.json or pass another file with --credentials flag
+  # Authentication: Use OAuth (default) or PAT with --pat flag
+  # OAuth: Put OAuth app client ID at ~/.anbu-github-credentials.json or pass another file with --credentials flag
   anbu github -c path/to/credentials.json list owner/repo/i
+  
+  # PAT: Use Personal Access Token (classic or fine-grained) with --pat flag
+  anbu gh --pat YOUR_TOKEN ls owner/repo/i
 
   anbu gh ls owner/repo/i # List issues
   anbu gh ls owner/repo/i/23 # List comments for an issue
@@ -329,6 +334,18 @@ The specific details of each are:
   ```bash
   anbu markdown          # Start markdown viewer on default address (0.0.0.0:8080)
   anbu md -l :3000       # Start on port 3000 on all interfaces
+  ```
+
+- ***AWS Helper Utilities***
+
+  ```bash
+  # Configure AWS SSO with IAM Identity Center for multi-role access
+  # This will create profiles in ~/.aws/config for all accounts and roles
+  anbu aws iidc-login -u https://my-sso.awsapps.com/start -r us-east-1
+  anbu aws iidc-login --start-url https://my-sso.awsapps.com/start --sso-region us-east-1 --cli-region us-west-2 --session-name my-sso
+
+  # Generate AWS console URL from a local CLI profile (valid for 12 hours)
+  anbu aws cli-ui -p my-profile
   ```
 
 ## Tips & Tricks
@@ -464,7 +481,13 @@ When you run a `box` command for the first time, `anbu` will:
 <details>
 <summary><b>Creating GitHub API Credentials</b></summary>
 
-To use the `github` command, you need to create a GitHub OAuth App. Here's how to do it:
+To use the `github` command, you can authenticate using either:
+- **OAuth App** (default method - requires credentials file)
+- **Personal Access Token** (PAT - classic or fine-grained, passed via `--pat` flag)
+
+**Option 1: OAuth App Authentication**
+
+To use OAuth authentication, you need to create a GitHub OAuth App. Here's how to do it:
 
 1. Navigate to [GitHub Developer Settings](https://github.com/settings/developers).
 2. **Create a New OAuth App:**
@@ -483,6 +506,10 @@ To use the `github` command, you need to create a GitHub OAuth App. Here's how t
      }
      ```
    - Save this file as `~/.anbu-github-credentials.json` or provide its path using the `--credentials` flag.
+
+**Option 2: PAT**
+
+This is straightforward, but remember to use the `--pat` flag for every operation.
 
 **Authentication Flow:**
 

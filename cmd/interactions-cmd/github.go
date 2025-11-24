@@ -16,6 +16,7 @@ import (
 
 var githubFlags struct {
 	credentialsFile string
+	pat             string
 }
 
 var GitHubCmd = &cobra.Command{
@@ -27,6 +28,10 @@ Requires a json file with client_id of Oauth app,
 which can be specified via a flag or placed at
 ~/.anbu-github-credentials.json.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Skip credentials file check if PAT is provided
+		if githubFlags.pat != "" {
+			return nil
+		}
 		if githubFlags.credentialsFile == "" {
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
@@ -61,7 +66,7 @@ Examples:
 		if len(args) > 0 {
 			path = args[0]
 		}
-		client, err := github.GetGitHubClient(githubFlags.credentialsFile)
+		client, err := github.GetGitHubClient(githubFlags.credentialsFile, githubFlags.pat)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get GitHub client")
 		}
@@ -91,7 +96,7 @@ Examples:
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := args[0]
-		client, err := github.GetGitHubClient(githubFlags.credentialsFile)
+		client, err := github.GetGitHubClient(githubFlags.credentialsFile, githubFlags.pat)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get GitHub client")
 		}
@@ -146,7 +151,7 @@ Examples:
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := args[0]
-		client, err := github.GetGitHubClient(githubFlags.credentialsFile)
+		client, err := github.GetGitHubClient(githubFlags.credentialsFile, githubFlags.pat)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get GitHub client")
 		}
@@ -209,7 +214,7 @@ Examples:
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		url := args[0]
-		client, err := github.GetGitHubClient(githubFlags.credentialsFile)
+		client, err := github.GetGitHubClient(githubFlags.credentialsFile, githubFlags.pat)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get GitHub client")
 		}
@@ -281,6 +286,7 @@ func handleList(client *http.Client, owner, repo, resourcePath string) error {
 
 func init() {
 	GitHubCmd.PersistentFlags().StringVarP(&githubFlags.credentialsFile, "credentials", "c", "", "Path to GitHub credentials.json file (default ~/.anbu-github-credentials.json)")
+	GitHubCmd.PersistentFlags().StringVar(&githubFlags.pat, "pat", "", "GitHub Personal Access Token (classic or fine-grained)")
 
 	GitHubCmd.AddCommand(githubListCmd)
 	GitHubCmd.AddCommand(githubAddCmd)

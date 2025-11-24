@@ -46,22 +46,30 @@ type TokenErrorResponse struct {
 	ErrorURI         string `json:"error_uri"`
 }
 
-func GetGitHubClient(credentialsFile string) (*http.Client, error) {
+func GetGitHubClient(credentialsFile string, pat string) (*http.Client, error) {
 	ctx := context.Background()
-	b, err := os.ReadFile(credentialsFile)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read credentials file: %v", err)
-	}
-	var creds GitHubCredentials
-	if err := json.Unmarshal(b, &creds); err != nil {
-		return nil, fmt.Errorf("unable to parse credentials file: %v", err)
-	}
-	if creds.ClientID == "" {
-		return nil, fmt.Errorf("credentials file must contain client_id")
-	}
-	token, err := getGitHubOAuthToken(creds.ClientID)
-	if err != nil {
-		return nil, fmt.Errorf("unable to get OAuth token: %v", err)
+	var token string
+	// Use PAT directly if provided
+	if pat != "" {
+		token = pat
+	} else {
+		// otherwise, default to OAuth
+		b, err := os.ReadFile(credentialsFile)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read credentials file: %v", err)
+		}
+		var creds GitHubCredentials
+		if err := json.Unmarshal(b, &creds); err != nil {
+			return nil, fmt.Errorf("unable to parse credentials file: %v", err)
+		}
+		if creds.ClientID == "" {
+			return nil, fmt.Errorf("credentials file must contain client_id")
+		}
+		oauthToken, err := getGitHubOAuthToken(creds.ClientID)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get OAuth token: %v", err)
+		}
+		token = oauthToken
 	}
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token,
