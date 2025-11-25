@@ -21,7 +21,8 @@ A summary of everything that **Anbu** can perform:
 | **Simple HTTP/HTTPS Server** | Host a simple webserver over HTTP/HTTPS with optional file upload capability |
 | **Secrets Scan** | Find common secrets in file systems using regular expressions |
 | **IP Information** | Display local and public IP details, including geolocation information |
-| **Bulk Rename** | Batch rename files or directories using regular expression patterns |
+| **Bulk Rename** | Batch rename files or directories using regular expression patterns, supporting capture groups |
+| **Bulk Sed (Regex Substitution)** | Apply regex pattern matching and replacement to file content, supporting capture groups |
 | **Data & Encoding Conversion** | Convert between data formats (YAML/JSON), decode JWTs, and handle various encodings (Base64, Hex, URL) |
 | **File Encryption/Decryption** | Secure file encryption and decryption with AES-256-GCM symmetric encryption |
 | **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
@@ -125,10 +126,19 @@ The specific details of each are:
 - ***Bulk Rename***
 
   ```bash
-  anbu rename 'prefix_(.*)' 'new_\1'        # Rename files matching regex pattern
-  anbu rename -d 'old_(.*)' 'new_\1'        # Rename directories instead of files
-  anbu rename '(.*)\.(.*)' '\1_backup.\2'   # Add _backup before extension
-  anbu rename 'image-(\d+).jpg' 'IMG_\1.jpeg' -r # Perform a dry-run without renaming
+  anbu rename 'prefix_(.*)' 'new_\1'              # Rename files matching regex pattern
+  anbu rename -d 'old_(.*)' 'new_\1'              # Rename directories instead of files
+  anbu rename '(.*)\.(.*)' '\1_backup.\2'         # Add _backup before extension
+  anbu rename 'image-(\d+).jpg' 'IMG_\1.jpeg' -r  # Perform a dry-run without renaming
+  ```
+
+- ***Sed (Regex Substitution)***
+
+  ```bash
+  anbu sed 'old' 'new' file.txt                            # Replace all occurrences of 'old' with 'new' in a file
+  anbu sed '([a-z]+)@([a-z]+)\.com' '\1@***.com' file.txt  # Replace email patterns with masked version
+  anbu sed 'foo' 'bar' ./directory                         # Apply substitution to all files in directory
+  anbu sed 'foo' 'bar' ./directory -r                      # Perform a dry-run without modifying files
   ```
 
 - ***Data & Encoding Conversion*** (alias: `c`)
