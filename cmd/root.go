@@ -58,6 +58,7 @@ func init() {
 	rootCmd.AddCommand(genericsCmd.StringCmd)
 	rootCmd.AddCommand(genericsCmd.TimeCmd)
 	rootCmd.AddCommand(genericsCmd.BulkRenameCmd)
+	rootCmd.AddCommand(genericsCmd.SedCmd)
 	rootCmd.AddCommand(genericsCmd.ConvertCmd)
 	rootCmd.AddCommand(genericsCmd.MarkdownCmd)
 	rootCmd.AddCommand(genericsCmd.StashCmd)
