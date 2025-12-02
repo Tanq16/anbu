@@ -1,88 +1,65 @@
 package interactionsCmd
 
 import (
-	"context"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	fssync "github.com/tanq16/anbu/internal/interactions/fs-sync"
 )
 
 var (
-	fsSyncClientFlags struct {
-		addr   string
-		dir    string
-		ignore string
-	}
-	fsSyncServerFlags struct {
+	fsSyncServeFlags struct {
 		port   int
 		dir    string
 		ignore string
+	}
+	fsSyncSyncFlags struct {
+		server string
+		dir    string
+		ignore string
+		delete bool
+		dryRun bool
 	}
 )
 
 var FSSyncCmd = &cobra.Command{
 	Use:   "fs-sync",
-	Short: "Synchronize files between client and server",
-	Long: `Synchronize files between a client and server using WebSocket.
-The server maintains the source of truth, and clients sync to it.
-Both client and server watch for file changes and propagate them in real-time.`,
+	Short: "One-shot file synchronization over WebSocket",
+	Long: `One-shot file synchronization between two machines.
+Server side runs 'serve' and waits for one client connection.
+Client side runs 'sync' to connect and sync files.
+Both commands exit after sync completes.`,
 }
 
-var fsSyncClientCmd = &cobra.Command{
-	Use:   "client",
-	Short: "Run the fs-sync client",
+var fsSyncServeCmd = &cobra.Command{
+	Use:   "serve",
+	Short: "Serve files and wait for one sync client",
+	Long: `Start a server that waits for one client connection, serves files, and exits.
+Run this on the machine with the source files.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-		defer stop()
-		log.Info().Msgf("Starting fs-sync client: server_address=%s directory=%s ignores=%s", fsSyncClientFlags.addr, fsSyncClientFlags.dir, fsSyncClientFlags.ignore)
-		cfg := fssync.ClientConfig{
-			ServerAddr:  fsSyncClientFlags.addr,
-			SyncDir:     fsSyncClientFlags.dir,
-			IgnorePaths: fsSyncClientFlags.ignore,
-		}
-		c, err := fssync.NewClient(cfg)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to initialize client")
-		}
-		c.Run(ctx)
+		log.Fatal().Msg("fs-sync serve: not implemented yet")
 	},
 }
 
-var fsSyncServerCmd = &cobra.Command{
-	Use:   "server",
-	Short: "Run the fs-sync server",
+var fsSyncSyncCmd = &cobra.Command{
+	Use:   "sync",
+	Short: "Connect to server and sync files",
+	Long: `Connect to a server, receive file manifest, sync files, and exit.
+Run this on the machine that wants to receive the files.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-		defer stop()
-		log.Info().Msgf("Starting fs-sync server: port=%d directory=%s ignores=%s", fsSyncServerFlags.port, fsSyncServerFlags.dir, fsSyncServerFlags.ignore)
-		cfg := fssync.ServerConfig{
-			Port:        fsSyncServerFlags.port,
-			SyncDir:     fsSyncServerFlags.dir,
-			IgnorePaths: fsSyncServerFlags.ignore,
-		}
-		s, err := fssync.NewServer(cfg)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to initialize server")
-		}
-		if err := s.Run(ctx); err != nil {
-			log.Fatal().Err(err).Msg("Server exited with an error")
-		}
+		log.Fatal().Msg("fs-sync sync: not implemented yet")
 	},
 }
 
 func init() {
-	fsSyncClientCmd.Flags().StringVarP(&fsSyncClientFlags.addr, "addr", "a", "ws://localhost:8080/ws", "Address of the fs-sync server")
-	fsSyncClientCmd.Flags().StringVarP(&fsSyncClientFlags.dir, "dir", "d", ".", "Directory to sync with the server")
-	fsSyncClientCmd.Flags().StringVar(&fsSyncClientFlags.ignore, "ignore", "", "Comma-separated list of glob patterns to ignore for local changes (e.g., 'node_modules/*,*.log')")
+	fsSyncServeCmd.Flags().IntVarP(&fsSyncServeFlags.port, "port", "p", 8080, "Port to listen on")
+	fsSyncServeCmd.Flags().StringVarP(&fsSyncServeFlags.dir, "dir", "d", ".", "Directory to serve")
+	fsSyncServeCmd.Flags().StringVar(&fsSyncServeFlags.ignore, "ignore", "", "Comma-separated patterns to ignore (e.g., '.git,node_modules')")
 
-	fsSyncServerCmd.Flags().IntVarP(&fsSyncServerFlags.port, "port", "p", 8080, "Port for the server to listen on")
-	fsSyncServerCmd.Flags().StringVarP(&fsSyncServerFlags.dir, "dir", "d", ".", "Directory to sync (server's source of truth)")
-	fsSyncServerCmd.Flags().StringVar(&fsSyncServerFlags.ignore, "ignore", "", "Comma-separated list of glob patterns to ignore (e.g., '.git/*,*.tmp')")
+	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.server, "server", "s", "ws://localhost:8080/ws", "Server address")
+	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.dir, "dir", "d", ".", "Local directory to sync to")
+	fsSyncSyncCmd.Flags().StringVar(&fsSyncSyncFlags.ignore, "ignore", "", "Comma-separated patterns to ignore")
+	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.delete, "delete", false, "Delete local files not present on server")
+	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.dryRun, "dry-run", false, "Show what would be synced without doing it")
 
-	FSSyncCmd.AddCommand(fsSyncClientCmd)
-	FSSyncCmd.AddCommand(fsSyncServerCmd)
+	FSSyncCmd.AddCommand(fsSyncServeCmd)
+	FSSyncCmd.AddCommand(fsSyncSyncCmd)
 }

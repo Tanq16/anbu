@@ -9,11 +9,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.7
 	github.com/aws/aws-sdk-go-v2/service/sts v1.40.2
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/fsnotify/fsnotify v1.9.0
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/go-github/v79 v79.0.0
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/websocket v1.5.3
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.2
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1
