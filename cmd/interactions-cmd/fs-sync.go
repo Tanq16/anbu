@@ -16,7 +16,6 @@ var (
 	fsSyncSyncFlags struct {
 		server   string
 		dir      string
-		ignore   string
 		delete   bool
 		dryRun   bool
 		insecure bool
@@ -67,7 +66,6 @@ var fsSyncSyncCmd = &cobra.Command{
 		cfg := fssync.ClientConfig{
 			ServerAddr:  fsSyncSyncFlags.server,
 			SyncDir:     fsSyncSyncFlags.dir,
-			IgnorePaths: fsSyncSyncFlags.ignore,
 			DeleteExtra: fsSyncSyncFlags.delete,
 			Insecure:    fsSyncSyncFlags.insecure,
 			DryRun:      fsSyncSyncFlags.dryRun,
@@ -90,7 +88,6 @@ func init() {
 
 	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.server, "server", "s", "http://localhost:8080", "Server URL (http:// or https://)")
 	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.dir, "dir", "d", ".", "Local directory to sync to")
-	fsSyncSyncCmd.Flags().StringVar(&fsSyncSyncFlags.ignore, "ignore", "", "Comma-separated patterns to ignore")
 	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.delete, "delete", false, "Delete local files not present on server")
 	fsSyncSyncCmd.Flags().BoolVarP(&fsSyncSyncFlags.dryRun, "dry-run", "r", false, "Show what would be synced without doing it")
 	fsSyncSyncCmd.Flags().BoolVarP(&fsSyncSyncFlags.insecure, "insecure", "k", false, "Skip TLS certificate verification")

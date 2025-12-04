@@ -31,7 +31,7 @@ A summary of everything that **Anbu** can perform:
 | **Google Drive Interaction** | Interact with Google Drive to list, upload, download, and sync files and folders |
 | **Box.com Interaction** | Interact with Box.com to list, upload, download, and sync files and folders |
 | **GitHub Interaction** | Interact with GitHub to list issues, PRs, workflow runs, add comments, create issues/PRs, and download files/folders |
-| **File System Synchronization** | Synchronize files between client and server using WebSocket with real-time change propagation |
+| **File System Synchronization** | One-shot file synchronization between two machines over HTTP/HTTPS |
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
 | **Markdown Viewer** | Start a web server to view rendered markdown files with syntax highlighting, navigation, and Mermaid support |
 | **AWS Helper Utilities** | Configure AWS SSO with IAM Identity Center for multi-role access and generate console URLs from CLI profiles |
@@ -313,13 +313,17 @@ The specific details of each are:
 - ***File System Synchronization***
 
   ```bash
-  # Run the fs-sync server (maintains source of truth)
-  anbu fs-sync server -p 8080 -d /path/to/sync/dir
-  anbu fs-sync server --port 8080 --dir ./sync-dir --ignore ".git/*,*.tmp"
+  # Run the fs-sync server (serves files and waits for one client connection)
+  anbu fs-sync serve -p 8080 -d /path/to/sync/dir
+  anbu fs-sync serve --port 8080 --dir ./sync-dir --ignore ".git,node_modules"
+  anbu fs-sync serve -p 8443 -d ./sync-dir -t  # Serve over HTTPS with self-signed certificate
 
-  # Run the fs-sync client (connects to server and syncs)
-  anbu fs-sync client -a ws://server.example.com:8080/ws -d /path/to/local/dir
-  anbu fs-sync client --addr wss://file.sync.com/ws --dir ./local-dir --ignore "node_modules/*,*.log"
+  # Run the fs-sync client (connects to server and syncs files)
+  anbu fs-sync sync -s http://server.example.com:8080 -d /path/to/local/dir
+  anbu fs-sync sync --server https://file.sync.com:8443 --dir ./local-dir
+  anbu fs-sync sync -s https://server.com:8443 -d ./local-dir -k  # Skip TLS certificate verification
+  anbu fs-sync sync -s http://server.com:8080 -d ./local-dir -r  # Dry run to see what would be synced
+  anbu fs-sync sync -s http://server.com:8080 -d ./local-dir --delete  # Delete local files not on server
   ```
 
 - ***Neo4j Database Interaction***

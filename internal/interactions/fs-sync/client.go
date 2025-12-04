@@ -18,7 +18,6 @@ import (
 type ClientConfig struct {
 	ServerAddr  string
 	SyncDir     string
-	IgnorePaths string
 	DeleteExtra bool
 	Insecure    bool
 	DryRun      bool
@@ -26,7 +25,6 @@ type ClientConfig struct {
 
 type Client struct {
 	cfg        ClientConfig
-	ignorer    *PathIgnorer
 	httpClient *http.Client
 }
 
@@ -44,8 +42,7 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 	return &Client{
-		cfg:     cfg,
-		ignorer: NewPathIgnorer(cfg.IgnorePaths),
+		cfg: cfg,
 		httpClient: &http.Client{
 			Timeout:   5 * time.Minute,
 			Transport: transport,
@@ -58,7 +55,7 @@ func (c *Client) Run() error {
 	if err != nil {
 		return fmt.Errorf("failed to fetch manifest: %w", err)
 	}
-	localManifest, _ := BuildManifest(c.cfg.SyncDir, c.ignorer)
+	localManifest, _ := BuildManifest(c.cfg.SyncDir, nil)
 	toRequest, toDelete := c.compareManifests(serverManifest, localManifest)
 	if c.cfg.DryRun {
 		for _, path := range toRequest {

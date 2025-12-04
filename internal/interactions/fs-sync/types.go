@@ -82,7 +82,7 @@ func BuildManifest(rootDir string, ignorer *PathIgnorer) (map[string]string, err
 			return nil
 		}
 		relPath = filepath.ToSlash(relPath)
-		if ignorer.IsIgnored(relPath) {
+		if ignorer != nil && ignorer.IsIgnored(relPath) {
 			return nil
 		}
 		hash, err := ComputeFileHash(path)
