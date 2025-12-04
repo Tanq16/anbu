@@ -8,11 +8,10 @@ import (
 
 var (
 	fsSyncServeFlags struct {
-		port    int
-		dir     string
-		ignore  string
-		tlsCert string
-		tlsKey  string
+		port      int
+		dir       string
+		ignore    string
+		enableTLS bool
 	}
 	fsSyncSyncFlags struct {
 		server   string
@@ -39,7 +38,7 @@ var fsSyncServeCmd = &cobra.Command{
 	Long:  `Start a server that waits for one client connection, serves files, and exits.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		protocol := "http"
-		if fsSyncServeFlags.tlsCert != "" {
+		if fsSyncServeFlags.enableTLS {
 			protocol = "https"
 		}
 		log.Info().Msgf("Starting fs-sync server: %s://localhost:%d directory=%s",
@@ -48,8 +47,7 @@ var fsSyncServeCmd = &cobra.Command{
 			Port:        fsSyncServeFlags.port,
 			SyncDir:     fsSyncServeFlags.dir,
 			IgnorePaths: fsSyncServeFlags.ignore,
-			TLSCert:     fsSyncServeFlags.tlsCert,
-			TLSKey:      fsSyncServeFlags.tlsKey,
+			EnableTLS:   fsSyncServeFlags.enableTLS,
 		}
 		s, err := fssync.NewServer(cfg)
 		if err != nil {
@@ -88,15 +86,14 @@ func init() {
 	fsSyncServeCmd.Flags().IntVarP(&fsSyncServeFlags.port, "port", "p", 8080, "Port to listen on")
 	fsSyncServeCmd.Flags().StringVarP(&fsSyncServeFlags.dir, "dir", "d", ".", "Directory to serve")
 	fsSyncServeCmd.Flags().StringVar(&fsSyncServeFlags.ignore, "ignore", "", "Comma-separated patterns to ignore (e.g., '.git,node_modules')")
-	fsSyncServeCmd.Flags().StringVar(&fsSyncServeFlags.tlsCert, "tls-cert", "", "TLS certificate file")
-	fsSyncServeCmd.Flags().StringVar(&fsSyncServeFlags.tlsKey, "tls-key", "", "TLS private key file")
+	fsSyncServeCmd.Flags().BoolVarP(&fsSyncServeFlags.enableTLS, "tls", "t", false, "Enable HTTPS with a self-signed certificate")
 
 	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.server, "server", "s", "http://localhost:8080", "Server URL (http:// or https://)")
 	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.dir, "dir", "d", ".", "Local directory to sync to")
 	fsSyncSyncCmd.Flags().StringVar(&fsSyncSyncFlags.ignore, "ignore", "", "Comma-separated patterns to ignore")
 	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.delete, "delete", false, "Delete local files not present on server")
 	fsSyncSyncCmd.Flags().BoolVarP(&fsSyncSyncFlags.dryRun, "dry-run", "r", false, "Show what would be synced without doing it")
-	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.insecure, "insecure", false, "Skip TLS certificate verification")
+	fsSyncSyncCmd.Flags().BoolVarP(&fsSyncSyncFlags.insecure, "insecure", "k", false, "Skip TLS certificate verification")
 
 	FSSyncCmd.AddCommand(fsSyncServeCmd)
 	FSSyncCmd.AddCommand(fsSyncSyncCmd)
