@@ -22,6 +22,7 @@ A summary of everything that **Anbu** can perform:
 | **Secrets Scan** | Find common secrets in file systems using regular expressions |
 | **IP Information** | Display local and public IP details, including geolocation information |
 | **Bulk Rename** | Batch rename files or directories using regular expression patterns, supporting capture groups |
+| **Manual Rename** | Interactively rename files and directories one by one with TUI-style inline input |
 | **Bulk Sed (Regex Substitution)** | Apply regex pattern matching and replacement to file content, supporting capture groups |
 | **Data & Encoding Conversion** | Convert between data formats (YAML/JSON), decode JWTs, and handle various encodings (Base64, Hex, URL) |
 | **File Encryption/Decryption** | Secure file encryption and decryption with AES-256-GCM symmetric encryption |
@@ -130,6 +131,16 @@ The specific details of each are:
   anbu rename -d 'old_(.*)' 'new_\1'              # Rename directories instead of files
   anbu rename '(.*)\.(.*)' '\1_backup.\2'         # Add _backup before extension
   anbu rename 'image-(\d+).jpg' 'IMG_\1.jpeg' -r  # Perform a dry-run without renaming
+  ```
+
+- ***Manual Rename*** (alias: `mrename`)
+
+  ```bash
+  anbu manual-rename                    # Interactively rename files one by one
+  anbu mrename -d                       # Include directories in the rename operation
+  anbu mrename -H                       # Include hidden files and directories
+  anbu mrename -x                       # Allow changing file extension
+  anbu mrename -d -H -x                 # Include directories, hidden files, and allow extension changes
   ```
 
 - ***Sed (Regex Substitution)***
