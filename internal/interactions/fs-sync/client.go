@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+
+	u "github.com/tanq16/anbu/utils"
 )
 
 type ClientConfig struct {
@@ -59,28 +61,48 @@ func (c *Client) Run() error {
 	localManifest, _ := BuildManifest(c.cfg.SyncDir, c.ignorer)
 	toRequest, toDelete := c.compareManifests(serverManifest, localManifest)
 	if c.cfg.DryRun {
-		log.Info().Msgf("Would sync %d files:", len(toRequest))
 		for _, path := range toRequest {
-			log.Info().Msgf("  - %s", path)
+			fmt.Printf("Dry Run: %s\n", u.FDebug(path))
 		}
-		if c.cfg.DeleteExtra && len(toDelete) > 0 {
-			log.Info().Msgf("Would delete %d files:", len(toDelete))
+		if c.cfg.DeleteExtra {
 			for _, path := range toDelete {
-				log.Info().Msgf("  - %s", path)
+				fmt.Printf("Dry Run: %s\n", u.FDebug(path))
 			}
+		}
+		fmt.Println()
+		totalCount := len(toRequest)
+		if c.cfg.DeleteExtra {
+			totalCount += len(toDelete)
+		}
+		if totalCount == 0 {
+			log.Warn().Msg("no files would be synced")
+		} else {
+			fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
+				u.FSuccess(fmt.Sprintf("%d file(s) would be synced", totalCount)))
 		}
 		return nil
 	}
+	syncedCount := 0
 	if len(toRequest) > 0 {
-		log.Info().Msgf("Syncing %d files...", len(toRequest))
-		if err := c.fetchFiles(toRequest); err != nil {
+		syncedCount, err = c.fetchFiles(toRequest)
+		if err != nil {
 			return fmt.Errorf("failed to fetch files: %w", err)
 		}
 	}
+	deletedCount := 0
 	if c.cfg.DeleteExtra && len(toDelete) > 0 {
-		if err := c.deleteFiles(toDelete); err != nil {
+		deletedCount, err = c.deleteFiles(toDelete)
+		if err != nil {
 			return fmt.Errorf("failed to delete files: %w", err)
 		}
+	}
+	fmt.Println()
+	totalCount := syncedCount + deletedCount
+	if totalCount == 0 {
+		log.Warn().Msg("no files were synced")
+	} else {
+		fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
+			u.FSuccess(fmt.Sprintf("%d file(s) synced", totalCount)))
 	}
 	return nil
 }
@@ -102,7 +124,7 @@ func (c *Client) fetchManifest() (map[string]string, error) {
 	return manifest.Files, nil
 }
 
-func (c *Client) fetchFiles(paths []string) error {
+func (c *Client) fetchFiles(paths []string) (int, error) {
 	reqBody, _ := json.Marshal(FileRequest{Paths: paths})
 	resp, err := c.httpClient.Post(
 		c.cfg.ServerAddr+"/files",
@@ -110,28 +132,30 @@ func (c *Client) fetchFiles(paths []string) error {
 		bytes.NewReader(reqBody),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to fetch files: %w", err)
+		return 0, fmt.Errorf("failed to fetch files: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("server returned %d", resp.StatusCode)
+		return 0, fmt.Errorf("server returned %d", resp.StatusCode)
 	}
 
 	var filesResp FilesResponse
 	if err := json.NewDecoder(resp.Body).Decode(&filesResp); err != nil {
-		return err
+		return 0, err
 	}
-	for i, file := range filesResp.Files {
+	count := 0
+	for _, file := range filesResp.Files {
 		fullPath := filepath.Join(c.cfg.SyncDir, file.Path)
 		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-			return fmt.Errorf("failed to create directory for %s: %w", file.Path, err)
+			return count, fmt.Errorf("failed to create directory for %s: %w", file.Path, err)
 		}
 		if err := os.WriteFile(fullPath, file.Content, 0644); err != nil {
-			return fmt.Errorf("failed to write file %s: %w", file.Path, err)
+			return count, fmt.Errorf("failed to write file %s: %w", file.Path, err)
 		}
-		log.Info().Msgf("[%d/%d] %s", i+1, len(filesResp.Files), file.Path)
+		fmt.Printf("Synced: %s\n", u.FSuccess(file.Path))
+		count++
 	}
-	return nil
+	return count, nil
 }
 
 func (c *Client) compareManifests(server, local map[string]string) (toRequest, toDelete []string) {
@@ -148,14 +172,16 @@ func (c *Client) compareManifests(server, local map[string]string) (toRequest, t
 	return
 }
 
-func (c *Client) deleteFiles(paths []string) error {
+func (c *Client) deleteFiles(paths []string) (int, error) {
+	count := 0
 	for _, path := range paths {
 		fullPath := filepath.Join(c.cfg.SyncDir, path)
 		if err := os.RemoveAll(fullPath); err != nil {
-			log.Warn().Err(err).Msgf("Failed to delete %s", path)
+			u.PrintError(fmt.Sprintf("Failed to delete %s: %v", path, err))
 		} else {
-			log.Info().Msgf("Deleted %s", path)
+			fmt.Printf("Deleted: %s\n", u.FSuccess(path))
+			count++
 		}
 	}
-	return nil
+	return count, nil
 }

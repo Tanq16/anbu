@@ -60,7 +60,6 @@ func BulkRename(pattern string, replacement string, renameDirectories bool, dryR
 	if renameCount == 0 {
 		log.Warn().Msg("no items were renamed")
 	} else {
-		fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
-			u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories])))
+		fmt.Printf("%s %s\n", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories])))
 	}
 }

@@ -58,7 +58,6 @@ var fsSyncServeCmd = &cobra.Command{
 		if err := s.Run(); err != nil {
 			log.Fatal().Err(err).Msg("Server error")
 		}
-		log.Info().Msg("Sync complete, exiting")
 	},
 }
 
@@ -67,7 +66,6 @@ var fsSyncSyncCmd = &cobra.Command{
 	Short: "Connect to a server and sync files",
 	Long:  `Connect to a server, receive file manifest, sync files, and exit.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Info().Msgf("Connecting to server: %s", fsSyncSyncFlags.server)
 		cfg := fssync.ClientConfig{
 			ServerAddr:  fsSyncSyncFlags.server,
 			SyncDir:     fsSyncSyncFlags.dir,
@@ -83,7 +81,6 @@ var fsSyncSyncCmd = &cobra.Command{
 		if err := c.Run(); err != nil {
 			log.Fatal().Err(err).Msg("Sync failed")
 		}
-		log.Info().Msg("Sync complete, exiting")
 	},
 }
 
@@ -98,7 +95,7 @@ func init() {
 	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.dir, "dir", "d", ".", "Local directory to sync to")
 	fsSyncSyncCmd.Flags().StringVar(&fsSyncSyncFlags.ignore, "ignore", "", "Comma-separated patterns to ignore")
 	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.delete, "delete", false, "Delete local files not present on server")
-	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.dryRun, "dry-run", false, "Show what would be synced without doing it")
+	fsSyncSyncCmd.Flags().BoolVarP(&fsSyncSyncFlags.dryRun, "dry-run", "r", false, "Show what would be synced without doing it")
 	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.insecure, "insecure", false, "Skip TLS certificate verification")
 
 	FSSyncCmd.AddCommand(fsSyncServeCmd)
