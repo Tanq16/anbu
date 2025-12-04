@@ -204,7 +204,7 @@ Shortcuts (e.g., %project%) are supported in the path.`,
 		if err != nil {
 			log.Fatal().Err(err).Msg("Search failed")
 		}
-		table := u.NewTable([]string{"Type", "Name", "Path", "Size", "Modified"})
+		table := u.NewTable([]string{"Type", "Path", "Size", "Modified"})
 		for _, item := range items {
 			typeStr := "F"
 			if item.Type == "folder" {
@@ -216,7 +216,6 @@ Shortcuts (e.g., %project%) are supported in the path.`,
 			}
 			table.Rows = append(table.Rows, []string{
 				typeStr,
-				item.Name,
 				item.Path,
 				sizeStr,
 				item.ModifiedTime,

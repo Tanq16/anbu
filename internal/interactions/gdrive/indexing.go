@@ -89,6 +89,9 @@ func SearchIndex(pattern string, searchPath string, excludeDirs, excludeFiles bo
 	cleanSearch := strings.Trim(searchPath, "/")
 	cleanRoot := strings.Trim(idx.RootPath, "/")
 	isRootIndex := cleanRoot == "root" || cleanRoot == ""
+	if cleanSearch == "root" {
+		cleanSearch = ""
+	}
 	if cleanSearch != "" && !isRootIndex && !strings.HasPrefix(cleanSearch, cleanRoot) {
 		return nil, fmt.Errorf("search path '%s' is outside the indexed root '%s'. Please run index command on this path first", searchPath, idx.RootPath)
 	}
@@ -105,7 +108,7 @@ func SearchIndex(pattern string, searchPath string, excludeDirs, excludeFiles bo
 			continue
 		}
 		itemP := strings.Trim(item.Path, "/")
-		if !strings.HasPrefix(itemP, cleanSearch) {
+		if cleanSearch != "" && !strings.HasPrefix(itemP, cleanSearch) {
 			continue
 		}
 		if re.MatchString(item.Name) {
