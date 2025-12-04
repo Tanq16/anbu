@@ -3,26 +3,30 @@ package interactionsCmd
 import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	fssync "github.com/tanq16/anbu/internal/interactions/fs-sync"
 )
 
 var (
 	fsSyncServeFlags struct {
-		port   int
-		dir    string
-		ignore string
+		port    int
+		dir     string
+		ignore  string
+		tlsCert string
+		tlsKey  string
 	}
 	fsSyncSyncFlags struct {
-		server string
-		dir    string
-		ignore string
-		delete bool
-		dryRun bool
+		server   string
+		dir      string
+		ignore   string
+		delete   bool
+		dryRun   bool
+		insecure bool
 	}
 )
 
 var FSSyncCmd = &cobra.Command{
 	Use:   "fs-sync",
-	Short: "One-shot file synchronization over WebSocket",
+	Short: "One-shot file synchronization over HTTP/HTTPS",
 	Long: `One-shot file synchronization between two machines.
 Server side runs 'serve' and waits for one client connection.
 Client side runs 'sync' to connect and sync files.
@@ -31,21 +35,55 @@ Both commands exit after sync completes.`,
 
 var fsSyncServeCmd = &cobra.Command{
 	Use:   "serve",
-	Short: "Serve files and wait for one sync client",
-	Long: `Start a server that waits for one client connection, serves files, and exits.
-Run this on the machine with the source files.`,
+	Short: "Serve files to sync to a client",
+	Long:  `Start a server that waits for one client connection, serves files, and exits.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Fatal().Msg("fs-sync serve: not implemented yet")
+		protocol := "http"
+		if fsSyncServeFlags.tlsCert != "" {
+			protocol = "https"
+		}
+		log.Info().Msgf("Starting fs-sync server: %s://localhost:%d directory=%s",
+			protocol, fsSyncServeFlags.port, fsSyncServeFlags.dir)
+		cfg := fssync.ServerConfig{
+			Port:        fsSyncServeFlags.port,
+			SyncDir:     fsSyncServeFlags.dir,
+			IgnorePaths: fsSyncServeFlags.ignore,
+			TLSCert:     fsSyncServeFlags.tlsCert,
+			TLSKey:      fsSyncServeFlags.tlsKey,
+		}
+		s, err := fssync.NewServer(cfg)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to initialize server")
+		}
+		if err := s.Run(); err != nil {
+			log.Fatal().Err(err).Msg("Server error")
+		}
+		log.Info().Msg("Sync complete, exiting")
 	},
 }
 
 var fsSyncSyncCmd = &cobra.Command{
 	Use:   "sync",
-	Short: "Connect to server and sync files",
-	Long: `Connect to a server, receive file manifest, sync files, and exit.
-Run this on the machine that wants to receive the files.`,
+	Short: "Connect to a server and sync files",
+	Long:  `Connect to a server, receive file manifest, sync files, and exit.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Fatal().Msg("fs-sync sync: not implemented yet")
+		log.Info().Msgf("Connecting to server: %s", fsSyncSyncFlags.server)
+		cfg := fssync.ClientConfig{
+			ServerAddr:  fsSyncSyncFlags.server,
+			SyncDir:     fsSyncSyncFlags.dir,
+			IgnorePaths: fsSyncSyncFlags.ignore,
+			DeleteExtra: fsSyncSyncFlags.delete,
+			Insecure:    fsSyncSyncFlags.insecure,
+			DryRun:      fsSyncSyncFlags.dryRun,
+		}
+		c, err := fssync.NewClient(cfg)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to initialize client")
+		}
+		if err := c.Run(); err != nil {
+			log.Fatal().Err(err).Msg("Sync failed")
+		}
+		log.Info().Msg("Sync complete, exiting")
 	},
 }
 
@@ -53,12 +91,15 @@ func init() {
 	fsSyncServeCmd.Flags().IntVarP(&fsSyncServeFlags.port, "port", "p", 8080, "Port to listen on")
 	fsSyncServeCmd.Flags().StringVarP(&fsSyncServeFlags.dir, "dir", "d", ".", "Directory to serve")
 	fsSyncServeCmd.Flags().StringVar(&fsSyncServeFlags.ignore, "ignore", "", "Comma-separated patterns to ignore (e.g., '.git,node_modules')")
+	fsSyncServeCmd.Flags().StringVar(&fsSyncServeFlags.tlsCert, "tls-cert", "", "TLS certificate file")
+	fsSyncServeCmd.Flags().StringVar(&fsSyncServeFlags.tlsKey, "tls-key", "", "TLS private key file")
 
-	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.server, "server", "s", "ws://localhost:8080/ws", "Server address")
+	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.server, "server", "s", "http://localhost:8080", "Server URL (http:// or https://)")
 	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.dir, "dir", "d", ".", "Local directory to sync to")
 	fsSyncSyncCmd.Flags().StringVar(&fsSyncSyncFlags.ignore, "ignore", "", "Comma-separated patterns to ignore")
 	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.delete, "delete", false, "Delete local files not present on server")
 	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.dryRun, "dry-run", false, "Show what would be synced without doing it")
+	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.insecure, "insecure", false, "Skip TLS certificate verification")
 
 	FSSyncCmd.AddCommand(fsSyncServeCmd)
 	FSSyncCmd.AddCommand(fsSyncSyncCmd)
