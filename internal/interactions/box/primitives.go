@@ -47,6 +47,7 @@ type BoxError struct {
 }
 
 type BoxItemDisplay struct {
+	ID           string
 	Name         string
 	ModifiedTime string
 	Size         int64

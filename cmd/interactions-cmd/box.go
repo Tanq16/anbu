@@ -152,6 +152,79 @@ var boxSyncCmd = &cobra.Command{
 	},
 }
 
+var boxIndexCmd = &cobra.Command{
+	Use:   "index [path]",
+	Short: "Index file metadata for fast searching",
+	Run: func(cmd *cobra.Command, args []string) {
+		path := ""
+		if len(args) > 0 {
+			path, _ = box.ResolvePath(args[0])
+		}
+		client, err := box.GetBoxClient(boxFlags.credentialsFile)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to get Box client")
+		}
+		if err := box.GenerateIndex(client, path); err != nil {
+			log.Fatal().Err(err).Msg("Indexing failed")
+		}
+		u.PrintSuccess("Box indexing completed.")
+	},
+}
+
+var boxSearchFlags struct {
+	excludeDirs  bool
+	excludeFiles bool
+}
+
+var boxSearchCmd = &cobra.Command{
+	Use:   "search <regex> [path]",
+	Short: "Search indexed files using regex",
+	Long: `Search across your indexed Box files using regex.
+Requires running 'anbu box index' first.
+If [path] is omitted, it defaults to the root of the index.
+Shortcuts (e.g., %project%) are supported in the path.`,
+	Args: cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		regex := args[0]
+		path := ""
+		if len(args) > 1 {
+			path, _ = box.ResolvePath(args[1])
+		}
+		displayPath := path
+		if displayPath == "" {
+			displayPath = "/"
+		}
+		u.PrintInfo(fmt.Sprintf("Searching Box index in '%s'...", displayPath))
+		items, err := box.SearchIndex(regex, path, boxSearchFlags.excludeDirs, boxSearchFlags.excludeFiles)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Search failed")
+		}
+		table := u.NewTable([]string{"Type", "Name", "Path", "Size", "Modified"})
+		for _, item := range items {
+			typeStr := "F"
+			if item.Type == "folder" {
+				typeStr = "D"
+			}
+			sizeStr := "--"
+			if item.Type == "file" {
+				sizeStr = fmt.Sprintf("%d B", item.Size)
+			}
+			table.Rows = append(table.Rows, []string{
+				typeStr,
+				item.Name,
+				item.Path,
+				sizeStr,
+				item.ModifiedTime,
+			})
+		}
+		if len(table.Rows) == 0 {
+			u.PrintWarning("No matches found.")
+			return
+		}
+		table.PrintTable(false)
+	},
+}
+
 func init() {
 	BoxCmd.PersistentFlags().StringVarP(&boxFlags.credentialsFile, "credentials", "c", "", "Path to Box credentials.json file (default ~/.anbu-box-credentials.json)")
 
@@ -159,4 +232,9 @@ func init() {
 	BoxCmd.AddCommand(boxUploadCmd)
 	BoxCmd.AddCommand(boxDownloadCmd)
 	BoxCmd.AddCommand(boxSyncCmd)
+	BoxCmd.AddCommand(boxIndexCmd)
+	BoxCmd.AddCommand(boxSearchCmd)
+
+	boxSearchCmd.Flags().BoolVar(&boxSearchFlags.excludeDirs, "exclude-dirs", false, "Exclude directories from results")
+	boxSearchCmd.Flags().BoolVar(&boxSearchFlags.excludeFiles, "exclude-files", false, "Exclude files from results")
 }

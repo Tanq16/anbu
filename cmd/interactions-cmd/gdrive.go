@@ -161,6 +161,75 @@ var gdriveSyncCmd = &cobra.Command{
 	},
 }
 
+var gdriveIndexCmd = &cobra.Command{
+	Use:   "index [path]",
+	Short: "Index file metadata for fast searching",
+	Run: func(cmd *cobra.Command, args []string) {
+		path := "root"
+		if len(args) > 0 {
+			path, _ = gdrive.ResolvePath(args[0])
+		}
+		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
+		}
+		if err := gdrive.GenerateIndex(srv, path); err != nil {
+			log.Fatal().Err(err).Msg("Indexing failed")
+		}
+		u.PrintSuccess("Google Drive indexing completed.")
+	},
+}
+
+var gdriveSearchFlags struct {
+	excludeDirs  bool
+	excludeFiles bool
+}
+
+var gdriveSearchCmd = &cobra.Command{
+	Use:   "search <regex> [path]",
+	Short: "Search indexed files using regex",
+	Long: `Search across your indexed Google Drive files using regex.
+Requires running 'anbu gdrive index' first.
+If [path] is omitted, it defaults to the root of the index.
+Shortcuts (e.g., %project%) are supported in the path.`,
+	Args: cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		regex := args[0]
+		path := "root"
+		if len(args) > 1 {
+			path, _ = gdrive.ResolvePath(args[1])
+		}
+		u.PrintInfo(fmt.Sprintf("Searching Google Drive index in '%s'...", path))
+		items, err := gdrive.SearchIndex(regex, path, gdriveSearchFlags.excludeDirs, gdriveSearchFlags.excludeFiles)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Search failed")
+		}
+		table := u.NewTable([]string{"Type", "Name", "Path", "Size", "Modified"})
+		for _, item := range items {
+			typeStr := "F"
+			if item.Type == "folder" {
+				typeStr = "D"
+			}
+			sizeStr := "--"
+			if item.Type == "file" {
+				sizeStr = fmt.Sprintf("%d B", item.Size)
+			}
+			table.Rows = append(table.Rows, []string{
+				typeStr,
+				item.Name,
+				item.Path,
+				sizeStr,
+				item.ModifiedTime,
+			})
+		}
+		if len(table.Rows) == 0 {
+			u.PrintWarning("No matches found.")
+			return
+		}
+		table.PrintTable(false)
+	},
+}
+
 func init() {
 	GDriveCmd.PersistentFlags().StringVarP(&gdriveFlags.credentialsFile, "credentials", "c", "", "Path to Google Drive credentials.json file (default ~/.anbu-gdrive-credentials.json)")
 
@@ -168,4 +237,9 @@ func init() {
 	GDriveCmd.AddCommand(gdriveUploadCmd)
 	GDriveCmd.AddCommand(gdriveDownloadCmd)
 	GDriveCmd.AddCommand(gdriveSyncCmd)
+	GDriveCmd.AddCommand(gdriveIndexCmd)
+	GDriveCmd.AddCommand(gdriveSearchCmd)
+
+	gdriveSearchCmd.Flags().BoolVar(&gdriveSearchFlags.excludeDirs, "exclude-dirs", false, "Exclude directories from results")
+	gdriveSearchCmd.Flags().BoolVar(&gdriveSearchFlags.excludeFiles, "exclude-files", false, "Exclude files from results")
 }

@@ -122,6 +122,7 @@ func listBoxFileInfo(client *http.Client, fileID string) ([]BoxItemDisplay, []Bo
 		}
 	}
 	display := BoxItemDisplay{
+		ID:           item.ID,
 		Name:         item.Name,
 		ModifiedTime: modTime,
 		Type:         item.Type,
@@ -138,7 +139,7 @@ func listBoxFolderContents(client *http.Client, folderID string) ([]BoxItemDispl
 		return nil, nil, fmt.Errorf("failed to create request: %v", err)
 	}
 	q := req.URL.Query()
-	q.Add("fields", "type,name,size,modified_at")
+	q.Add("fields", "type,name,id,size,modified_at")
 	req.URL.RawQuery = q.Encode()
 	resp, err := client.Do(req)
 	if err != nil {
@@ -163,6 +164,7 @@ func listBoxFolderContents(client *http.Client, folderID string) ([]BoxItemDispl
 			}
 		}
 		display := BoxItemDisplay{
+			ID:           item.ID,
 			Name:         item.Name,
 			ModifiedTime: modTime,
 			Type:         item.Type,
