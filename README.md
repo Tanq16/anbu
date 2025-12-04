@@ -29,8 +29,8 @@ A summary of everything that **Anbu** can perform:
 | **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 | **Stash** | Persistent clipboard for files, folders, and text snippets with apply, pop, and clear operations, almost similar to `git` stash |
-| **Google Drive Interaction** | Interact with Google Drive to list, upload, download, and sync files and folders |
-| **Box.com Interaction** | Interact with Box.com to list, upload, download, and sync files and folders |
+| **Google Drive Interaction** | Interact with Google Drive to list, upload, download, sync, index, and search files and folders |
+| **Box.com Interaction** | Interact with Box.com to list, upload, download, sync, index, and search files and folders |
 | **GitHub Interaction** | Interact with GitHub to list issues, PRs, workflow runs, add comments, create issues/PRs, and download files/folders |
 | **File System Synchronization** | One-shot file synchronization between two machines over HTTP/HTTPS |
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
@@ -258,6 +258,17 @@ The specific details of each are:
   # Sync local directory with remote directory (uploads missing, deletes remote-only, updates changed)
   anbu gdrive sync ./local-dir "My Drive Folder"
   anbu gd sync ./local-dir "Backup"  # syncs using MD5 hashes (yes, Google uses this) for comparison
+
+  # Index file metadata for fast searching (defaults to root 'My Drive' when not specified)
+  anbu gdrive index                    # Index entire Google Drive
+  anbu gd index "My Folder"            # Index a specific folder and its contents
+
+  # Search indexed files using regex (requires running 'anbu gdrive index' first)
+  anbu gdrive search '\.pdf$'             # Search for all PDF files
+  anbu gd search '(?i)invoice'            # Case-insensitive search for files containing "invoice"
+  anbu gd search 'report' "My Folder"     # Search within a specific folder
+  anbu gd search '\.txt$' --exclude-dirs  # Search only files, exclude directories
+  anbu gd search 'folder' --exclude-files # Search only directories, exclude files
   ```
 
 - ***Box Interaction***
@@ -282,6 +293,17 @@ The specific details of each are:
   # Sync local directory with remote directory (uploads missing, deletes remote-only, updates changed)
   anbu box sync ./local-dir "Test Folder"
   anbu box sync ./local-dir ""  # syncs to root folder using SHA1 hashes (yes, Box uses this) for comparison
+
+  # Index file metadata for fast searching (defaults to root folder when not specified)
+  anbu box index                     # Index entire Box account
+  anbu box index "My Folder"         # Index a specific folder and its contents
+
+  # Search indexed files using regex (requires running 'anbu box index' first)
+  anbu box search '\.pdf$'                 # Search for all PDF files
+  anbu box search '(?i)invoice'            # Case-insensitive search for files containing "invoice"
+  anbu box search 'report' "My Folder"     # Search within a specific folder
+  anbu box search '\.txt$' --exclude-dirs  # Search only files, exclude directories
+  anbu box search 'folder' --exclude-files # Search only directories, exclude files
   ```
 
 - ***GitHub Interaction*** (alias: `gh`)
