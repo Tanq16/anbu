@@ -23,6 +23,7 @@ A summary of everything that **Anbu** can perform:
 | **IP Information** | Display local and public IP details, including geolocation information |
 | **Bulk Rename** | Batch rename files or directories using regular expression patterns, supporting capture groups |
 | **Manual Rename** | Interactively rename files and directories one by one with TUI-style inline input |
+| **Find Duplicates** | Find duplicate files by comparing file sizes and SHA256 hashes, with support for recursive search |
 | **Bulk Sed (Regex Substitution)** | Apply regex pattern matching and replacement to file content, supporting capture groups |
 | **Data & Encoding Conversion** | Convert between data formats (YAML/JSON), decode JWTs, and handle various encodings (Base64, Hex, URL) |
 | **File Encryption/Decryption** | Secure file encryption and decryption with AES-256-GCM symmetric encryption |
@@ -141,6 +142,13 @@ The specific details of each are:
   anbu mrename -H                       # Include hidden files and directories
   anbu mrename -x                       # Allow changing file extension
   anbu mrename -d -H -x                 # Include directories, hidden files, and allow extension changes
+  ```
+
+- ***Find Duplicates*** (alias: `dup`)
+
+  ```bash
+  anbu duplicates                       # Find duplicate files in the current directory
+  anbu dup --recursive                 # Find duplicate files recursively in subdirectories
   ```
 
 - ***Sed (Regex Substitution)***
