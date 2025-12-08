@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
@@ -233,33 +234,52 @@ func uploadBoxFileToFolder(client *http.Client, localPath string, parentFolderID
 	return nil
 }
 
-func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, localBase string, remoteFolderID string) error {
+func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, localBase string, remoteFolderID string, sem chan struct{}, wg *sync.WaitGroup) error {
 	for fileName, localFile := range localTree.Files {
 		remoteFile, exists := remoteTree.Files[fileName]
 		localPath := filepath.Join(localBase, fileName)
-		if !exists {
-			fmt.Printf("Uploading %s\n", u.FDebug(localFile.Path))
-			if err := uploadBoxFileToFolder(client, localPath, remoteFolderID); err != nil {
-				log.Error().Err(err).Msgf("Failed to upload %s", localFile.Path)
-			}
-		} else if localFile.Hash != remoteFile.Hash {
-			log.Debug().Str("path", localFile.Path).Msg("file hash mismatch, update needed")
-			fmt.Printf("Updating %s\n", u.FDebug(localFile.Path))
-			if err := deleteBoxFile(client, remoteFile.ID); err != nil {
-				log.Error().Err(err).Msgf("Failed to delete %s for update", localFile.Path)
-				continue
-			}
-			if err := uploadBoxFileToFolder(client, localPath, remoteFolderID); err != nil {
-				log.Error().Err(err).Msgf("Failed to upload updated %s", localFile.Path)
-			}
+		switch {
+		case !exists:
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(localPath string, localFile FileInfo) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				fmt.Printf("Uploading %s\n", u.FDebug(localFile.Path))
+				if err := uploadBoxFileToFolder(client, localPath, remoteFolderID); err != nil {
+					log.Error().Err(err).Msgf("Failed to upload %s", localFile.Path)
+				}
+			}(localPath, localFile)
+		case localFile.Hash != remoteFile.Hash:
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(localPath string, localFile FileInfo, remoteFile FileInfo) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				log.Debug().Str("path", localFile.Path).Msg("file hash mismatch, update needed")
+				fmt.Printf("Updating %s\n", u.FDebug(localFile.Path))
+				if err := deleteBoxFile(client, remoteFile.ID); err != nil {
+					log.Error().Err(err).Msgf("Failed to delete %s for update", localFile.Path)
+					return
+				}
+				if err := uploadBoxFileToFolder(client, localPath, remoteFolderID); err != nil {
+					log.Error().Err(err).Msgf("Failed to upload updated %s", localFile.Path)
+				}
+			}(localPath, localFile, remoteFile)
 		}
 	}
 	for fileName, remoteFile := range remoteTree.Files {
 		if _, exists := localTree.Files[fileName]; !exists {
-			fmt.Printf("%s %s\n", u.FError("Deleting"), u.FDebug(remoteFile.Path))
-			if err := deleteBoxFile(client, remoteFile.ID); err != nil {
-				log.Error().Err(err).Msgf("Failed to delete %s", remoteFile.Path)
-			}
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(remoteFile FileInfo) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				fmt.Printf("%s %s\n", u.FError("Deleting"), u.FDebug(remoteFile.Path))
+				if err := deleteBoxFile(client, remoteFile.ID); err != nil {
+					log.Error().Err(err).Msgf("Failed to delete %s", remoteFile.Path)
+				}
+			}(remoteFile)
 		}
 	}
 	for dirName, localSubTree := range localTree.Dirs {
@@ -322,41 +342,47 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 			}
 		}
 		subLocalBase := filepath.Join(localBase, dirName)
-		if err := syncTree(client, localSubTree, remoteSubTree, subLocalBase, subFolderID); err != nil {
+		if err := syncTree(client, localSubTree, remoteSubTree, subLocalBase, subFolderID, sem, wg); err != nil {
 			log.Error().Err(err).Msgf("Failed to sync subtree %s", dirName)
 		}
 	}
 	for dirName := range remoteTree.Dirs {
 		if _, exists := localTree.Dirs[dirName]; !exists {
-			req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, remoteFolderID), nil)
-			if err != nil {
-				continue
-			}
-			q := req.URL.Query()
-			q.Add("fields", "type,name,id")
-			req.URL.RawQuery = q.Encode()
-			resp, err := client.Do(req)
-			if err != nil {
-				continue
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				continue
-			}
-			var items BoxFolderItems
-			if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
-				continue
-			}
-			for _, item := range items.Entries {
-				if item.Type == "folder" && item.Name == dirName {
-					if err := deleteBoxFolderRecursive(client, item.ID); err != nil {
-						log.Error().Err(err).Msgf("Failed to delete folder %s", dirName)
-					} else {
-						fmt.Printf("%s %s\n", u.FError("Deleting folder"), u.FDebug(dirName))
-					}
-					break
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(dirName string) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, remoteFolderID), nil)
+				if err != nil {
+					return
 				}
-			}
+				q := req.URL.Query()
+				q.Add("fields", "type,name,id")
+				req.URL.RawQuery = q.Encode()
+				resp, err := client.Do(req)
+				if err != nil {
+					return
+				}
+				defer resp.Body.Close()
+				if resp.StatusCode != http.StatusOK {
+					return
+				}
+				var items BoxFolderItems
+				if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+					return
+				}
+				for _, item := range items.Entries {
+					if item.Type == "folder" && item.Name == dirName {
+						if err := deleteBoxFolderRecursive(client, item.ID); err != nil {
+							log.Error().Err(err).Msgf("Failed to delete folder %s", dirName)
+						} else {
+							fmt.Printf("%s %s\n", u.FError("Deleting folder"), u.FDebug(dirName))
+						}
+						break
+					}
+				}
+			}(dirName)
 		}
 	}
 	return nil
@@ -408,7 +434,7 @@ func deleteBoxFolderRecursive(client *http.Client, folderID string) error {
 	return nil
 }
 
-func SyncBoxDirectory(client *http.Client, localDir string, remotePath string) error {
+func SyncBoxDirectory(client *http.Client, localDir string, remotePath string, concurrency int) error {
 	localTree, err := buildLocalTree(localDir)
 	if err != nil {
 		return fmt.Errorf("failed to build local tree: %v", err)
@@ -425,5 +451,12 @@ func SyncBoxDirectory(client *http.Client, localDir string, remotePath string) e
 	if err != nil {
 		return fmt.Errorf("failed to build remote tree: %v", err)
 	}
-	return syncTree(client, localTree, remoteTree, localDir, folderID)
+	if concurrency < 1 {
+		concurrency = 1
+	}
+	sem := make(chan struct{}, concurrency)
+	var wg sync.WaitGroup
+	err = syncTree(client, localTree, remoteTree, localDir, folderID, sem, &wg)
+	wg.Wait()
+	return err
 }

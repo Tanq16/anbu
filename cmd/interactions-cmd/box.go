@@ -15,6 +15,10 @@ var boxFlags struct {
 	credentialsFile string
 }
 
+var boxSyncFlags struct {
+	concurrency int
+}
+
 var BoxCmd = &cobra.Command{
 	Use:   "box",
 	Short: "Interact with Box.com (list, upload, download)",
@@ -145,7 +149,7 @@ var boxSyncCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
 		fmt.Printf("Starting sync of %s to %s...\n", u.FDebug(localDir), u.FDebug(remotePath))
-		if err := box.SyncBoxDirectory(client, localDir, remotePath); err != nil {
+		if err := box.SyncBoxDirectory(client, localDir, remotePath, boxSyncFlags.concurrency); err != nil {
 			log.Fatal().Err(err).Msg("Failed to sync")
 		}
 		fmt.Printf("%s Sync completed successfully\n", u.FSuccess("✓"))
@@ -234,6 +238,7 @@ func init() {
 	BoxCmd.AddCommand(boxIndexCmd)
 	BoxCmd.AddCommand(boxSearchCmd)
 
+	boxSyncCmd.Flags().IntVarP(&boxSyncFlags.concurrency, "concurrency", "t", 8, "Number of items to process concurrently")
 	boxSearchCmd.Flags().BoolVar(&boxSearchFlags.excludeDirs, "exclude-dirs", false, "Exclude directories from results")
 	boxSearchCmd.Flags().BoolVar(&boxSearchFlags.excludeFiles, "exclude-files", false, "Exclude files from results")
 }

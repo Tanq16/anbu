@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
@@ -180,28 +181,47 @@ func updateDriveFile(srv *drive.Service, fileID string, localPath string) error 
 	return err
 }
 
-func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, localBase string, remoteFolderID string) error {
+func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, localBase string, remoteFolderID string, sem chan struct{}, wg *sync.WaitGroup) error {
 	for fileName, localFile := range localTree.Files {
 		remoteFile, exists := remoteTree.Files[fileName]
 		localPath := filepath.Join(localBase, fileName)
-		if !exists {
-			fmt.Printf("Uploading %s\n", u.FDebug(localFile.Path))
-			if _, err := uploadDriveFileToFolder(srv, localPath, remoteFolderID); err != nil {
-				log.Error().Err(err).Msgf("Failed to upload %s", localFile.Path)
-			}
-		} else if localFile.Hash != remoteFile.Hash {
-			fmt.Printf("Updating %s\n", u.FDebug(localFile.Path))
-			if err := updateDriveFile(srv, remoteFile.ID, localPath); err != nil {
-				log.Error().Err(err).Msgf("Failed to update %s", localFile.Path)
-			}
+		switch {
+		case !exists:
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(localPath string, localFile FileInfo) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				fmt.Printf("Uploading %s\n", u.FDebug(localFile.Path))
+				if _, err := uploadDriveFileToFolder(srv, localPath, remoteFolderID); err != nil {
+					log.Error().Err(err).Msgf("Failed to upload %s", localFile.Path)
+				}
+			}(localPath, localFile)
+		case localFile.Hash != remoteFile.Hash:
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(localPath string, localFile FileInfo, remoteFile FileInfo) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				fmt.Printf("Updating %s\n", u.FDebug(localFile.Path))
+				if err := updateDriveFile(srv, remoteFile.ID, localPath); err != nil {
+					log.Error().Err(err).Msgf("Failed to update %s", localFile.Path)
+				}
+			}(localPath, localFile, remoteFile)
 		}
 	}
 	for fileName, remoteFile := range remoteTree.Files {
 		if _, exists := localTree.Files[fileName]; !exists {
-			fmt.Printf("%s %s\n", u.FError("Deleting"), u.FDebug(remoteFile.Path))
-			if err := deleteDriveFile(srv, remoteFile.ID); err != nil {
-				log.Error().Err(err).Msgf("Failed to delete %s", remoteFile.Path)
-			}
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(remoteFile FileInfo) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				fmt.Printf("%s %s\n", u.FError("Deleting"), u.FDebug(remoteFile.Path))
+				if err := deleteDriveFile(srv, remoteFile.ID); err != nil {
+					log.Error().Err(err).Msgf("Failed to delete %s", remoteFile.Path)
+				}
+			}(remoteFile)
 		}
 	}
 	for dirName, localSubTree := range localTree.Dirs {
@@ -233,21 +253,27 @@ func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, loc
 			subFolderID = r.Files[0].Id
 		}
 		subLocalBase := filepath.Join(localBase, dirName)
-		if err := syncTree(srv, localSubTree, remoteSubTree, subLocalBase, subFolderID); err != nil {
+		if err := syncTree(srv, localSubTree, remoteSubTree, subLocalBase, subFolderID, sem, wg); err != nil {
 			log.Error().Err(err).Msgf("Failed to sync subtree %s", dirName)
 		}
 	}
 	for dirName := range remoteTree.Dirs {
 		if _, exists := localTree.Dirs[dirName]; !exists {
-			query := fmt.Sprintf("name = '%s' and '%s' in parents and mimeType = '%s' and trashed = false", dirName, remoteFolderID, googleFolderMimeType)
-			r, err := srv.Files.List().Q(query).Fields("files(id)").PageSize(1).Do()
-			if err == nil && len(r.Files) > 0 {
-				if err := deleteDriveFolderRecursive(srv, r.Files[0].Id); err != nil {
-					log.Error().Err(err).Msgf("Failed to delete folder %s", dirName)
-				} else {
-					fmt.Printf("%s %s\n", u.FError("Deleting folder"), u.FDebug(dirName))
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(dirName string) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				query := fmt.Sprintf("name = '%s' and '%s' in parents and mimeType = '%s' and trashed = false", dirName, remoteFolderID, googleFolderMimeType)
+				r, err := srv.Files.List().Q(query).Fields("files(id)").PageSize(1).Do()
+				if err == nil && len(r.Files) > 0 {
+					if err := deleteDriveFolderRecursive(srv, r.Files[0].Id); err != nil {
+						log.Error().Err(err).Msgf("Failed to delete folder %s", dirName)
+					} else {
+						fmt.Printf("%s %s\n", u.FError("Deleting folder"), u.FDebug(dirName))
+					}
 				}
-			}
+			}(dirName)
 		}
 	}
 	return nil
@@ -283,7 +309,7 @@ func deleteDriveFolderRecursive(srv *drive.Service, folderID string) error {
 	return srv.Files.Delete(folderID).Do()
 }
 
-func SyncDriveDirectory(srv *drive.Service, localDir string, remotePath string) error {
+func SyncDriveDirectory(srv *drive.Service, localDir string, remotePath string, concurrency int) error {
 	localTree, err := buildLocalTree(localDir)
 	if err != nil {
 		return fmt.Errorf("failed to build local tree: %v", err)
@@ -303,5 +329,12 @@ func SyncDriveDirectory(srv *drive.Service, localDir string, remotePath string) 
 	if err != nil {
 		return fmt.Errorf("failed to build remote tree: %v", err)
 	}
-	return syncTree(srv, localTree, remoteTree, localDir, folderID)
+	if concurrency < 1 {
+		concurrency = 1
+	}
+	sem := make(chan struct{}, concurrency)
+	var wg sync.WaitGroup
+	err = syncTree(srv, localTree, remoteTree, localDir, folderID, sem, &wg)
+	wg.Wait()
+	return err
 }
