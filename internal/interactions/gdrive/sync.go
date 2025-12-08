@@ -326,6 +326,7 @@ func SyncDriveDirectory(srv *drive.Service, localDir string, remotePath string, 
 			ignoreSet[name] = struct{}{}
 		}
 	}
+	log.Debug().Str("localDir", localDir).Msg("building local tree")
 	localTree, err := buildLocalTree(localDir, ignoreSet)
 	if err != nil {
 		return fmt.Errorf("failed to build local tree: %v", err)
@@ -341,6 +342,7 @@ func SyncDriveDirectory(srv *drive.Service, localDir string, remotePath string, 
 		}
 		folderID = item.Id
 	}
+	log.Debug().Str("remotePath", remotePath).Str("folderID", folderID).Msg("building remote tree")
 	remoteTree, err := buildRemoteTree(srv, folderID, "", ignoreSet)
 	if err != nil {
 		return fmt.Errorf("failed to build remote tree: %v", err)

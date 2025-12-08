@@ -451,6 +451,7 @@ func SyncBoxDirectory(client *http.Client, localDir string, remotePath string, c
 			ignoreSet[name] = struct{}{}
 		}
 	}
+	log.Debug().Str("localDir", localDir).Msg("building local tree")
 	localTree, err := buildLocalTree(localDir, ignoreSet)
 	if err != nil {
 		return fmt.Errorf("failed to build local tree: %v", err)
@@ -463,6 +464,7 @@ func SyncBoxDirectory(client *http.Client, localDir string, remotePath string, c
 			return fmt.Errorf("failed to resolve remote path: %v", err)
 		}
 	}
+	log.Debug().Str("remotePath", remotePath).Str("folderID", folderID).Msg("building remote tree")
 	remoteTree, err := buildRemoteTree(client, folderID, "", ignoreSet)
 	if err != nil {
 		return fmt.Errorf("failed to build remote tree: %v", err)
