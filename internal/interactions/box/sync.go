@@ -42,7 +42,7 @@ func computeLocalHash(filePath string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func buildLocalTree(rootDir string) (*FileTree, error) {
+func buildLocalTree(rootDir string, ignoreSet map[string]struct{}) (*FileTree, error) {
 	tree := &FileTree{
 		Files: make(map[string]FileInfo),
 		Dirs:  make(map[string]*FileTree),
@@ -50,6 +50,12 @@ func buildLocalTree(rootDir string) (*FileTree, error) {
 	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+		if _, skip := ignoreSet[d.Name()]; skip {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 		relPath, err := filepath.Rel(rootDir, path)
 		if err != nil {
@@ -132,7 +138,7 @@ func getRemoteFileHash(client *http.Client, fileID string) (string, error) {
 	return file.SHA1, nil
 }
 
-func buildRemoteTree(client *http.Client, folderID string, basePath string) (*FileTree, error) {
+func buildRemoteTree(client *http.Client, folderID string, basePath string, ignoreSet map[string]struct{}) (*FileTree, error) {
 	tree := &FileTree{
 		Files: make(map[string]FileInfo),
 		Dirs:  make(map[string]*FileTree),
@@ -157,9 +163,12 @@ func buildRemoteTree(client *http.Client, folderID string, basePath string) (*Fi
 		return nil, err
 	}
 	for _, item := range items.Entries {
+		if _, skip := ignoreSet[item.Name]; skip {
+			continue
+		}
 		itemPath := filepath.Join(basePath, item.Name)
 		if item.Type == "folder" {
-			subTree, err := buildRemoteTree(client, item.ID, itemPath)
+			subTree, err := buildRemoteTree(client, item.ID, itemPath, ignoreSet)
 			if err != nil {
 				log.Error().Err(err).Msgf("Failed to build tree for folder %s", itemPath)
 				continue
@@ -434,8 +443,15 @@ func deleteBoxFolderRecursive(client *http.Client, folderID string) error {
 	return nil
 }
 
-func SyncBoxDirectory(client *http.Client, localDir string, remotePath string, concurrency int) error {
-	localTree, err := buildLocalTree(localDir)
+func SyncBoxDirectory(client *http.Client, localDir string, remotePath string, concurrency int, ignore []string) error {
+	ignoreSet := make(map[string]struct{})
+	for _, v := range ignore {
+		name := strings.TrimSpace(v)
+		if name != "" {
+			ignoreSet[name] = struct{}{}
+		}
+	}
+	localTree, err := buildLocalTree(localDir, ignoreSet)
 	if err != nil {
 		return fmt.Errorf("failed to build local tree: %v", err)
 	}
@@ -447,7 +463,7 @@ func SyncBoxDirectory(client *http.Client, localDir string, remotePath string, c
 			return fmt.Errorf("failed to resolve remote path: %v", err)
 		}
 	}
-	remoteTree, err := buildRemoteTree(client, folderID, "")
+	remoteTree, err := buildRemoteTree(client, folderID, "", ignoreSet)
 	if err != nil {
 		return fmt.Errorf("failed to build remote tree: %v", err)
 	}

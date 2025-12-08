@@ -17,6 +17,7 @@ var boxFlags struct {
 
 var boxSyncFlags struct {
 	concurrency int
+	ignore      string
 }
 
 var BoxCmd = &cobra.Command{
@@ -144,12 +145,13 @@ var boxSyncCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		localDir := args[0]
 		remotePath, _ := box.ResolvePath(args[1])
+		ignore := parseIgnoreArg(boxSyncFlags.ignore)
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Box client")
 		}
 		fmt.Printf("Starting sync of %s to %s...\n", u.FDebug(localDir), u.FDebug(remotePath))
-		if err := box.SyncBoxDirectory(client, localDir, remotePath, boxSyncFlags.concurrency); err != nil {
+		if err := box.SyncBoxDirectory(client, localDir, remotePath, boxSyncFlags.concurrency, ignore); err != nil {
 			log.Fatal().Err(err).Msg("Failed to sync")
 		}
 		fmt.Printf("%s Sync completed successfully\n", u.FSuccess("✓"))
@@ -239,6 +241,7 @@ func init() {
 	BoxCmd.AddCommand(boxSearchCmd)
 
 	boxSyncCmd.Flags().IntVarP(&boxSyncFlags.concurrency, "concurrency", "t", 8, "Number of items to process concurrently")
+	boxSyncCmd.Flags().StringVarP(&boxSyncFlags.ignore, "ignore", "i", "", "Comma-separated list of file or folder names to ignore")
 	boxSearchCmd.Flags().BoolVar(&boxSearchFlags.excludeDirs, "exclude-dirs", false, "Exclude directories from results")
 	boxSearchCmd.Flags().BoolVar(&boxSearchFlags.excludeFiles, "exclude-files", false, "Exclude files from results")
 }

@@ -17,6 +17,7 @@ var gdriveFlags struct {
 
 var gdriveSyncFlags struct {
 	concurrency int
+	ignore      string
 }
 
 var GDriveCmd = &cobra.Command{
@@ -153,12 +154,13 @@ var gdriveSyncCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		localDir := args[0]
 		remotePath, _ := gdrive.ResolvePath(args[1])
+		ignore := parseIgnoreArg(gdriveSyncFlags.ignore)
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
 		}
 		fmt.Printf("Starting sync of %s to %s...\n", u.FDebug(localDir), u.FDebug(remotePath))
-		if err := gdrive.SyncDriveDirectory(srv, localDir, remotePath, gdriveSyncFlags.concurrency); err != nil {
+		if err := gdrive.SyncDriveDirectory(srv, localDir, remotePath, gdriveSyncFlags.concurrency, ignore); err != nil {
 			log.Fatal().Err(err).Msg("Failed to sync")
 		}
 		fmt.Printf("%s Sync completed successfully\n", u.FSuccess("✓"))
@@ -244,6 +246,7 @@ func init() {
 	GDriveCmd.AddCommand(gdriveSearchCmd)
 
 	gdriveSyncCmd.Flags().IntVarP(&gdriveSyncFlags.concurrency, "concurrency", "t", 8, "Number of items to process concurrently")
+	gdriveSyncCmd.Flags().StringVarP(&gdriveSyncFlags.ignore, "ignore", "i", "", "Comma-separated list of file or folder names to ignore")
 	gdriveSearchCmd.Flags().BoolVar(&gdriveSearchFlags.excludeDirs, "exclude-dirs", false, "Exclude directories from results")
 	gdriveSearchCmd.Flags().BoolVar(&gdriveSearchFlags.excludeFiles, "exclude-files", false, "Exclude files from results")
 }

@@ -39,7 +39,7 @@ func computeLocalHash(filePath string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func buildLocalTree(rootDir string) (*FileTree, error) {
+func buildLocalTree(rootDir string, ignoreSet map[string]struct{}) (*FileTree, error) {
 	tree := &FileTree{
 		Files: make(map[string]FileInfo),
 		Dirs:  make(map[string]*FileTree),
@@ -47,6 +47,12 @@ func buildLocalTree(rootDir string) (*FileTree, error) {
 	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+		if _, skip := ignoreSet[d.Name()]; skip {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 		relPath, err := filepath.Rel(rootDir, path)
 		if err != nil {
@@ -104,7 +110,7 @@ func buildLocalTree(rootDir string) (*FileTree, error) {
 	return tree, err
 }
 
-func buildRemoteTree(srv *drive.Service, folderID string, basePath string) (*FileTree, error) {
+func buildRemoteTree(srv *drive.Service, folderID string, basePath string, ignoreSet map[string]struct{}) (*FileTree, error) {
 	tree := &FileTree{
 		Files: make(map[string]FileInfo),
 		Dirs:  make(map[string]*FileTree),
@@ -120,9 +126,12 @@ func buildRemoteTree(srv *drive.Service, folderID string, basePath string) (*Fil
 			return nil, err
 		}
 		for _, f := range r.Files {
+			if _, skip := ignoreSet[f.Name]; skip {
+				continue
+			}
 			itemPath := filepath.Join(basePath, f.Name)
 			if f.MimeType == googleFolderMimeType {
-				subTree, err := buildRemoteTree(srv, f.Id, itemPath)
+				subTree, err := buildRemoteTree(srv, f.Id, itemPath, ignoreSet)
 				if err != nil {
 					log.Error().Err(err).Msgf("Failed to build tree for folder %s", itemPath)
 					continue
@@ -309,8 +318,15 @@ func deleteDriveFolderRecursive(srv *drive.Service, folderID string) error {
 	return srv.Files.Delete(folderID).Do()
 }
 
-func SyncDriveDirectory(srv *drive.Service, localDir string, remotePath string, concurrency int) error {
-	localTree, err := buildLocalTree(localDir)
+func SyncDriveDirectory(srv *drive.Service, localDir string, remotePath string, concurrency int, ignore []string) error {
+	ignoreSet := make(map[string]struct{})
+	for _, v := range ignore {
+		name := strings.TrimSpace(v)
+		if name != "" {
+			ignoreSet[name] = struct{}{}
+		}
+	}
+	localTree, err := buildLocalTree(localDir, ignoreSet)
 	if err != nil {
 		return fmt.Errorf("failed to build local tree: %v", err)
 	}
@@ -325,7 +341,7 @@ func SyncDriveDirectory(srv *drive.Service, localDir string, remotePath string, 
 		}
 		folderID = item.Id
 	}
-	remoteTree, err := buildRemoteTree(srv, folderID, "")
+	remoteTree, err := buildRemoteTree(srv, folderID, "", ignoreSet)
 	if err != nil {
 		return fmt.Errorf("failed to build remote tree: %v", err)
 	}
