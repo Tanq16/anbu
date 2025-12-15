@@ -302,12 +302,26 @@ func uploadBoxFileToFolder(client *http.Client, localPath string, parentFolderID
 		bodyBytes, readErr := io.ReadAll(resp.Body)
 		if readErr == nil {
 			var boxErr BoxError
-			if json.Unmarshal(bodyBytes, &boxErr) == nil && boxErr.Code == "item_name_in_use" {
-				fileID, findErr := findFileIDInFolder(client, fileName, parentFolderID)
-				if findErr == nil {
-					return uploadBoxFileVersion(client, localPath, fileID)
+			if json.Unmarshal(bodyBytes, &boxErr) == nil {
+				if boxErr.Code == "item_name_in_use" {
+					fileID, findErr := findFileIDInFolder(client, fileName, parentFolderID)
+					if findErr == nil {
+						return uploadBoxFileVersion(client, localPath, fileID)
+					}
+				}
+				// Handle 409 Conflict by force deleting and re-uploading
+				if resp.StatusCode == http.StatusConflict {
+					log.Debug().Str("file", fileName).Msg("409 Conflict detected, force deleting and re-uploading")
+					fileID, findErr := findFileIDInFolder(client, fileName, parentFolderID)
+					if findErr == nil {
+						if delErr := deleteBoxFile(client, fileID); delErr != nil {
+							return fmt.Errorf("force delete failed: %v", delErr)
+						}
+						return uploadBoxFileToFolder(client, localPath, parentFolderID)
+					}
 				}
 			}
+			return fmt.Errorf("api request to 'upload file' failed: %s - %s", boxErr.Code, boxErr.Message)
 		}
 		return handleBoxAPIError("upload file", resp)
 	}

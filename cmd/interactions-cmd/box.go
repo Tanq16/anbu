@@ -140,7 +140,7 @@ var boxDownloadCmd = &cobra.Command{
 var boxSyncCmd = &cobra.Command{
 	Use:   "sync <local-dir> <remote-dir>",
 	Short: "Sync local directory with Box remote directory",
-	Long:  `Synchronizes a local directory with a remote Box directory. Uploads missing files, deletes remote-only files, and updates changed files.`,
+	Long:  `Synchronizes a local directory with a remote Box directory. Uploads missing files, deletes remote-only files, and updates changed files. Conflicts are automatically resolved by deleting and re-uploading.`,
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		localDir := args[0]
