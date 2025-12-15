@@ -76,7 +76,7 @@ The specific details of each are:
   ```bash
   anbu pass list  # List all secrets
 
-  # Managing Secrets (Password asked or from ANBUPW env var)
+  # Managing Secrets (Default password used or provide yours with --password)
   anbu pass add API_KEY     # Create a new secret (encrypted with AES GCM at rest)
   anbu pass add API_KEY -m  # Create a new multi-line secret
   anbu pass get API_KEY     # Retrieve a secret (decrypted value)
