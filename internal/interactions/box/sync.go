@@ -256,6 +256,7 @@ func uploadBoxFileVersion(client *http.Client, localPath string, fileID string) 
 		return err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("If-Match", "*")
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
@@ -309,19 +310,9 @@ func uploadBoxFileToFolder(client *http.Client, localPath string, parentFolderID
 						return uploadBoxFileVersion(client, localPath, fileID)
 					}
 				}
-				// Handle 409 Conflict by force deleting and re-uploading
-				if resp.StatusCode == http.StatusConflict {
-					log.Debug().Str("file", fileName).Msg("409 Conflict detected, force deleting and re-uploading")
-					fileID, findErr := findFileIDInFolder(client, fileName, parentFolderID)
-					if findErr == nil {
-						if delErr := deleteBoxFile(client, fileID); delErr != nil {
-							return fmt.Errorf("force delete failed: %v", delErr)
-						}
-						return uploadBoxFileToFolder(client, localPath, parentFolderID)
-					}
-				}
+				return fmt.Errorf("api request to 'upload file' failed: %s - %s", boxErr.Code, boxErr.Message)
 			}
-			return fmt.Errorf("api request to 'upload file' failed: %s - %s", boxErr.Code, boxErr.Message)
+			return fmt.Errorf("api request to 'upload file' failed with status %s: %s", resp.Status, string(bodyBytes))
 		}
 		return handleBoxAPIError("upload file", resp)
 	}
