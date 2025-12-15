@@ -206,6 +206,67 @@ func deleteBoxFile(client *http.Client, fileID string) error {
 	return nil
 }
 
+func findFileIDInFolder(client *http.Client, fileName string, folderID string) (string, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, folderID), nil)
+	if err != nil {
+		return "", err
+	}
+	q := req.URL.Query()
+	q.Add("fields", "type,name,id")
+	req.URL.RawQuery = q.Encode()
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to list folder items")
+	}
+	var items BoxFolderItems
+	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+		return "", err
+	}
+	for _, item := range items.Entries {
+		if item.Type == "file" && item.Name == fileName {
+			return item.ID, nil
+		}
+	}
+	return "", fmt.Errorf("file not found")
+}
+
+func uploadBoxFileVersion(client *http.Client, localPath string, fileID string) error {
+	file, err := os.Open(localPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	fileName := filepath.Base(localPath)
+	part, err := writer.CreateFormFile("file", fileName)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(part, file); err != nil {
+		return err
+	}
+	writer.Close()
+	req, err := http.NewRequest("POST", fmt.Sprintf(uploadFileVersionURL, fileID), body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		return handleBoxAPIError("upload file version", resp)
+	}
+	return nil
+}
+
 func uploadBoxFileToFolder(client *http.Client, localPath string, parentFolderID string) error {
 	file, err := os.Open(localPath)
 	if err != nil {
@@ -238,6 +299,16 @@ func uploadBoxFileToFolder(client *http.Client, localPath string, parentFolderID
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr == nil {
+			var boxErr BoxError
+			if json.Unmarshal(bodyBytes, &boxErr) == nil && boxErr.Code == "item_name_in_use" {
+				fileID, findErr := findFileIDInFolder(client, fileName, parentFolderID)
+				if findErr == nil {
+					return uploadBoxFileVersion(client, localPath, fileID)
+				}
+			}
+		}
 		return handleBoxAPIError("upload file", resp)
 	}
 	return nil

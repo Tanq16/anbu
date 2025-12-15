@@ -16,8 +16,8 @@ var SecretsCmd = &cobra.Command{
 	Aliases: []string{"p"},
 	Short:   "Manage secrets securely with AES-GCM encryption",
 	Long: `A secure store for secrets, which are encrypted at rest using AES-GCM.
-The store is protected by a master password derived from the ANBUPW environment
-variable or entered interactively.
+The store uses a default password of "p455w0rd" unless a custom password is
+specified with the --password flag.
 
 Examples:
   # List all stored secret IDs
@@ -44,6 +44,7 @@ Examples:
 
 var secretsFile string
 var multilineFlag bool
+var passwordFlag string
 
 var secretsListCmd = &cobra.Command{
 	Use:   "list",
@@ -65,10 +66,7 @@ var secretsGetCmd = &cobra.Command{
 	Short: "Print the value of a specific secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		password, err := anbuCrypto.GetPassword()
-		if err != nil {
-			log.Fatal().Err(err)
-		}
+		password := passwordFlag
 		value, err := anbuCrypto.GetSecret(secretsFile, args[0], password)
 		if err != nil {
 			log.Fatal().Err(err)
@@ -93,10 +91,7 @@ var secretsSetCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to read secret value")
 		}
-		password, err := anbuCrypto.GetPassword()
-		if err != nil {
-			log.Fatal().Err(err)
-		}
+		password := passwordFlag
 		if err := anbuCrypto.SetSecret(secretsFile, secretID, value, password); err != nil {
 			log.Fatal().Err(err)
 		}
@@ -120,7 +115,8 @@ var secretsImportCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		importFile := args[0]
-		if err := anbuCrypto.ImportSecrets(secretsFile, importFile); err != nil {
+		password := passwordFlag
+		if err := anbuCrypto.ImportSecrets(secretsFile, importFile, password); err != nil {
 			log.Fatal().Err(err)
 		}
 		u.PrintSuccess(fmt.Sprintf("Imported secrets from %s successfully", importFile))
@@ -132,7 +128,8 @@ var secretsExportCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		exportFile := args[0]
-		if err := anbuCrypto.ExportSecrets(secretsFile, exportFile); err != nil {
+		password := passwordFlag
+		if err := anbuCrypto.ExportSecrets(secretsFile, exportFile, password); err != nil {
 			log.Fatal().Err(err)
 		}
 		log.Info().Msgf("Exported secrets to %s successfully", exportFile)
@@ -150,6 +147,8 @@ func init() {
 		log.Fatal().Err(err)
 	}
 
+	// default known password is fine here - we would anyway use a password inline or in env. var. direct workstation access is anyway a risk, intention is secrets are not in plain text in history or logs. not a huge risk with default password, but option for custom password is nice.
+	SecretsCmd.Flags().StringVar(&passwordFlag, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
 	secretsSetCmd.Flags().BoolVarP(&multilineFlag, "multiline", "m", false, "Enable multiline input (end with 'EOF' on a new line)")
 
 	SecretsCmd.AddCommand(secretsListCmd)

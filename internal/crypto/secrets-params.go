@@ -13,9 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
-
-	"golang.org/x/term"
 )
 
 type SecretsStore struct {
@@ -47,20 +44,6 @@ func saveSecretsStore(store *SecretsStore, filePath string) error {
 		return fmt.Errorf("failed to write secrets file: %w", err)
 	}
 	return nil
-}
-
-func GetPassword() (string, error) {
-	password := os.Getenv("ANBUPW")
-	if password != "" {
-		return password, nil
-	}
-	fmt.Print("Enter password for secrets: ")
-	passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
-	fmt.Println()
-	if err != nil {
-		return "", fmt.Errorf("failed to read password: %w", err)
-	}
-	return string(passwordBytes), nil
 }
 
 func ListSecrets(filePath string) ([]string, error) {
@@ -116,7 +99,7 @@ func DeleteSecret(filePath, secretID string) error {
 	return saveSecretsStore(store, filePath)
 }
 
-func ImportSecrets(filePath, importFilePath string) error {
+func ImportSecrets(filePath, importFilePath string, password string) error {
 	importData, err := os.ReadFile(importFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read import file: %w", err)
@@ -129,10 +112,6 @@ func ImportSecrets(filePath, importFilePath string) error {
 	if err != nil {
 		return err
 	}
-	password, err := GetPassword()
-	if err != nil {
-		return err
-	}
 	for secretID, secretValue := range importStore.Secrets {
 		if err := setSecret(currentStore, filePath, secretID, secretValue, password); err != nil {
 			return fmt.Errorf("failed to encrypt and save secret '%s': %w", secretID, err)
@@ -141,17 +120,13 @@ func ImportSecrets(filePath, importFilePath string) error {
 	return nil
 }
 
-func ExportSecrets(filePath, exportFilePath string) error {
+func ExportSecrets(filePath, exportFilePath string, password string) error {
 	store, err := loadSecretsStore(filePath)
 	if err != nil {
 		return err
 	}
 	exportStore := &SecretsStore{
 		Secrets: make(map[string]string),
-	}
-	password, err := GetPassword()
-	if err != nil {
-		return err
 	}
 	for id, encryptedValue := range store.Secrets {
 		decryptedValue, err := decryptString(encryptedValue, password)

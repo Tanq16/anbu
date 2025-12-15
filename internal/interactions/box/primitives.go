@@ -8,14 +8,15 @@ import (
 )
 
 const (
-	boxTokenFile    = ".anbu-box-token.json"
-	redirectURI     = "http://localhost:8080"
-	apiBaseURL      = "https://api.box.com/2.0"
-	uploadBaseURL   = "https://upload.box.com/api/2.0"
-	folderItemsURL  = apiBaseURL + "/folders/%s/items"
-	fileContentURL  = apiBaseURL + "/files/%s/content"
-	uploadFileURL   = uploadBaseURL + "/files/content"
-	uploadFolderURL = apiBaseURL + "/folders"
+	boxTokenFile         = ".anbu-box-token.json"
+	redirectURI          = "http://localhost:8080"
+	apiBaseURL           = "https://api.box.com/2.0"
+	uploadBaseURL        = "https://upload.box.com/api/2.0"
+	folderItemsURL       = apiBaseURL + "/folders/%s/items"
+	fileContentURL       = apiBaseURL + "/files/%s/content"
+	uploadFileURL        = uploadBaseURL + "/files/content"
+	uploadFileVersionURL = uploadBaseURL + "/files/%s/content"
+	uploadFolderURL      = apiBaseURL + "/folders"
 )
 
 type BoxCredentials struct {
