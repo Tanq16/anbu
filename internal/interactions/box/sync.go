@@ -207,31 +207,43 @@ func deleteBoxFile(client *http.Client, fileID string) error {
 }
 
 func findFileIDInFolder(client *http.Client, fileName string, folderID string) (string, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, folderID), nil)
-	if err != nil {
-		return "", err
-	}
-	q := req.URL.Query()
-	q.Add("fields", "type,name,id")
-	req.URL.RawQuery = q.Encode()
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to list folder items")
-	}
-	var items BoxFolderItems
-	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
-		return "", err
-	}
-	for _, item := range items.Entries {
-		if item.Type == "file" && item.Name == fileName {
-			return item.ID, nil
+	offset := 0
+	limit := 1000
+	for {
+		req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, folderID), nil)
+		if err != nil {
+			return "", err
 		}
+		q := req.URL.Query()
+		q.Add("fields", "type,name,id")
+		q.Add("limit", fmt.Sprintf("%d", limit))
+		q.Add("offset", fmt.Sprintf("%d", offset))
+		req.URL.RawQuery = q.Encode()
+		resp, err := client.Do(req)
+		if err != nil {
+			return "", err
+		}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return "", fmt.Errorf("failed to list folder items (status %d)", resp.StatusCode)
+		}
+		var items BoxFolderItems
+		if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+			resp.Body.Close()
+			return "", err
+		}
+		resp.Body.Close()
+		for _, item := range items.Entries {
+			if item.Type == "file" && item.Name == fileName {
+				return item.ID, nil
+			}
+		}
+		if len(items.Entries) < limit {
+			break
+		}
+		offset += limit
 	}
-	return "", fmt.Errorf("file not found")
+	return "", fmt.Errorf("file not found in folder after checking all pages")
 }
 
 func uploadBoxFileVersion(client *http.Client, localPath string, fileID string) error {
@@ -305,10 +317,12 @@ func uploadBoxFileToFolder(client *http.Client, localPath string, parentFolderID
 			var boxErr BoxError
 			if json.Unmarshal(bodyBytes, &boxErr) == nil {
 				if boxErr.Code == "item_name_in_use" {
+					log.Debug().Str("file", fileName).Str("folder", parentFolderID).Msg("File already exists, attempting to update version")
 					fileID, findErr := findFileIDInFolder(client, fileName, parentFolderID)
 					if findErr == nil {
 						return uploadBoxFileVersion(client, localPath, fileID)
 					}
+					return fmt.Errorf("file '%s' already exists but couldn't find its ID to update: %v", fileName, findErr)
 				}
 				return fmt.Errorf("api request to 'upload file' failed: %s - %s", boxErr.Code, boxErr.Message)
 			}
@@ -319,7 +333,7 @@ func uploadBoxFileToFolder(client *http.Client, localPath string, parentFolderID
 	return nil
 }
 
-func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, localBase string, remoteFolderID string, sem chan struct{}, wg *sync.WaitGroup) error {
+func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, localBase string, remoteFolderID string, sem chan struct{}, wg *sync.WaitGroup, depth int) error {
 	for fileName, localFile := range localTree.Files {
 		remoteFile, exists := remoteTree.Files[fileName]
 		localPath := filepath.Join(localBase, fileName)
@@ -368,6 +382,9 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 		}
 	}
 	for dirName, localSubTree := range localTree.Dirs {
+		if depth == 0 {
+			log.Info().Str("directory", dirName).Msg("Syncing directory")
+		}
 		remoteSubTree, exists := remoteTree.Dirs[dirName]
 		var subFolderID string
 		if !exists {
@@ -427,7 +444,7 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 			}
 		}
 		subLocalBase := filepath.Join(localBase, dirName)
-		if err := syncTree(client, localSubTree, remoteSubTree, subLocalBase, subFolderID, sem, wg); err != nil {
+		if err := syncTree(client, localSubTree, remoteSubTree, subLocalBase, subFolderID, sem, wg, depth+1); err != nil {
 			log.Error().Err(err).Msgf("Failed to sync subtree %s", dirName)
 		}
 	}
@@ -548,9 +565,18 @@ func SyncBoxDirectory(client *http.Client, localDir string, remotePath string, c
 	if concurrency < 1 {
 		concurrency = 1
 	}
+
+	totalTopLevelDirs := len(localTree.Dirs)
+	totalTopLevelFiles := len(localTree.Files)
+	if totalTopLevelDirs > 0 || totalTopLevelFiles > 0 {
+		log.Info().Int("directories", totalTopLevelDirs).Int("files", totalTopLevelFiles).Msg("Starting sync")
+	}
 	sem := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
-	err = syncTree(client, localTree, remoteTree, localDir, folderID, sem, &wg)
+	err = syncTree(client, localTree, remoteTree, localDir, folderID, sem, &wg, 0)
 	wg.Wait()
+	if err == nil {
+		log.Info().Msg("Sync completed")
+	}
 	return err
 }
