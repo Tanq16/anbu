@@ -81,4 +81,5 @@ func init() {
 	rootCmd.AddCommand(interactionsCmd.FSSyncCmd)
 
 	rootCmd.AddCommand(cloudCmd.AwsCmd)
+	rootCmd.AddCommand(cloudCmd.AzureCmd)
 }

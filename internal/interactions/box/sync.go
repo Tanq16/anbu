@@ -383,7 +383,7 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 	}
 	for dirName, localSubTree := range localTree.Dirs {
 		if depth == 0 {
-			log.Info().Str("directory", dirName).Msg("Syncing directory")
+			log.Debug().Str("directory", dirName).Msg("Syncing directory")
 		}
 		remoteSubTree, exists := remoteTree.Dirs[dirName]
 		var subFolderID string
@@ -569,14 +569,14 @@ func SyncBoxDirectory(client *http.Client, localDir string, remotePath string, c
 	totalTopLevelDirs := len(localTree.Dirs)
 	totalTopLevelFiles := len(localTree.Files)
 	if totalTopLevelDirs > 0 || totalTopLevelFiles > 0 {
-		log.Info().Int("directories", totalTopLevelDirs).Int("files", totalTopLevelFiles).Msg("Starting sync")
+		log.Debug().Int("directories", totalTopLevelDirs).Int("files", totalTopLevelFiles).Msg("Starting sync")
 	}
 	sem := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
 	err = syncTree(client, localTree, remoteTree, localDir, folderID, sem, &wg, 0)
 	wg.Wait()
 	if err == nil {
-		log.Info().Msg("Sync completed")
+		log.Debug().Msg("Sync completed")
 	}
 	return err
 }
