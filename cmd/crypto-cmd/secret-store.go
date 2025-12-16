@@ -148,7 +148,10 @@ func init() {
 	}
 
 	// default known password is fine here - we would anyway use a password inline or in env. var. direct workstation access is anyway a risk, intention is secrets are not in plain text in history or logs. not a huge risk with default password, but option for custom password is nice.
-	SecretsCmd.Flags().StringVar(&passwordFlag, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
+	secretsGetCmd.Flags().StringVar(&passwordFlag, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
+	secretsSetCmd.Flags().StringVar(&passwordFlag, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
+	secretsExportCmd.Flags().StringVar(&passwordFlag, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
+	secretsImportCmd.Flags().StringVar(&passwordFlag, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
 	secretsSetCmd.Flags().BoolVarP(&multilineFlag, "multiline", "m", false, "Enable multiline input (end with 'EOF' on a new line)")
 
 	SecretsCmd.AddCommand(secretsListCmd)
