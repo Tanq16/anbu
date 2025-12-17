@@ -19,7 +19,7 @@ type Subscription struct {
 }
 
 func SwitchSubscription() error {
-	cmd := exec.Command("az", "account", "list", "--query", "[].{name:name,id:id}", "-o", "json")
+	cmd := exec.Command("az", "account", "list", "--query", "[].{name:name,id:id}", "-o", "json", "--all")
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("failed to list subscriptions: %w", err)
