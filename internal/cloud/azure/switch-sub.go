@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -59,6 +58,6 @@ func SwitchSubscription() error {
 	if err := setCmd.Run(); err != nil {
 		return fmt.Errorf("failed to set subscription: %w", err)
 	}
-	log.Info().Str("subscription", selectedSub.Name).Str("id", selectedSub.ID).Msg("subscription switched successfully")
+	fmt.Println(u.FSuccess("Subscription switched successfully"), u.FInfo(selectedSub.Name), u.FDebug(selectedSub.ID))
 	return nil
 }

@@ -30,34 +30,82 @@ func resolvePathToID(client *http.Client, path string, expectedType string) (str
 		if segment == "" {
 			continue
 		}
-		req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, currentID), nil)
-		if err != nil {
-			return "", "", fmt.Errorf("http error creating request: %w", err)
-		}
-		q := req.URL.Query()
-		q.Add("fields", "type,name")
-		req.URL.RawQuery = q.Encode()
-		resp, err := client.Do(req)
-		if err != nil {
-			return "", "", fmt.Errorf("http error listing folder %s: %w", currentID, err)
-		}
-		if resp.StatusCode != http.StatusOK {
-			body, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			return "", "", fmt.Errorf("api error listing folder %s (status %d): %s", currentID, resp.StatusCode, string(body))
-		}
-		var items BoxFolderItems
-		err = json.NewDecoder(resp.Body).Decode(&items)
-		resp.Body.Close()
-		if err != nil {
-			return "", "", fmt.Errorf("json parse error: %w", err)
+		isFirstSegment := (i == 0)
+		isLastSegment := (i == len(segments)-1)
+		isNumeric := strings.TrimSpace(segment) != "" && isAllDigits(segment)
+		if isNumeric {
+			if isFirstSegment {
+				folderID, folderType, err := tryResolveFolderByID(client, segment)
+				if err == nil {
+					currentID = folderID
+					currentType = folderType
+					if isLastSegment {
+						if expectedType != "" && currentType != expectedType {
+							return "", "", fmt.Errorf("path error: ID '%s' is a %s, but expected a %s", segment, currentType, expectedType)
+						}
+						return currentID, currentType, nil
+					}
+					continue
+				}
+			}
+			if isLastSegment {
+				fileID, fileType, err := tryResolveFileByID(client, segment)
+				if err == nil {
+					if expectedType != "" && fileType != expectedType {
+						return "", "", fmt.Errorf("path error: ID '%s' is a %s, but expected a %s", segment, fileType, expectedType)
+					}
+					return fileID, fileType, nil
+				}
+				folderID, folderType, err := tryResolveFolderByID(client, segment)
+				if err == nil {
+					if expectedType != "" && folderType != expectedType {
+						return "", "", fmt.Errorf("path error: ID '%s' is a %s, but expected a %s", segment, folderType, expectedType)
+					}
+					return folderID, folderType, nil
+				}
+			}
 		}
 		found := false
-		for _, item := range items.Entries {
-			if strings.EqualFold(item.Name, segment) {
-				currentID = item.ID
-				currentType = item.Type
-				found = true
+		offset := 0
+		limit := 1000
+		for !found {
+			req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, currentID), nil)
+			if err != nil {
+				return "", "", fmt.Errorf("http error creating request: %w", err)
+			}
+			q := req.URL.Query()
+			q.Add("fields", "type,name")
+			q.Add("limit", fmt.Sprintf("%d", limit))
+			q.Add("offset", fmt.Sprintf("%d", offset))
+			req.URL.RawQuery = q.Encode()
+			resp, err := client.Do(req)
+			if err != nil {
+				return "", "", fmt.Errorf("http error listing folder %s: %w", currentID, err)
+			}
+			if resp.StatusCode != http.StatusOK {
+				body, _ := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				return "", "", fmt.Errorf("api error listing folder %s (status %d): %s", currentID, resp.StatusCode, string(body))
+			}
+			var items BoxFolderItems
+			err = json.NewDecoder(resp.Body).Decode(&items)
+			resp.Body.Close()
+			if err != nil {
+				return "", "", fmt.Errorf("json parse error: %w", err)
+			}
+			for _, item := range items.Entries {
+				if strings.EqualFold(item.Name, segment) {
+					currentID = item.ID
+					currentType = item.Type
+					found = true
+					break
+				}
+			}
+			if found {
+				break
+			}
+			offset += len(items.Entries)
+			if offset >= items.TotalCount || len(items.Entries) == 0 {
 				break
 			}
 		}
@@ -65,7 +113,6 @@ func resolvePathToID(client *http.Client, path string, expectedType string) (str
 			log.Debug().Str("segment", segment).Str("path", path).Str("currentID", currentID).Msg("path segment not found during traversal")
 			return "", "", fmt.Errorf("path not found: '%s' in '%s'", segment, path)
 		}
-		isLastSegment := (i == len(segments)-1)
 		if isLastSegment {
 			if expectedType != "" && currentType != expectedType {
 				log.Debug().Str("segment", segment).Str("actualType", currentType).Str("expectedType", expectedType).Msg("type mismatch in path resolution")
@@ -78,6 +125,61 @@ func resolvePathToID(client *http.Client, path string, expectedType string) (str
 		}
 	}
 	return "0", "folder", nil
+}
+
+func isAllDigits(s string) bool {
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return len(s) > 0
+}
+
+func tryResolveFolderByID(client *http.Client, folderID string) (string, string, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/folders/%s", apiBaseURL, folderID), nil)
+	if err != nil {
+		return "", "", err
+	}
+	q := req.URL.Query()
+	q.Add("fields", "type,id")
+	req.URL.RawQuery = q.Encode()
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("status %d", resp.StatusCode)
+	}
+	var folder BoxItem
+	if err := json.NewDecoder(resp.Body).Decode(&folder); err != nil {
+		return "", "", err
+	}
+	return folder.ID, folder.Type, nil
+}
+
+func tryResolveFileByID(client *http.Client, fileID string) (string, string, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/files/%s", apiBaseURL, fileID), nil)
+	if err != nil {
+		return "", "", err
+	}
+	q := req.URL.Query()
+	q.Add("fields", "type,id")
+	req.URL.RawQuery = q.Encode()
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("status %d", resp.StatusCode)
+	}
+	var file BoxItem
+	if err := json.NewDecoder(resp.Body).Decode(&file); err != nil {
+		return "", "", err
+	}
+	return file.ID, file.Type, nil
 }
 
 func ListBoxContents(client *http.Client, path string) ([]BoxItemDisplay, []BoxItemDisplay, error) {
@@ -134,53 +236,65 @@ func listBoxFileInfo(client *http.Client, fileID string) ([]BoxItemDisplay, []Bo
 }
 
 func listBoxFolderContents(client *http.Client, folderID string) ([]BoxItemDisplay, []BoxItemDisplay, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, folderID), nil)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create request: %v", err)
-	}
-	q := req.URL.Query()
-	q.Add("fields", "type,name,id,size,modified_at")
-	req.URL.RawQuery = q.Encode()
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to list items: %v", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, nil, handleBoxAPIError("list items", resp)
-	}
-	var items BoxFolderItems
-	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
-		return nil, nil, fmt.Errorf("failed to parse list response: %v", err)
-	}
-	var folders []BoxItemDisplay
-	var files []BoxItemDisplay
-	for _, item := range items.Entries {
-		var modTime string
-		if item.ModifiedAt != nil {
-			t, err := time.Parse(time.RFC3339, *item.ModifiedAt)
-			if err == nil {
-				modTime = t.Format("2006-01-02 15:04")
+	var allFolders []BoxItemDisplay
+	var allFiles []BoxItemDisplay
+	offset := 0
+	limit := 1000
+	for {
+		req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, folderID), nil)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create request: %v", err)
+		}
+		q := req.URL.Query()
+		q.Add("fields", "type,name,id,size,modified_at")
+		q.Add("limit", fmt.Sprintf("%d", limit))
+		q.Add("offset", fmt.Sprintf("%d", offset))
+		req.URL.RawQuery = q.Encode()
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to list items: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return nil, nil, handleBoxAPIError("list items", resp)
+		}
+		var items BoxFolderItems
+		err = json.NewDecoder(resp.Body).Decode(&items)
+		resp.Body.Close()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse list response: %v", err)
+		}
+		for _, item := range items.Entries {
+			var modTime string
+			if item.ModifiedAt != nil {
+				t, err := time.Parse(time.RFC3339, *item.ModifiedAt)
+				if err == nil {
+					modTime = t.Format("2006-01-02 15:04")
+				}
+			}
+			display := BoxItemDisplay{
+				ID:           item.ID,
+				Name:         item.Name,
+				ModifiedTime: modTime,
+				Type:         item.Type,
+			}
+			if item.Size != nil {
+				display.Size = *item.Size
+			}
+			if item.Type == "folder" {
+				allFolders = append(allFolders, display)
+			} else {
+				allFiles = append(allFiles, display)
 			}
 		}
-		display := BoxItemDisplay{
-			ID:           item.ID,
-			Name:         item.Name,
-			ModifiedTime: modTime,
-			Type:         item.Type,
-		}
-		if item.Size != nil {
-			display.Size = *item.Size
-		}
-		if item.Type == "folder" {
-			folders = append(folders, display)
-		} else {
-			files = append(files, display)
+		offset += len(items.Entries)
+		if offset >= items.TotalCount || len(items.Entries) == 0 {
+			break
 		}
 	}
-	sort.Slice(folders, func(i, j int) bool { return folders[i].Name < folders[j].Name })
-	sort.Slice(files, func(i, j int) bool { return files[i].Name < files[j].Name })
-	return folders, files, nil
+	sort.Slice(allFolders, func(i, j int) bool { return allFolders[i].Name < allFolders[j].Name })
+	sort.Slice(allFiles, func(i, j int) bool { return allFiles[i].Name < allFiles[j].Name })
+	return allFolders, allFiles, nil
 }
 
 func UploadBoxItem(client *http.Client, localPath string, boxFolderPath string) error {
@@ -264,11 +378,34 @@ func DownloadBoxItem(client *http.Client, boxPath string, localPath string) (str
 
 func downloadBoxFile(client *http.Client, fileID string, boxFilePath string, localPath string) (string, error) {
 	if localPath == "" {
-		parts := strings.Split(strings.Trim(boxFilePath, "/"), "/")
-		if len(parts) > 0 {
-			localPath = parts[len(parts)-1]
-		} else {
-			localPath = "downloaded_file"
+		isNumericID := isAllDigits(strings.TrimSpace(boxFilePath))
+		if isNumericID {
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/files/%s", apiBaseURL, fileID), nil)
+			if err != nil {
+				return "", fmt.Errorf("failed to create request: %v", err)
+			}
+			q := req.URL.Query()
+			q.Add("fields", "name")
+			req.URL.RawQuery = q.Encode()
+			resp, err := client.Do(req)
+			if err != nil {
+				return "", fmt.Errorf("failed to get file info: %v", err)
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				var file BoxItem
+				if err := json.NewDecoder(resp.Body).Decode(&file); err == nil && file.Name != "" {
+					localPath = file.Name
+				}
+			}
+		}
+		if localPath == "" {
+			parts := strings.Split(strings.Trim(boxFilePath, "/"), "/")
+			if len(parts) > 0 {
+				localPath = parts[len(parts)-1]
+			} else {
+				localPath = "downloaded_file"
+			}
 		}
 	}
 	out, err := os.Create(localPath)
@@ -381,36 +518,50 @@ func UploadBoxFolder(client *http.Client, localPath string, boxFolderPath string
 }
 
 func findOrCreateBoxFolder(client *http.Client, folderName string, parentId string) (string, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, parentId), nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %v", err)
-	}
-	q := req.URL.Query()
-	q.Add("fields", "type,name")
-	req.URL.RawQuery = q.Encode()
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to list folder: %v", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
+	offset := 0
+	limit := 1000
+	for {
+		req, err := http.NewRequest("GET", fmt.Sprintf(folderItemsURL, parentId), nil)
+		if err != nil {
+			return "", fmt.Errorf("failed to create request: %v", err)
+		}
+		q := req.URL.Query()
+		q.Add("fields", "type,name")
+		q.Add("limit", fmt.Sprintf("%d", limit))
+		q.Add("offset", fmt.Sprintf("%d", offset))
+		req.URL.RawQuery = q.Encode()
+		resp, err := client.Do(req)
+		if err != nil {
+			return "", fmt.Errorf("failed to list folder: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			break
+		}
 		var items BoxFolderItems
-		if err := json.NewDecoder(resp.Body).Decode(&items); err == nil {
-			for _, item := range items.Entries {
-				if strings.EqualFold(item.Name, folderName) && item.Type == "folder" {
-					return item.ID, nil
-				}
+		err = json.NewDecoder(resp.Body).Decode(&items)
+		resp.Body.Close()
+		if err != nil {
+			break
+		}
+		for _, item := range items.Entries {
+			if strings.EqualFold(item.Name, folderName) && item.Type == "folder" {
+				return item.ID, nil
 			}
+		}
+		offset += len(items.Entries)
+		if offset >= items.TotalCount || len(items.Entries) == 0 {
+			break
 		}
 	}
 	log.Debug().Msgf("Folder '%s' not found, creating it...", folderName)
 	folderJSON := fmt.Sprintf(`{"name":"%s", "parent":{"id":"%s"}}`, folderName, parentId)
-	req, err = http.NewRequest("POST", uploadFolderURL, bytes.NewBufferString(folderJSON))
+	req, err := http.NewRequest("POST", uploadFolderURL, bytes.NewBufferString(folderJSON))
 	if err != nil {
 		return "", fmt.Errorf("failed to create folder request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to create folder: %v", err)
 	}
