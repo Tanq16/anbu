@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
@@ -48,8 +47,4 @@ func (t *Table) FormatTable(useMarkdown bool) string {
 
 func (t *Table) PrintTable(useMarkdown bool) {
 	fmt.Println(t.FormatTable(useMarkdown))
-}
-
-func (t *Table) WriteMarkdownTableToFile(outputPath string) error {
-	return os.WriteFile(outputPath, []byte(t.FormatTable(true)), 0644)
 }

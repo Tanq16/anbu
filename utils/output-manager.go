@@ -2,14 +2,10 @@ package utils
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"sync"
 	"time"
-	"unicode/utf8"
-
-	"golang.org/x/term"
 )
 
 type FunctionOutput struct {
@@ -68,20 +64,6 @@ func NewManager() *Manager {
 	return retMgr
 }
 
-func (m *Manager) Pause() {
-	if !m.isPaused {
-		m.pauseCh <- true
-		m.isPaused = true
-	}
-}
-
-func (m *Manager) Resume() {
-	if m.isPaused {
-		m.pauseCh <- false
-		m.isPaused = false
-	}
-}
-
 func (m *Manager) Register(name string) string {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -137,75 +119,6 @@ func (m *Manager) ReportError(name string, err error) {
 			Time:         time.Now(),
 		})
 	}
-}
-
-func (m *Manager) AddStreamLine(name string, line string) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	if info, exists := m.outputs[name]; exists {
-		wrappedLines := wrapText(line, basePadding+4)
-		currentLen := len(info.StreamLines)
-		totalNewLines := len(wrappedLines)
-		if currentLen+totalNewLines > m.maxStreams {
-			startIndex := currentLen + totalNewLines - m.maxStreams
-			if startIndex > currentLen {
-				startIndex = 0
-				existingToKeep := m.maxStreams - totalNewLines
-				if existingToKeep > 0 {
-					info.StreamLines = info.StreamLines[currentLen-existingToKeep:]
-				} else {
-					info.StreamLines = []string{} // All existing lines will be dropped
-				}
-			} else {
-				info.StreamLines = info.StreamLines[startIndex:]
-			}
-			info.StreamLines = append(info.StreamLines, wrappedLines...)
-		} else {
-			info.StreamLines = append(info.StreamLines, wrappedLines...)
-		}
-		if len(info.StreamLines) > m.maxStreams {
-			info.StreamLines = info.StreamLines[len(info.StreamLines)-m.maxStreams:]
-		}
-		info.LastUpdated = time.Now()
-	}
-}
-
-func getTerminalWidth() int {
-	width, _, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil || width <= 0 {
-		return 80 // Default fallback width if terminal width can't be determined
-	}
-	return width
-}
-
-func wrapText(text string, indent int) []string {
-	termWidth := getTerminalWidth()
-	maxWidth := termWidth - indent - 2 // Account for indentation
-	if maxWidth <= 10 {
-		maxWidth = 80
-	}
-	if utf8.RuneCountInString(text) <= maxWidth {
-		return []string{text}
-	}
-	var lines []string
-	currentLine := ""
-	currentWidth := 0
-	for _, r := range text {
-		runeWidth := 1
-		// If adding this rune would exceed max width, flush the line
-		if currentWidth+runeWidth > maxWidth {
-			lines = append(lines, currentLine)
-			currentLine = string(r)
-			currentWidth = runeWidth
-		} else {
-			currentLine += string(r)
-			currentWidth += runeWidth
-		}
-	}
-	if currentLine != "" {
-		lines = append(lines, currentLine)
-	}
-	return lines
 }
 
 func (m *Manager) AddProgressBarToStream(name string, outof, final int64, text string) {
