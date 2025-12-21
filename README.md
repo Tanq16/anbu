@@ -37,6 +37,7 @@ A summary of everything that **Anbu** can perform:
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
 | **Markdown Viewer** | Start a web server to view rendered markdown files with syntax highlighting, navigation, and Mermaid support |
 | **AWS Helper Utilities** | Configure AWS SSO with IAM Identity Center for multi-role access and generate console URLs from CLI profiles |
+| **Azure Helper Utilities** | Switch between Azure subscriptions interactively |
 
 ## Installation
 
@@ -105,7 +106,7 @@ The specific details of each are:
 - ***Simple HTTP/HTTPS Server***
 
   ```bash
-  anbu http-server                     # Serves current directory on http://localhost:8000
+  anbu http-server                     # Serves current directory on http://0.0.0.0:8080
   anbu http-server -l 0.0.0.0:8080 -t  # Serve HTTPS on given add:port with a self-signed cert
   anbu http-server -u                  # Enables file upload via PUT requests
   ```
@@ -181,6 +182,10 @@ The specific details of each are:
 
   # JWT Decoding
   anbu convert jwtd "$TOKEN"  # Decodes and prints the headers and payload
+
+  # Docker command conversion
+  anbu convert docker-compose "docker run -p 8080:80 nginx"  # Convert docker run command to docker-compose.yml
+  anbu convert compose-docker docker-compose.yml            # Convert docker-compose.yml to docker run command
   ```
 
 - ***File Encryption/Decryption*** (alias: `fc`)
@@ -399,8 +404,16 @@ The specific details of each are:
   anbu aws iidc-login -u https://my-sso.awsapps.com/start -r us-east-1
   anbu aws iidc-login --start-url https://my-sso.awsapps.com/start --sso-region us-east-1 --cli-region us-west-2 --session-name my-sso
 
-  # Generate AWS console URL from a local CLI profile (valid for 12 hours)
+  # Generate AWS console URL from a local CLI profile (valid for up to 12 hours)
   anbu aws cli-ui -p my-profile
+  ```
+
+- ***Azure Helper Utilities*** (alias: `az`)
+
+  ```bash
+  # Switch between Azure subscriptions interactively
+  anbu azure switch-sub
+  anbu az switch
   ```
 
 ## Tips & Tricks

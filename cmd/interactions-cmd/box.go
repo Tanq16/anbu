@@ -41,7 +41,7 @@ var BoxCmd = &cobra.Command{
 var boxListCmd = &cobra.Command{
 	Use:     "list [path]",
 	Aliases: []string{"ls"},
-	Short:   "List files and folders in Box (defaults to root 'My Drive' without a path)",
+	Short:   "List files and folders in Box (defaults to root folder without a path)",
 	Args:    cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := ""
@@ -84,7 +84,7 @@ var boxListCmd = &cobra.Command{
 var boxUploadCmd = &cobra.Command{
 	Use:     "upload <local-path> [box-folder-path]",
 	Aliases: []string{"up"},
-	Short:   "Upload a local file or folder to Box (defaults to root 'My Drive' without a path)",
+	Short:   "Upload a local file or folder to Box (defaults to root folder without a path)",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		localPath := args[0]
@@ -153,7 +153,7 @@ var boxSyncCmd = &cobra.Command{
 
 var boxIndexCmd = &cobra.Command{
 	Use:   "index [path]",
-	Short: "Index file metadata for fast searching (defaults to root 'My Drive' without a path)",
+	Short: "Index file metadata for fast searching (defaults to root folder without a path)",
 	Run: func(cmd *cobra.Command, args []string) {
 		path := ""
 		if len(args) > 0 {

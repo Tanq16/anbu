@@ -50,7 +50,7 @@ var awsIidcLoginCmd = &cobra.Command{
 
 var awsCliUiCmd = &cobra.Command{
 	Use:   "cli-ui",
-	Short: "Get a console URL from an AWS CLI profile with a pre-signed URL valid for upto 12 hours",
+	Short: "Get a console URL from an AWS CLI profile with a pre-signed URL valid for up to 12 hours",
 	Run: func(cmd *cobra.Command, args []string) {
 		consoleURL, err := anbuCloud.GenerateConsoleURLFromProfile(awsCliUiFlags.profile)
 		if err != nil {
