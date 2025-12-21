@@ -26,14 +26,14 @@ var GDriveCmd = &cobra.Command{
 	Short:   "Interact with Google Drive (list, upload, download)",
 	Long: `Provides commands to interact with Google Drive.
 Requires a credentials.json file, which can be specified via a flag
-or placed at ~/.anbu-gdrive-credentials.json.`,
+or placed at ~/.anbu/gdrive-credentials.json.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if gdriveFlags.credentialsFile == "" {
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
 				return fmt.Errorf("failed to get user home directory: %w", err)
 			}
-			gdriveFlags.credentialsFile = filepath.Join(homeDir, ".anbu-gdrive-credentials.json")
+			gdriveFlags.credentialsFile = filepath.Join(homeDir, ".anbu", "gdrive-credentials.json")
 		}
 		if _, err := os.Stat(gdriveFlags.credentialsFile); os.IsNotExist(err) {
 			return fmt.Errorf("credentials file not found at %s. Please provide one using the --credentials flag or place it at the default location", gdriveFlags.credentialsFile)
@@ -236,7 +236,7 @@ Shortcuts (e.g., %project%) are supported in the path.`,
 }
 
 func init() {
-	GDriveCmd.PersistentFlags().StringVarP(&gdriveFlags.credentialsFile, "credentials", "c", "", "Path to Google Drive credentials.json file (default ~/.anbu-gdrive-credentials.json)")
+	GDriveCmd.PersistentFlags().StringVarP(&gdriveFlags.credentialsFile, "credentials", "c", "", "Path to Google Drive credentials.json file (default ~/.anbu/gdrive-credentials.json)")
 
 	GDriveCmd.AddCommand(gdriveListCmd)
 	GDriveCmd.AddCommand(gdriveUploadCmd)

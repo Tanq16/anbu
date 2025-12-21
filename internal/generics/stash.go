@@ -42,7 +42,11 @@ func getStashDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	stashDir := filepath.Join(homeDir, ".anbu-stash")
+	anbuDir := filepath.Join(homeDir, ".anbu")
+	if err := os.MkdirAll(anbuDir, 0755); err != nil {
+		return "", err
+	}
+	stashDir := filepath.Join(anbuDir, "stash")
 	if err := os.MkdirAll(stashDir, 0755); err != nil {
 		return "", err
 	}

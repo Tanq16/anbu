@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	boxTokenFile         = ".anbu-box-token.json"
+	boxTokenFile         = "box-token.json"
 	redirectURI          = "http://localhost:8080"
 	apiBaseURL           = "https://api.box.com/2.0"
 	uploadBaseURL        = "https://upload.box.com/api/2.0"
@@ -60,7 +60,7 @@ func ResolvePath(path string) (string, error) {
 	if err != nil {
 		return path, nil
 	}
-	shortcutsFile := filepath.Join(homeDir, ".anbu-box-shortcuts.json")
+	shortcutsFile := filepath.Join(homeDir, ".anbu", "box-shortcuts.json")
 	data, err := os.ReadFile(shortcutsFile)
 	if err != nil {
 		return path, nil

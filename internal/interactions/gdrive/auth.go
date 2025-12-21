@@ -88,7 +88,11 @@ func getTokenFilePath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get user home directory: %w", err)
 	}
-	return filepath.Join(homeDir, gdriveTokenFile), nil
+	anbuDir := filepath.Join(homeDir, ".anbu")
+	if err := os.MkdirAll(anbuDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create .anbu directory: %w", err)
+	}
+	return filepath.Join(anbuDir, gdriveTokenFile), nil
 }
 
 func tokenFromFile(file string) (*oauth2.Token, error) {

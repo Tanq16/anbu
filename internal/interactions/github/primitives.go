@@ -1,7 +1,7 @@
 package github
 
 const (
-	githubTokenFile = ".anbu-github-token.json"
+	githubTokenFile = "github-token.json"
 )
 
 type RepoPath struct {

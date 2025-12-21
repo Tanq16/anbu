@@ -25,14 +25,14 @@ var BoxCmd = &cobra.Command{
 	Short: "Interact with Box.com (list, upload, download)",
 	Long: `Provides commands to interact with Box.com.
 Requires a credentials.json file with client_id and client_secret,
-which can be specified via a flag or placed at ~/.anbu-box-credentials.json.`,
+which can be specified via a flag or placed at ~/.anbu/box-credentials.json.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if boxFlags.credentialsFile == "" {
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
 				return fmt.Errorf("failed to get user home directory: %w", err)
 			}
-			boxFlags.credentialsFile = filepath.Join(homeDir, ".anbu-box-credentials.json")
+			boxFlags.credentialsFile = filepath.Join(homeDir, ".anbu", "box-credentials.json")
 		}
 		if _, err := os.Stat(boxFlags.credentialsFile); os.IsNotExist(err) {
 			return fmt.Errorf("credentials file not found at %s. Please provide one using the --credentials flag or place it at the default location", boxFlags.credentialsFile)
@@ -231,7 +231,7 @@ Shortcuts (e.g., %project%) are supported in the path.`,
 }
 
 func init() {
-	BoxCmd.PersistentFlags().StringVarP(&boxFlags.credentialsFile, "credentials", "c", "", "Path to Box credentials.json file (default ~/.anbu-box-credentials.json)")
+	BoxCmd.PersistentFlags().StringVarP(&boxFlags.credentialsFile, "credentials", "c", "", "Path to Box credentials.json file (default ~/.anbu/box-credentials.json)")
 
 	BoxCmd.AddCommand(boxListCmd)
 	BoxCmd.AddCommand(boxUploadCmd)

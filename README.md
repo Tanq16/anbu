@@ -247,7 +247,7 @@ The specific details of each are:
 - ***Google Drive Interaction*** (alias: `gd`)
 
   ```bash
-  # Set up credentials by placing credentials.json at ~/.anbu-gdrive-credentials.json or pass with --credentials flag
+  # Set up credentials by placing credentials.json at ~/.anbu/gdrive-credentials.json or pass with --credentials flag
   anbu gdrive -c path/to/credentials.json list
 
   # List files and folders (defaults to root 'My Drive')
@@ -282,7 +282,7 @@ The specific details of each are:
 - ***Box Interaction***
 
   ```bash
-  # Set up credentials by placing credentials.json at ~/.anbu-box-credentials.json or pass with --credentials flag
+  # Set up credentials by placing credentials.json at ~/.anbu/box-credentials.json or pass with --credentials flag
   anbu box -c path/to/credentials.json list
 
   # List files and folders (defaults to root folder)
@@ -318,7 +318,7 @@ The specific details of each are:
 
   ```bash
   # Authentication: Use OAuth (default) or PAT with --pat flag
-  # OAuth: Put OAuth app client ID at ~/.anbu-github-credentials.json or pass another file with --credentials flag
+  # OAuth: Put OAuth app client ID at ~/.anbu/github-credentials.json or pass another file with --credentials flag
   anbu github -c path/to/credentials.json list owner/repo/i
   
   # PAT: Use Personal Access Token (classic or fine-grained) with --pat flag
@@ -478,7 +478,7 @@ To use the `gdrive` command, you need to create OAuth 2.0 credentials. Here’s 
     - Give it a name and click **Create**.
 4. **Download Credentials:**
     - After creation, a dialog will show your client ID and secret. Click **Download JSON** to save the `credentials.json` file.
-    - Place this file at `~/.anbu-gdrive-credentials.json` or provide its path using the `--credentials` flag.
+    - Place this file at `~/.anbu/gdrive-credentials.json` or provide its path using the `--credentials` flag.
 5. **Publish the App:**
     - In the **OAuth consent screen** tab, you need to configure the consent screen. For personal use, you can keep it in "Testing" mode and add your Google account as a test user.
     - If you want to allow other users, you must publish the app, which may require verification by Google.
@@ -519,7 +519,7 @@ To use the `box` command, you need to create OAuth 2.0 credentials. Here's how t
         "client_secret": "your_client_secret"
       }
       ```
-    - Save this file as `~/.anbu-box-credentials.json` or provide its path using the `--credentials` flag.
+    - Save this file as `~/.anbu/box-credentials.json` or provide its path using the `--credentials` flag.
 
 **Authentication Flow:**
 
@@ -560,7 +560,7 @@ To use OAuth authentication, you need to create a GitHub OAuth App. Here's how t
        "client_id": "your_client_id"
      }
      ```
-   - Save this file as `~/.anbu-github-credentials.json` or provide its path using the `--credentials` flag.
+   - Save this file as `~/.anbu/github-credentials.json` or provide its path using the `--credentials` flag.
 
 **Option 2: PAT**
 
@@ -574,14 +574,14 @@ When you run a `github` command for the first time, `anbu` will:
 3. Authorize the application in your browser, then return to the terminal and press Enter.
 4. `anbu` will then check authorization and retrieve an access token.
 
-The access token is saved at `~/.anbu-github-token.json` and will be reused for subsequent commands.
+The access token is saved at `~/.anbu/github-token.json` and will be reused for subsequent commands.
 
 </details>
 
 <details>
 <summary><b>Path Shortcuts for Box and Google Drive</b></summary>
 
-You can define path shortcuts to simplify remote paths. For Box, create `~/.anbu-box-shortcuts.json`, and for Google Drive, create `~/.anbu-gdrive-shortcuts.json`. Use `%shortcut%` syntax in remote paths (not local paths for Google Drive) to automatically expand shortcuts. Use `%%` for a literal percent sign.
+You can define path shortcuts to simplify remote paths. For Box, create `~/.anbu/box-shortcuts.json`, and for Google Drive, create `~/.anbu/gdrive-shortcuts.json`. Use `%shortcut%` syntax in remote paths (not local paths for Google Drive) to automatically expand shortcuts. Use `%%` for a literal percent sign.
 
 ```json
 {

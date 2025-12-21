@@ -34,7 +34,11 @@ func getIndexPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".anbu-box-index.json"), nil
+	anbuDir := filepath.Join(home, ".anbu")
+	if err := os.MkdirAll(anbuDir, 0755); err != nil {
+		return "", err
+	}
+	return filepath.Join(anbuDir, "box-index.json"), nil
 }
 
 func saveIndex(rootPath string, items []IndexItem) error {

@@ -26,7 +26,7 @@ var GitHubCmd = &cobra.Command{
 	Long: `Provides commands to interact with GitHub.
 Requires a json file with client_id of Oauth app,
 which can be specified via a flag or placed at
-~/.anbu-github-credentials.json.`,
+~/.anbu/github-credentials.json.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Skip credentials file check if PAT is provided
 		if githubFlags.pat != "" {
@@ -37,7 +37,7 @@ which can be specified via a flag or placed at
 			if err != nil {
 				return fmt.Errorf("failed to get user home directory: %w", err)
 			}
-			githubFlags.credentialsFile = filepath.Join(homeDir, ".anbu-github-credentials.json")
+			githubFlags.credentialsFile = filepath.Join(homeDir, ".anbu", "github-credentials.json")
 		}
 		if _, err := os.Stat(githubFlags.credentialsFile); os.IsNotExist(err) {
 			return fmt.Errorf("credentials file not found at %s. Please provide one using the --credentials flag or place it at the default location", githubFlags.credentialsFile)
@@ -285,7 +285,7 @@ func handleList(client *http.Client, owner, repo, resourcePath string) error {
 }
 
 func init() {
-	GitHubCmd.PersistentFlags().StringVarP(&githubFlags.credentialsFile, "credentials", "c", "", "Path to GitHub credentials.json file (default ~/.anbu-github-credentials.json)")
+	GitHubCmd.PersistentFlags().StringVarP(&githubFlags.credentialsFile, "credentials", "c", "", "Path to GitHub credentials.json file (default ~/.anbu/github-credentials.json)")
 	GitHubCmd.PersistentFlags().StringVar(&githubFlags.pat, "pat", "", "GitHub Personal Access Token (classic or fine-grained)")
 
 	GitHubCmd.AddCommand(githubListCmd)

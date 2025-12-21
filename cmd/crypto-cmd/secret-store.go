@@ -138,9 +138,13 @@ var secretsExportCmd = &cobra.Command{
 
 func init() {
 	homeDir, err := os.UserHomeDir()
-	secretsFile = ".anbu-secrets.json"
+	secretsFile = "secrets.json"
 	if err == nil {
-		secretsFile = filepath.Join(homeDir, ".anbu-secrets.json")
+		anbuDir := filepath.Join(homeDir, ".anbu")
+		if err := os.MkdirAll(anbuDir, 0755); err != nil {
+			log.Fatal().Err(err)
+		}
+		secretsFile = filepath.Join(anbuDir, "secrets.json")
 	}
 	err = anbuCrypto.InitializeSecretsStore(secretsFile)
 	if err != nil {

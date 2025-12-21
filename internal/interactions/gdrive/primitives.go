@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	gdriveTokenFile      = ".anbu-gdrive-token.json"
+	gdriveTokenFile      = "gdrive-token.json"
 	googleFolderMimeType = "application/vnd.google-apps.folder"
 )
 
@@ -23,7 +23,7 @@ func ResolvePath(path string) (string, error) {
 	if err != nil {
 		return path, nil
 	}
-	shortcutsFile := filepath.Join(homeDir, ".anbu-gdrive-shortcuts.json")
+	shortcutsFile := filepath.Join(homeDir, ".anbu", "gdrive-shortcuts.json")
 	data, err := os.ReadFile(shortcutsFile)
 	if err != nil {
 		return path, nil
