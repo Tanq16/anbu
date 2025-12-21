@@ -15,15 +15,8 @@ var timeCmdFlags struct {
 var TimeCmd = &cobra.Command{
 	Use:     "time",
 	Aliases: []string{"t"},
-	Short:   "time related commands to print or analyze time",
-	Long: `Arguments:
-- now: print the current time in various formats
-- purple: print the current time in purple team format (includes public ip)
-- iso: print the current ISO time string in UTC in plaintext (for scripts)
-- diff: print the difference between two epochs
-- parse: parse a time string across various formats and print as table
-- until: parse a time string and print the difference between now and then`,
-	Args: cobra.MaximumNArgs(1),
+	Short:   "Display and analyze time in various formats and perform epoch diffs, time parsing, and time remaining calculations",
+	Args:    cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			anbuGenerics.TimeCurrent()

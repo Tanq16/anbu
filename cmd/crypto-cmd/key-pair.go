@@ -18,15 +18,6 @@ var KeyPairCmd = &cobra.Command{
 	Use:     "key-pair",
 	Aliases: []string{},
 	Short:   "Generate RSA key pairs in PEM or SSH format",
-	Long: `Generates RSA public and private key pairs.
-Supports standard PEM format for general use and OpenSSH format for SSH authentication.
-
-Examples:
-  # Generate a 4096-bit RSA key pair in PEM format
-  anbu key-pair -o my-key -k 4096
-
-  # Generate a default 2048-bit RSA key pair in SSH format
-  anbu key-pair --ssh -o my-ssh-key`,
 	Run: func(cmd *cobra.Command, args []string) {
 		keyName := filepath.Base(keyPairFlags.outputPath)
 		keyDir := filepath.Dir(keyPairFlags.outputPath)

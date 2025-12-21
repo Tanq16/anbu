@@ -12,24 +12,13 @@ var sedFlags struct {
 var SedCmd = &cobra.Command{
 	Use:     "sed <pattern> <replacement> <path>",
 	Aliases: []string{},
-	Short:   "Apply regex substitution to file(s)",
-	Long: `Applies regex pattern matching and replacement to file content.
-The first expression is a regex pattern, the second is a replacement string.
-If path is a file, applies to that file. If path is a directory, applies to all files within.
-
-- Use \1, \2, etc. in the <replacement> string to refer to capture groups from the <pattern>.
-- The pattern is standard Go regex. Remember to quote arguments to prevent shell expansion.
-- Substitutions are applied globally to each file.
+	Short:   "Apply regex substitution to file content",
+	Long: `Replace text patterns in single files or entire directories using regex patterns.
 
 Examples:
-  # Replace all occurrences of 'old' with 'new' in a file
-  anbu sed 'old' 'new' file.txt
-
-  # Replace email patterns with masked version
-  anbu sed '([a-z]+)@([a-z]+)\.com' '\1@***.com' file.txt
-
-  # Simulate substitution without making changes
-  anbu sed 'foo' 'bar' ./directory -r`,
+  anbu sed 'old_(.*)' 'new_\1' path/to/file.txt  # Replace text in file
+  anbu sed 'old_(.*)' 'new_\1' path/to/dir       # Replace text in all files in directory
+  anbu sed 'old_(.*)' 'new_\1' path/to/dir -r    # Perform a dry-run without applying changes`,
 	Args: cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		anbuGenerics.Sed(args[0], args[1], args[2], sedFlags.dryRun)

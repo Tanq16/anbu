@@ -23,10 +23,7 @@ var gdriveSyncFlags struct {
 var GDriveCmd = &cobra.Command{
 	Use:     "gdrive",
 	Aliases: []string{"gd"},
-	Short:   "Interact with Google Drive (list, upload, download)",
-	Long: `Provides commands to interact with Google Drive.
-Requires a credentials.json file, which can be specified via a flag
-or placed at ~/.anbu/gdrive-credentials.json.`,
+	Short:   "Interact with Google Drive to list, upload, download, sync, and index & search files and folders",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if gdriveFlags.credentialsFile == "" {
 			homeDir, err := os.UserHomeDir()
@@ -45,8 +42,7 @@ or placed at ~/.anbu/gdrive-credentials.json.`,
 var gdriveListCmd = &cobra.Command{
 	Use:     "list [path]",
 	Aliases: []string{"ls"},
-	Short:   "List files and folders in Google Drive",
-	Long:    `Lists files and folders. If [path] is provided and is a folder, lists its contents. If [path] is a file, shows file info. Otherwise, lists the root 'My Drive'.`,
+	Short:   "List files and folders in Google Drive (defaults to root 'My Drive' without a path)",
 	Args:    cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := "root"
@@ -94,8 +90,7 @@ var gdriveListCmd = &cobra.Command{
 var gdriveUploadCmd = &cobra.Command{
 	Use:     "upload <local-path> [drive-folder]",
 	Aliases: []string{"up"},
-	Short:   "Upload a local file or folder to Google Drive",
-	Long:    `Uploads a local file or folder to Google Drive. If [drive-folder] is provided, uploads to that folder. Otherwise, uploads to the root 'My Drive'. Folders are uploaded recursively.`,
+	Short:   "Upload a local file or folder to Google Drive (defaults to root 'My Drive' without a path)",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		localPath := args[0]
@@ -120,8 +115,7 @@ var gdriveUploadCmd = &cobra.Command{
 var gdriveDownloadCmd = &cobra.Command{
 	Use:     "download <drive-path> [local-path]",
 	Aliases: []string{"dl"},
-	Short:   "Download a file or folder from Google Drive",
-	Long:    `Downloads a file or folder from Google Drive. If [local-path] is provided for a file, saves to that path. For folders, downloads to current directory with the folder name.`,
+	Short:   "Download a file or folder from Google Drive (defaults to current directory without a path)",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		drivePath, _ := gdrive.ResolvePath(args[0])
@@ -149,7 +143,6 @@ var gdriveDownloadCmd = &cobra.Command{
 var gdriveSyncCmd = &cobra.Command{
 	Use:   "sync <local-dir> <remote-dir>",
 	Short: "Sync local directory with Google Drive remote directory",
-	Long:  `Synchronizes a local directory with a remote Google Drive directory. Uploads missing files, deletes remote-only files, and updates changed files.`,
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		localDir := args[0]
@@ -169,7 +162,7 @@ var gdriveSyncCmd = &cobra.Command{
 
 var gdriveIndexCmd = &cobra.Command{
 	Use:   "index [path]",
-	Short: "Index file metadata for fast searching",
+	Short: "Index file metadata for fast searching (defaults to root 'My Drive' without a path)",
 	Run: func(cmd *cobra.Command, args []string) {
 		path := "root"
 		if len(args) > 0 {
@@ -193,12 +186,8 @@ var gdriveSearchFlags struct {
 
 var gdriveSearchCmd = &cobra.Command{
 	Use:   "search <regex> [path]",
-	Short: "Search indexed files using regex",
-	Long: `Search across your indexed Google Drive files using regex.
-Requires running 'anbu gdrive index' first.
-If [path] is omitted, it defaults to the root of the index.
-Shortcuts (e.g., %project%) are supported in the path.`,
-	Args: cobra.MinimumNArgs(1),
+	Short: "Search indexed files using regex (defaults to full index without a path)",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		regex := args[0]
 		path := "root"

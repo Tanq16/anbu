@@ -11,22 +11,21 @@ import (
 var StringCmd = &cobra.Command{
 	Use:     "string",
 	Aliases: []string{"s"},
-	Short:   "generate a random string, a sequence, a repetition, or password/passphrase",
-	Long: `generate a variety of strings with the following
+	Short:   "Generate random strings, sequences, passwords, and passphrases",
+	Long: `Generate random strings, sequences, passwords, and passphrases.
 Examples:
-	anbu string N                      # generate a random string of length N
-	anbu string seq N                  # generate a sequence of length N
-	anbu string rep N hello            # repeat the string hello N times
-	anbu string uuid                   # generate a UUID
-	anbu string ruid [N b/w 1 and 30]  # generate a reduced UUID of length N
-	anbu string suid                   # generate a short UUID of length 18
-	anbu string password               # generate a password of length 12
-	anbu string password N             # generate a password of length N
-	anbu string password N simple      # generate a password of length N w/ only letters
-	anbu string passphrase             # generate a passphrase of 3 words
-	anbu string passphrase N           # generate a passphrase of N words
-	anbu string passphrase N "M"       # generate a passphrase of N words w/ M as separator
-	anbu string passphrase N simple    # generate a passphrase of N words and - as separator`,
+  anbu string 23                       # generate 23 (100 if not specified) random alphanumeric chars
+  anbu string seq 29                   # prints "abcdefghijklmnopqrstuvxyz" until desired length
+  anbu string rep 23 str2rep           # prints "str2repstr2rep...23 times"
+  anbu string uuid                     # generates a uuid
+  anbu string ruid 16                  # generates a short uuid of length b/w 1-32
+  anbu string suid                     # generates a short uuid of length 18
+  anbu string password                 # generate a 12-character complex password
+  anbu string password 16              # generate a 16-character complex password
+  anbu string password 8 simple        # generate an 8-letter lowercase password
+  anbu string passphrase               # generate a 3-word passphrase with hyphens
+  anbu string passphrase 5             # generate a 5-word passphrase with hyphens
+  anbu string passphrase 4 '@'         # generate a 4-word passphrase with a custom separator`,
 	Args: cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		// No args

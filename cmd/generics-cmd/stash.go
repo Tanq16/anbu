@@ -10,21 +10,12 @@ import (
 
 var StashCmd = &cobra.Command{
 	Use:   "stash",
-	Short: "Manage a persistent clipboard for files, folders, and text snippets",
-	Long: `Stash provides a persistent storage for files, folders, and text snippets.
-
-Subcommands:
-  fs <path>      Stash a file or folder (removes original)
-  text <name>    Stash text from stdin
-  list           List all stashed entries
-  apply <id>     Apply a stash without removing it
-  pop <id>       Apply a stash and remove it
-  clear <id>     Remove a stash without applying it`,
+	Short: "Manage a persistent clipboard for files, folders, and text",
 }
 
 var stashFSCmd = &cobra.Command{
 	Use:   "fs <path>",
-	Short: "Stash a file or folder",
+	Short: "Stash a file or folder keeping the original in its location",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuGenerics.StashFS(args[0]); err != nil {
@@ -35,7 +26,7 @@ var stashFSCmd = &cobra.Command{
 
 var stashTextCmd = &cobra.Command{
 	Use:   "text <name>",
-	Short: "Stash text from stdin",
+	Short: "Stash text from stdin and stash it with a given name",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuGenerics.StashText(args[0]); err != nil {
@@ -46,7 +37,7 @@ var stashTextCmd = &cobra.Command{
 
 var stashListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all stashed entries",
+	Short: "List all stashed entries with their IDs and types",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuGenerics.StashList(); err != nil {
@@ -57,7 +48,7 @@ var stashListCmd = &cobra.Command{
 
 var stashApplyCmd = &cobra.Command{
 	Use:   "apply <id>",
-	Short: "Apply a stash without removing it",
+	Short: "Apply a stash without removing it (text prints to stdout, files/folders extracted to current directory)",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := strconv.Atoi(args[0])
@@ -72,7 +63,7 @@ var stashApplyCmd = &cobra.Command{
 
 var stashPopCmd = &cobra.Command{
 	Use:   "pop <id>",
-	Short: "Apply a stash and remove it",
+	Short: "Apply a stash and remove it (text prints to stdout, files/folders extracted to current directory)",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := strconv.Atoi(args[0])
@@ -87,7 +78,7 @@ var stashPopCmd = &cobra.Command{
 
 var stashClearCmd = &cobra.Command{
 	Use:   "clear <id>",
-	Short: "Remove a stash without applying it",
+	Short: "Remove a stash without applying or popping it",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := strconv.Atoi(args[0])

@@ -15,17 +15,8 @@ var fileCryptoFlags struct {
 var FileCryptoCmd = &cobra.Command{
 	Use:     "file-crypt <file-path>",
 	Aliases: []string{"fc"},
-	Short:   "Encrypt or decrypt files using AES-256-GCM symmetric encryption",
-	Long: `Performs symmetric encryption and decryption on files.
-A password is required for both operations.
-
-Examples:
-  # Encrypt a file (outputs file.zip.enc)
-  anbu file-crypt /path/to/file.zip -p "P@55w0rd"
-
-  # Decrypt a file (outputs file.zip)
-  anbu file-crypt /path/to/file.zip.enc -p "P@55w0rd" -d`,
-	Args: cobra.ExactArgs(1),
+	Short:   "Encrypt or decrypt files using AES-256-GCM with a password-based symmetric encryption",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if fileCryptoFlags.password == "" {
 			log.Fatal().Msg("No password specified")

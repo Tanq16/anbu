@@ -12,7 +12,7 @@ var duplicatesFlags struct {
 var DuplicatesCmd = &cobra.Command{
 	Use:     "duplicates",
 	Aliases: []string{"dup"},
-	Short:   "Find duplicate files in the current directory",
+	Short:   "Find duplicate files by content with optional recursive search",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		anbuGenerics.FindDuplicates(duplicatesFlags.recursive)

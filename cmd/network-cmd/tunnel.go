@@ -22,27 +22,11 @@ var TunnelCmd = &cobra.Command{
 	Use:     "tunnel",
 	Aliases: []string{},
 	Short:   "Create TCP or SSH tunnels between local and remote endpoints",
-	Long: `Provides tools for network tunneling.
-
-Subcommands:
-  tcp:   Create a simple TCP tunnel. Forwards traffic from a local port to a remote address.
-  ssh:   Create an SSH forward tunnel. Forwards a local port to a remote address through an SSH server.
-  rssh:  Create an SSH reverse tunnel. Forwards a remote port on an SSH server back to a local address.
-
-Examples:
-  # Forward local port 8080 to example.com:80
-  anbu tunnel tcp -l localhost:8080 -r example.com:80
-
-  # Forward local port 3306 to a database through an SSH jump host
-  anbu tunnel ssh -l localhost:3306 -r db.internal:3306 -s jump.host:22 -u user -k ~/.ssh/id_rsa
-
-  # Expose a local service (e.g., RDP on 3389) on a remote server's port 8001
-  anbu tunnel rssh -l localhost:3389 -r 0.0.0.0:8001 -s remote.server:22 -u user -p "password"`,
 }
 
 var tcpTunnelCmd = &cobra.Command{
 	Use:   "tcp",
-	Short: "Create a TCP tunnel from a local port to a remote address",
+	Short: "Create a TCP tunnel from a local port to a remote address with optional TLS support",
 	Run: func(cmd *cobra.Command, args []string) {
 		if tunnelFlags.localAddr == "" {
 			log.Fatal().Msg("Local address is required")
@@ -61,7 +45,7 @@ var tcpTunnelCmd = &cobra.Command{
 
 var sshTunnelCmd = &cobra.Command{
 	Use:   "ssh",
-	Short: "Create an SSH forward tunnel through a jump host",
+	Short: "Create an SSH forward tunnel through a jump host with password or key-based authentication",
 	Run: func(cmd *cobra.Command, args []string) {
 		if tunnelFlags.remoteAddr == "" {
 			log.Fatal().Msg("Remote address is required")
@@ -98,7 +82,7 @@ var sshTunnelCmd = &cobra.Command{
 
 var reverseSshTunnelCmd = &cobra.Command{
 	Use:   "rssh",
-	Short: "Create a reverse SSH tunnel from a remote host to a local service",
+	Short: "Create a reverse SSH tunnel from a remote host to a local service with password or key-based authentication",
 	Run: func(cmd *cobra.Command, args []string) {
 		if tunnelFlags.remoteAddr == "" {
 			log.Fatal().Msg("Remote address is required")

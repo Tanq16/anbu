@@ -14,11 +14,8 @@ var manualRenameFlags struct {
 var ManualRenameCmd = &cobra.Command{
 	Use:     "manual-rename",
 	Aliases: []string{"mrename"},
-	Short:   "Manually rename files and directories one by one",
-	Long: `Interactively rename files and directories one by one.
-For each file or directory, you will be prompted to enter a new name.
-Press Enter without typing to skip renaming an item.`,
-	Args: cobra.NoArgs,
+	Short:   "Interactively rename files and directories one by one, optionally including directories, hidden files, and extensions",
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		anbuGenerics.ManualRename(manualRenameFlags.includeDir, manualRenameFlags.hidden, manualRenameFlags.includeExtension)
 	},

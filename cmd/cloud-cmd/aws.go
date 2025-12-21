@@ -23,16 +23,11 @@ var awsCliUiFlags struct {
 var AwsCmd = &cobra.Command{
 	Use:   "aws",
 	Short: "Helper utilities for AWS",
-	Long: `Helper utilities for AWS.
-
-Subcommands:
-  iidc-login: Configure AWS SSO with IAM Identity Center for multi-role access
-  cli-ui:     Generate AWS console URL from a local CLI profile`,
 }
 
 var awsIidcLoginCmd = &cobra.Command{
 	Use:   "iidc-login",
-	Short: "Configure AWS SSO with IAM Identity Center",
+	Short: "Configure AWS SSO with IAM Identity Center for multi-role access",
 	Run: func(cmd *cobra.Command, args []string) {
 		if awsIidcLoginFlags.startURL == "" || awsIidcLoginFlags.ssoRegion == "" {
 			log.Fatal().Msg("Both --start-url and --sso-region flags are required")
@@ -55,7 +50,7 @@ var awsIidcLoginCmd = &cobra.Command{
 
 var awsCliUiCmd = &cobra.Command{
 	Use:   "cli-ui",
-	Short: "Get a console URL from an AWS CLI profile",
+	Short: "Get a console URL from an AWS CLI profile with a pre-signed URL valid for upto 12 hours",
 	Run: func(cmd *cobra.Command, args []string) {
 		consoleURL, err := anbuCloud.GenerateConsoleURLFromProfile(awsCliUiFlags.profile)
 		if err != nil {

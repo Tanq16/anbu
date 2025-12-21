@@ -9,26 +9,19 @@ import (
 var ConvertCmd = &cobra.Command{
 	Use:     "convert [converter] [data or file]",
 	Aliases: []string{"c"},
-	Short:   "Convert data between different formats",
-	Long: `Convert data between different formats. These are the supported converters:
+	Short:   "Convert data between different formats and encodings",
+	Long: `Convert data between different formats and encodings.
 
-File Formats:
-- yaml-json:      Convert YAML to JSON, requires a file path as input
-- json-yaml:      Convert JSON to YAML, requires a file path as input
-- docker-compose: Convert Docker Compose to YAML, requires a string as input
-- compose-docker: Convert Compose to Docker, requires a file path as input
-
-Encoding Formats:
-- b64:     Convert plain text to base64 encoded string
-- b64d:    Convert base64 encoded string to plain text
-- hex:     Convert plain text to hex encoded string
-- hexd:    Convert hex encoded string to plain text
-- b64-hex: Convert base64 encoded string to hex encoded string
-- hex-b64: Convert hex encoded string to base64 encoded string
-- url:     Convert plain text to URL encoded string
-- urld:    Convert URL encoded string to plain text
-- jwtd:    Convert JWT to decoded struct
-`,
+Examples:
+  anbu convert yaml-json config.yaml          # Convert YAML file to JSON
+  anbu convert json-yaml data.json            # Convert JSON file to YAML
+  anbu convert b64 "Hello World"              # Convert text to base64
+  anbu convert b64d "SGVsbG8gV29ybGQ="        # Decode base64 to text
+  anbu convert hex "Hello World"              # Convert text to hex
+  anbu convert hexd "48656c6c6f20576f726c64"  # Decode hex to text
+  anbu convert url "Hello World"              # URL encode text
+  anbu convert urld "Hello%20World"           # URL decode text
+  anbu convert jwtd "$TOKEN"                  # Decode JWT token`,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		converterType := args[0]

@@ -14,32 +14,7 @@ import (
 var SecretsCmd = &cobra.Command{
 	Use:     "pass",
 	Aliases: []string{"p"},
-	Short:   "Manage secrets securely with AES-GCM encryption",
-	Long: `A secure store for secrets, which are encrypted at rest using AES-GCM.
-The store uses a default password of "p455w0rd" unless a custom password is
-specified with the --password flag.
-
-Examples:
-  # List all stored secret IDs
-  anbu pass list
-
-  # Add a new secret
-  anbu pass add my-api-key
-
-  # Add a multi-line secret like a private key
-  anbu pass add my-ssh-key -m
-
-  # Retrieve and print a secret's value
-  anbu pass get my-api-key
-
-  # Delete a secret
-  anbu pass delete my-api-key
-
-  # Export all secrets (decrypted) to a JSON file
-  anbu pass export secrets_backup.json
-
-  # Import secrets from a JSON file
-  anbu pass import secrets_backup.json`,
+	Short:   "Manage secrets with AES-GCM encryption with support for single and multiline inputs and custom password",
 }
 
 var secretsFile string
@@ -48,7 +23,7 @@ var passwordFlag string
 
 var secretsListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all secrets",
+	Short: "List all secrets with their IDs",
 	Run: func(cmd *cobra.Command, args []string) {
 		secrets, err := anbuCrypto.ListSecrets(secretsFile)
 		if err != nil {
@@ -63,7 +38,7 @@ var secretsListCmd = &cobra.Command{
 }
 var secretsGetCmd = &cobra.Command{
 	Use:   "get <secret-id>",
-	Short: "Print the value of a specific secret",
+	Short: "Print the decrypted value of a specific secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		password := passwordFlag
@@ -76,7 +51,7 @@ var secretsGetCmd = &cobra.Command{
 }
 var secretsSetCmd = &cobra.Command{
 	Use:   "add <secret-id>",
-	Short: "Set the value for a secret",
+	Short: "Set the value for a secret with optional multiline input",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		secretID := args[0]
@@ -100,7 +75,7 @@ var secretsSetCmd = &cobra.Command{
 }
 var secretsDeleteCmd = &cobra.Command{
 	Use:   "delete <secret-id>",
-	Short: "Delete a secret",
+	Short: "Delete a secret from the store",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuCrypto.DeleteSecret(secretsFile, args[0]); err != nil {
@@ -111,7 +86,7 @@ var secretsDeleteCmd = &cobra.Command{
 }
 var secretsImportCmd = &cobra.Command{
 	Use:   "import <file-path>",
-	Short: "Import secrets from a JSON file",
+	Short: "Import secrets from a JSON file and encrypt them in the store",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		importFile := args[0]
@@ -124,7 +99,7 @@ var secretsImportCmd = &cobra.Command{
 }
 var secretsExportCmd = &cobra.Command{
 	Use:   "export <file-path>",
-	Short: "Export secrets to a JSON file (unencrypted)",
+	Short: "Export all secrets to a JSON file in decrypted form",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		exportFile := args[0]

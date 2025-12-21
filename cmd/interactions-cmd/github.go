@@ -22,11 +22,7 @@ var githubFlags struct {
 var GitHubCmd = &cobra.Command{
 	Use:     "github",
 	Aliases: []string{"gh"},
-	Short:   "Interact with GitHub (list, add, make, download)",
-	Long: `Provides commands to interact with GitHub.
-Requires a json file with client_id of Oauth app,
-which can be specified via a flag or placed at
-~/.anbu/github-credentials.json.`,
+	Short:   "Interact with GitHub repositories and resources with OAuth app or Personal Access Token authentication",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Skip credentials file check if PAT is provided
 		if githubFlags.pat != "" {
@@ -50,7 +46,7 @@ var githubListCmd = &cobra.Command{
 	Use:     "list [owner/repo/PATHS]",
 	Aliases: []string{"ls"},
 	Short:   "List GitHub resources (issues, PRs, actions)",
-	Long: `Lists GitHub resources based on the path.
+	Long: `Lists issues, pull requests, workflow runs, and their comments. Supports nested paths for detailed views and log streaming.
 Examples:
   anbu gh ls owner/repo/i          - list all issues
   anbu gh ls owner/repo/i/23       - list comments for issue 23
@@ -89,7 +85,7 @@ Examples:
 var githubAddCmd = &cobra.Command{
 	Use:   "add [owner/repo/PATHS]",
 	Short: "Add comments to issues or PRs",
-	Long: `Adds comments to GitHub issues or PRs.
+	Long: `Adds comments to GitHub issues or pull requests. Supports multi-line input terminated with 'EOF'.
 Examples:
   anbu gh add owner/repo/i/23  - add comment to issue 23
   anbu gh add owner/repo/pr/24 - add comment to PR 24`,
@@ -125,15 +121,16 @@ Examples:
 			lines = append(lines, line)
 		}
 		body := strings.Join(lines, "\n")
-		if resourceType == "i" {
+		switch resourceType {
+		case "i":
 			if err := github.AddIssueComment(client, owner, repo, num, body); err != nil {
 				log.Fatal().Err(err).Msg("Failed to add issue comment")
 			}
-		} else if resourceType == "pr" {
+		case "pr":
 			if err := github.AddPRComment(client, owner, repo, num, body); err != nil {
 				log.Fatal().Err(err).Msg("Failed to add PR comment")
 			}
-		} else {
+		default:
 			log.Fatal().Msg("Invalid resource type. Use 'i' for issues or 'pr' for PRs")
 		}
 		u.PrintSuccess("Comment added successfully")
@@ -143,7 +140,7 @@ Examples:
 var githubMakeCmd = &cobra.Command{
 	Use:   "make [owner/repo/PATHS]",
 	Short: "Create issues or PRs",
-	Long: `Creates GitHub issues or PRs.
+	Long: `Creates new GitHub issues or pull requests. For PRs, supports custom base branches (defaults to main).
 Examples:
   anbu gh make owner/repo/i              - create a new issue
   anbu gh make owner/repo/pr/branch      - create PR from branch to main
@@ -204,8 +201,8 @@ var githubDownloadCmd = &cobra.Command{
 	Use:     "download [OWNER/REPO/tree/REF/PATH]",
 	Aliases: []string{"dl"},
 	Short:   "Download files or folders from GitHub",
-	Long: `Downloads files or folders from a GitHub repository.
-The URL format is: OWNER/REPO/tree/<BRANCH|COMMIT>/PATH
+	Long: `Downloads files or folders from GitHub repositories. Supports branch names, commit SHAs, and recursive folder downloads.
+The URL format is: OWNER/REPO/tree/BRANCH|COMMIT/PATH
 
 Examples:
   anbu gh download owner/repo/tree/main/src/file.go     - download a single file

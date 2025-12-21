@@ -24,17 +24,12 @@ var (
 
 var FSSyncCmd = &cobra.Command{
 	Use:   "fs-sync",
-	Short: "One-shot file synchronization over HTTP/HTTPS",
-	Long: `One-shot file synchronization between two machines.
-Server side runs 'serve' and waits for one client connection.
-Client side runs 'sync' to connect and sync files.
-Both commands exit after sync completes.`,
+	Short: "One-shot file synchronization over HTTP/HTTPS with optional TLS, ignore patterns, and dry-run mode",
 }
 
 var fsSyncServeCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Serve files to sync to a client",
-	Long:  `Start a server that waits for one client connection, serves files, and exits.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		protocol := "http"
 		if fsSyncServeFlags.enableTLS {
@@ -61,7 +56,6 @@ var fsSyncServeCmd = &cobra.Command{
 var fsSyncSyncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "Connect to a server and sync files",
-	Long:  `Connect to a server, receive file manifest, sync files, and exit.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := fssync.ClientConfig{
 			ServerAddr:  fsSyncSyncFlags.server,

@@ -23,16 +23,7 @@ var neo4jCmdFlags struct {
 
 var Neo4jCmd = &cobra.Command{
 	Use:   "neo4j",
-	Short: "Interact with a Neo4j database",
-	Long: `Run Cypher queries against a Neo4j database from a string or a file.
-The query file should be a YAML file containing a list of queries.
-Multi-line queries are supported using the '|' character in YAML.
-
-Example (single query):
-  anbu interactions neo4j -q "MATCH (n) RETURN n LIMIT 5"
-
-Example (query file):
-  anbu interactions neo4j --query-file ./queries.yaml --output-file results.json`,
+	Short: "Execute inline or file-based Cypher queries against a Neo4j database",
 	Run: func(cmd *cobra.Command, args []string) {
 		if neo4jCmdFlags.query != "" && neo4jCmdFlags.queryFile != "" {
 			log.Fatal().Msg("please provide either a query or a query file, not both")

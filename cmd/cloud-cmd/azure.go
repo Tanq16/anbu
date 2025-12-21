@@ -10,16 +10,12 @@ var AzureCmd = &cobra.Command{
 	Use:     "azure",
 	Aliases: []string{"az"},
 	Short:   "Helper utilities for Azure",
-	Long: `Helper utilities for Azure.
-
-Subcommands:
-  switch-sub: Switch between Azure subscriptions`,
 }
 
 var azureSwitchCmd = &cobra.Command{
 	Use:     "switch-sub",
 	Aliases: []string{"switch"},
-	Short:   "Switch between Azure subscriptions",
+	Short:   "Switch between Azure subscriptions interactively",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuCloud.SwitchSubscription(); err != nil {
 			log.Fatal().Err(err).Msg("failed to switch subscription")

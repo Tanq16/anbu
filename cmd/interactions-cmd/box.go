@@ -22,10 +22,7 @@ var boxSyncFlags struct {
 
 var BoxCmd = &cobra.Command{
 	Use:   "box",
-	Short: "Interact with Box.com (list, upload, download)",
-	Long: `Provides commands to interact with Box.com.
-Requires a credentials.json file with client_id and client_secret,
-which can be specified via a flag or placed at ~/.anbu/box-credentials.json.`,
+	Short: "Interact with Box.com to list, upload, download, sync, and index & search files and folders",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if boxFlags.credentialsFile == "" {
 			homeDir, err := os.UserHomeDir()
@@ -44,8 +41,7 @@ which can be specified via a flag or placed at ~/.anbu/box-credentials.json.`,
 var boxListCmd = &cobra.Command{
 	Use:     "list [path]",
 	Aliases: []string{"ls"},
-	Short:   "List files and folders in Box",
-	Long:    `Lists files and folders. If [path] is provided and is a folder, lists its contents. If [path] is a file, shows file info. Otherwise, lists the root folder.`,
+	Short:   "List files and folders in Box (defaults to root 'My Drive' without a path)",
 	Args:    cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := ""
@@ -88,8 +84,7 @@ var boxListCmd = &cobra.Command{
 var boxUploadCmd = &cobra.Command{
 	Use:     "upload <local-path> [box-folder-path]",
 	Aliases: []string{"up"},
-	Short:   "Upload a local file or folder to Box",
-	Long:    `Uploads a local file or folder to Box. If [box-folder-path] is provided, uploads to that folder. Otherwise, uploads to the root folder. Folders are uploaded recursively.`,
+	Short:   "Upload a local file or folder to Box (defaults to root 'My Drive' without a path)",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		localPath := args[0]
@@ -112,8 +107,7 @@ var boxUploadCmd = &cobra.Command{
 var boxDownloadCmd = &cobra.Command{
 	Use:     "download <box-path> [local-path]",
 	Aliases: []string{"dl"},
-	Short:   "Download a file or folder from Box",
-	Long:    `Downloads a file or folder from Box. If [local-path] is provided for a file, saves to that path. For folders, downloads to current directory with the folder name.`,
+	Short:   "Download a file or folder from Box (defaults to current directory without a path)",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		boxPath, _ := box.ResolvePath(args[0])
@@ -139,8 +133,7 @@ var boxDownloadCmd = &cobra.Command{
 
 var boxSyncCmd = &cobra.Command{
 	Use:   "sync <local-dir> <remote-dir>",
-	Short: "Sync local directory with Box remote directory",
-	Long:  `Synchronizes a local directory with a remote Box directory. Uploads missing files, deletes remote-only files, and updates changed files. Conflicts are automatically resolved by deleting and re-uploading.`,
+	Short: "Sync local directory with Box remote directory with multi-threaded operations and ignore patterns",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		localDir := args[0]
@@ -160,7 +153,7 @@ var boxSyncCmd = &cobra.Command{
 
 var boxIndexCmd = &cobra.Command{
 	Use:   "index [path]",
-	Short: "Index file metadata for fast searching",
+	Short: "Index file metadata for fast searching (defaults to root 'My Drive' without a path)",
 	Run: func(cmd *cobra.Command, args []string) {
 		path := ""
 		if len(args) > 0 {
@@ -184,12 +177,8 @@ var boxSearchFlags struct {
 
 var boxSearchCmd = &cobra.Command{
 	Use:   "search <regex> [path]",
-	Short: "Search indexed files using regex",
-	Long: `Search across your indexed Box files using regex.
-Requires running 'anbu box index' first.
-If [path] is omitted, it defaults to the root of the index.
-Shortcuts (e.g., %project%) are supported in the path.`,
-	Args: cobra.MinimumNArgs(1),
+	Short: "Search indexed files using regex (defaults to full index without a path)",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		regex := args[0]
 		path := ""
