@@ -13,7 +13,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -32,10 +31,11 @@ type HTTPServer struct {
 }
 
 func (s *HTTPServer) Start() error {
-	fileServer := http.FileServer(http.Dir("."))
-	var handler http.Handler = fileServer
+	var handler http.Handler
 	if s.Options.EnableUpload {
-		handler = s.uploadMiddleware(handler)
+		handler = http.HandlerFunc(s.handleUpload)
+	} else {
+		handler = http.FileServer(http.Dir("."))
 	}
 	handler = s.loggingMiddleware(handler)
 	s.Server = &http.Server{
@@ -69,44 +69,118 @@ func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *HTTPServer) uploadMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPut {
-			targetPath := filepath.Join(".", r.URL.Path)
-			absTargetPath, _ := filepath.Abs(targetPath)
-			serverRoot, _ := filepath.Abs(".")
-			if !strings.HasPrefix(absTargetPath, serverRoot) {
-				log.Debug().Str("targetPath", targetPath).Str("absTargetPath", absTargetPath).Str("serverRoot", serverRoot).Msg("directory traversal attempt detected")
-				log.Error().Msgf("attempted directory traversal: %s", targetPath)
-				http.Error(w, "Forbidden", http.StatusForbidden)
-				return
-			}
-			targetDir := filepath.Dir(targetPath)
-			if err := os.MkdirAll(targetDir, 0755); err != nil {
-				log.Error().Msg("failed to create directory")
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-			file, err := os.Create(targetPath)
-			if err != nil {
-				log.Error().Msg("failed to create file")
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-			defer file.Close()
+func (s *HTTPServer) handleUpload(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { background-color: #2a2a2a; color: #fff; font-family: sans-serif; padding: 20px; }
+.container { max-width: 600px; margin: 0 auto; }
+textarea { width: 100%; height: 300px; padding: 10px; background-color: #1a1a1a; color: #fff; border: 2px dashed #555; border-radius: 5px; box-sizing: border-box; }
+textarea.drag-over { border-color: #4a9eff; background-color: #252525; }
+input[type="file"] { margin: 15px 0; color: #fff; }
+button { background-color: #4a9eff; color: #fff; padding: 10px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+button:hover { background-color: #3a8eef; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>Upload</h2>
+<form method="POST" enctype="multipart/form-data">
+<textarea name="text" id="textarea" placeholder="Paste or drag files here..."></textarea>
+<input type="file" name="files" multiple>
+<button type="submit">Upload</button>
+</form>
+</div>
+<script>
+var textarea = document.getElementById('textarea');
+textarea.addEventListener('dragover', function(e) { e.preventDefault(); textarea.classList.add('drag-over'); });
+textarea.addEventListener('dragleave', function(e) { e.preventDefault(); textarea.classList.remove('drag-over'); });
+textarea.addEventListener('drop', function(e) {
+  e.preventDefault();
+  textarea.classList.remove('drag-over');
+  var files = e.dataTransfer.files;
+  if (files.length > 0) {
+    var fileInput = document.querySelector('input[type="file"]');
+    fileInput.files = files;
+  }
+});
+</script>
+</body>
+</html>`)
+		return
+	}
 
-			_, err = io.Copy(file, r.Body)
-			if err != nil {
-				log.Error().Msg("failed to write file")
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-			log.Info().Msgf("File uploaded to %s", targetPath)
-			w.WriteHeader(http.StatusCreated)
+	if r.Method == http.MethodPost {
+		err := r.ParseMultipartForm(32 << 20)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to parse multipart form")
+			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
-		next.ServeHTTP(w, r)
-	})
+
+		textContent := r.FormValue("text")
+		if strings.TrimSpace(textContent) != "" {
+			epoch := time.Now().Unix()
+			filename := fmt.Sprintf("text-%d.txt", epoch)
+			filename = s.ensureUniqueFilename(filename)
+			if err := os.WriteFile(filename, []byte(textContent), 0644); err != nil {
+				log.Error().Err(err).Msg("failed to write text file")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+			log.Info().Msgf("Text saved to %s", filename)
+		}
+
+		files := r.MultipartForm.File["files"]
+		for _, fileHeader := range files {
+			file, err := fileHeader.Open()
+			if err != nil {
+				log.Error().Err(err).Msg("failed to open uploaded file")
+				continue
+			}
+			filename := s.ensureUniqueFilename(fileHeader.Filename)
+			outFile, err := os.Create(filename)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to create file")
+				file.Close()
+				continue
+			}
+			_, err = io.Copy(outFile, file)
+			file.Close()
+			outFile.Close()
+			if err != nil {
+				log.Error().Err(err).Msg("failed to write file")
+				continue
+			}
+			log.Info().Msgf("File uploaded to %s", filename)
+		}
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { background-color: #2a2a2a; color: #fff; font-family: sans-serif; padding: 20px; text-align: center; }
+</style>
+</head>
+<body>
+<h2>Upload Successful</h2>
+<p><a href="/" style="color: #4a9eff;">Upload more</a></p>
+</body>
+</html>`)
+		return
+	}
+	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+}
+
+func (s *HTTPServer) ensureUniqueFilename(filename string) string {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return filename
+	}
+	epoch := time.Now().Unix()
+	return fmt.Sprintf("%d-%s", epoch, filename)
 }
 
 func (s *HTTPServer) getTLSConfig() (*tls.Config, error) {

@@ -18,7 +18,7 @@ A summary of everything that **Anbu** can perform:
 | **Time Operations** | Display current time in various formats, calculate time differences, and parse time strings |
 | **Secrets Management** | Securely store and retrieve secrets with encryption at rest |
 | **Network Tunneling** | Create TCP and SSH tunnels (forward and reverse) to securely access remote services |
-| **Simple HTTP/HTTPS Server** | Host a simple webserver over HTTP/HTTPS with optional file upload capability |
+| **Simple HTTP/HTTPS Server** | Host a simple webserver over HTTP/HTTPS or serve an upload page for text and file uploads |
 | **Secrets Scan** | Find common secrets in file systems using regular expressions |
 | **IP Information** | Display local and public IP details, including geolocation information |
 | **Bulk Rename** | Batch rename files or directories using regular expression patterns, supporting capture groups |
@@ -108,7 +108,8 @@ The specific details of each are:
   ```bash
   anbu http-server                     # Serves current directory on http://0.0.0.0:8080
   anbu http-server -l 0.0.0.0:8080 -t  # Serve HTTPS on given add:port with a self-signed cert
-  anbu http-server -u                  # Enables file upload via PUT requests
+  anbu http-server -u                  # Serve simple upload page for text and files
+  anbu http-server -u -t               # Serve upload page over HTTPS with self-signed cert
   ```
 
 - ***Secrets Scan***
