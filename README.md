@@ -134,6 +134,8 @@ The specific details of each are:
   anbu rename -d 'old_(.*)' 'new_\1'              # Rename directories instead of files
   anbu rename '(.*)\.(.*)' '\1_backup.\2'         # Add _backup before extension
   anbu rename 'image-(\d+).jpg' 'IMG_\1.jpeg' -r  # Perform a dry-run without renaming
+  anbu rename '(.*)' '\1_\uuid'                    # Append UUID to filenames
+  anbu rename '(.*)\.(.*)' '\1_\suid.\2'           # Insert short UUID before extension
   ```
 
 - ***Manual Rename*** (alias: `mrename`)
