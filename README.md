@@ -151,8 +151,9 @@ The specific details of each are:
 - ***Find Duplicates*** (alias: `dup`)
 
   ```bash
-  anbu duplicates                       # Find duplicate files in the current directory
-  anbu dup --recursive                 # Find duplicate files recursively in subdirectories
+  anbu duplicates                 # Find duplicate files in the current directory
+  anbu dup --recursive            # Find duplicate files recursively in subdirectories
+  anbu dup --delete               # Find and delete duplicate files
   ```
 
 - ***Sed (Regex Substitution)***
@@ -188,7 +189,7 @@ The specific details of each are:
 
   # Docker command conversion
   anbu convert docker-compose "docker run -p 8080:80 nginx"  # Convert docker run command to docker-compose.yml
-  anbu convert compose-docker docker-compose.yml            # Convert docker-compose.yml to docker run command
+  anbu convert compose-docker docker-compose.yml             # Convert docker-compose.yml to docker run command
   ```
 
 - ***File Encryption/Decryption*** (alias: `fc`)

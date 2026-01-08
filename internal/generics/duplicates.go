@@ -13,7 +13,7 @@ import (
 
 const sizeThreshold = 100 * 1024 * 1024
 
-func FindDuplicates(recursive bool) {
+func FindDuplicates(recursive bool, delete bool) {
 	currentDir, err := os.Getwd()
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to get current directory")
@@ -100,6 +100,19 @@ func FindDuplicates(recursive bool) {
 			table.Rows = append(table.Rows, []string{fmt.Sprintf("%d", i+1), filesStr})
 		}
 		table.PrintTable(false)
+		if delete {
+			for _, fileList := range hashedDuplicates {
+				for i := 1; i < len(fileList); i++ {
+					if err := os.Remove(fileList[i]); err != nil {
+						relPath, _ := filepath.Rel(currentDir, fileList[i])
+						u.PrintError(fmt.Sprintf("Failed to delete %s: %v", relPath, err))
+					} else {
+						relPath, _ := filepath.Rel(currentDir, fileList[i])
+						fmt.Printf("Deleted: %s\n", u.FSuccess(relPath))
+					}
+				}
+			}
+		}
 	}
 
 	if len(unhashedDuplicates) > 0 {
@@ -122,6 +135,19 @@ func FindDuplicates(recursive bool) {
 			table.Rows = append(table.Rows, []string{fmt.Sprintf("%d", startID+i), filesStr})
 		}
 		table.PrintTable(false)
+		if delete {
+			for _, fileList := range unhashedDuplicates {
+				for i := 1; i < len(fileList); i++ {
+					if err := os.Remove(fileList[i]); err != nil {
+						relPath, _ := filepath.Rel(currentDir, fileList[i])
+						u.PrintError(fmt.Sprintf("Failed to delete %s: %v", relPath, err))
+					} else {
+						relPath, _ := filepath.Rel(currentDir, fileList[i])
+						fmt.Printf("Deleted: %s\n", u.FSuccess(relPath))
+					}
+				}
+			}
+		}
 	}
 }
 
