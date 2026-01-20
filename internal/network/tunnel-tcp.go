@@ -15,7 +15,7 @@ import (
 )
 
 func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
-	u.PrintInfo(fmt.Sprintf("TCP tunnel %s → %s", localAddr, remoteAddr))
+	u.PrintInfo(fmt.Sprintf("TCP tunnel %s %s %s", localAddr, u.StyleSymbols["arrow"], remoteAddr))
 
 	// Listen on the local address
 	listener, err := net.Listen("tcp", localAddr)
@@ -94,7 +94,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data to remote", err)
 					}
-					u.PrintStream(fmt.Sprintf("→ Sent %d bytes to remote", n))
+					u.PrintStream(fmt.Sprintf("%s Sent %d bytes to remote", u.StyleSymbols["arrow"], n))
 				}()
 				go func() {
 					defer wg.Done()

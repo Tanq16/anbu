@@ -15,7 +15,7 @@ import (
 )
 
 func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) {
-	u.PrintInfo(fmt.Sprintf("SSH tunnel %s → %s via %s", localAddr, remoteAddr, sshAddr))
+	u.PrintInfo(fmt.Sprintf("SSH tunnel %s %s %s via %s", localAddr, u.StyleSymbols["arrow"], remoteAddr, sshAddr))
 	config := &ssh.ClientConfig{
 		User:            user,
 		Auth:            authMethods,
@@ -97,7 +97,7 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data to remote", err)
 					}
-					u.PrintStream(fmt.Sprintf("→ Sent %d bytes to remote via SSH", n))
+					u.PrintStream(fmt.Sprintf("%s Sent %d bytes to remote via SSH", u.StyleSymbols["arrow"], n))
 				}()
 				go func() {
 					defer wg.Done()
@@ -116,7 +116,7 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 }
 
 func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) {
-	u.PrintInfo(fmt.Sprintf("Reverse SSH tunnel %s ← %s via %s", localAddr, remoteAddr, sshAddr))
+	u.PrintInfo(fmt.Sprintf("Reverse SSH tunnel %s %s %s via %s", remoteAddr, u.StyleSymbols["arrow"], localAddr, sshAddr))
 	config := &ssh.ClientConfig{
 		User:            user,
 		Auth:            authMethods,
@@ -203,7 +203,7 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data to remote", err)
 					}
-					u.PrintStream(fmt.Sprintf("→ Sent %d bytes to remote", n))
+					u.PrintStream(fmt.Sprintf("%s Sent %d bytes to remote", u.StyleSymbols["arrow"], n))
 				}()
 				go func() {
 					defer wg.Done()
