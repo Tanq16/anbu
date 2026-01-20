@@ -3,9 +3,9 @@ package genericsCmd
 import (
 	"strconv"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var StringCmd = &cobra.Command{
@@ -41,11 +41,11 @@ Examples:
 		// Sequence command arg
 		if args[0] == "seq" {
 			if len(args) < 2 {
-				log.Fatal().Msg("Missing length for sequence command")
+				u.PrintFatal("Missing length for sequence command", nil)
 			}
 			length, err := strconv.Atoi(args[1])
 			if err != nil {
-				log.Fatal().Msg("Not a valid length")
+				u.PrintFatal("Not a valid length", err)
 			}
 			anbuGenerics.GenerateSequenceString(length)
 			return
@@ -53,11 +53,11 @@ Examples:
 		// Repeat string command
 		if args[0] == "rep" {
 			if len(args) < 3 {
-				log.Fatal().Msg("Missing count or string for repetition")
+				u.PrintFatal("Missing count or string for repetition", nil)
 			}
 			count, err := strconv.Atoi(args[1])
 			if err != nil {
-				log.Fatal().Msg("Not a valid count")
+				u.PrintFatal("Not a valid count", err)
 			}
 			anbuGenerics.GenerateRepetitionString(count, args[2])
 			return
@@ -68,7 +68,7 @@ Examples:
 		}
 		if args[0] == "ruid" {
 			if len(args) < 2 {
-				log.Fatal().Msg("Missing length for RUID command")
+				u.PrintFatal("Missing length for RUID command", nil)
 			}
 			anbuGenerics.GenerateRUIDString(args[1])
 			return

@@ -50,7 +50,7 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 	logger.StartDisplay()
 	defer logger.StopDisplay()
 	funcID := logger.Register("secrets-scanner")
-	logger.SetMessage(funcID, "Scanning for secrets...")
+	logger.SetMessage(funcID, "Scanning for secrets")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		logger.ReportError(funcID, err)
 		logger.SetMessage(funcID, "Path doesn't exist")
@@ -62,7 +62,7 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 		Pattern *regexp.Regexp
 	}, len(secretRules))
 	for i, rule := range secretRules {
-		logger.SetMessage(funcID, "Compiling patterns...")
+		logger.SetMessage(funcID, "Compiling patterns")
 		pattern, err := regexp.Compile(rule.Pattern)
 		if err != nil {
 			logger.ReportError(funcID, err)
@@ -74,7 +74,7 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 	}
 
 	// Collect files to scan
-	logger.SetMessage(funcID, "Collecting files to scan...")
+	logger.SetMessage(funcID, "Collecting files to scan")
 	var filesToScan []string
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -96,7 +96,7 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 	}
 
 	// Create scanner pool
-	logger.SetMessage(funcID, "Scanning files...")
+	logger.SetMessage(funcID, "Scanning files")
 	var wg sync.WaitGroup
 	var progWg sync.WaitGroup
 	progressChan := make(chan int64)

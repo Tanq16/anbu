@@ -3,11 +3,13 @@ package interactionsCmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tanq16/anbu/internal/interactions"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var neo4jCmdFlags struct {
@@ -26,10 +28,10 @@ var Neo4jCmd = &cobra.Command{
 	Short: "Execute inline or file-based Cypher queries against a Neo4j database",
 	Run: func(cmd *cobra.Command, args []string) {
 		if neo4jCmdFlags.query != "" && neo4jCmdFlags.queryFile != "" {
-			log.Fatal().Msg("please provide either a query or a query file, not both")
+			u.PrintFatal("please provide either a query or a query file, not both", nil)
 		}
 		if neo4jCmdFlags.query == "" && neo4jCmdFlags.queryFile == "" {
-			log.Fatal().Msg("a query or a query file is required")
+			u.PrintFatal("a query or a query file is required", nil)
 		}
 
 		ctx := context.Background()
@@ -43,19 +45,19 @@ var Neo4jCmd = &cobra.Command{
 			results, err = interactions.ExecuteNeo4jQueriesFromFile(ctx, neo4jCmdFlags.uri, neo4jCmdFlags.user, neo4jCmdFlags.password, neo4jCmdFlags.database, neo4jCmdFlags.queryFile, neo4jCmdFlags.writeMode)
 		}
 		if err != nil {
-			log.Fatal().Err(err).Msg("failed to execute neo4j queries")
+			u.PrintFatal("failed to execute neo4j queries", err)
 		}
 
 		// Marshal the results to JSON
 		jsonData, err := json.MarshalIndent(results, "", "  ")
 		if err != nil {
-			log.Fatal().Err(err).Msg("failed to marshal results to JSON")
+			u.PrintFatal("failed to marshal results to JSON", err)
 		}
 		err = os.WriteFile(neo4jCmdFlags.outputFile, jsonData, 0644)
 		if err != nil {
-			log.Fatal().Err(err).Msgf("failed to write results to file: %s", neo4jCmdFlags.outputFile)
+			u.PrintFatal(fmt.Sprintf("failed to write results to file: %s", neo4jCmdFlags.outputFile), err)
 		}
-		log.Info().Msgf("Successfully executed queries and saved results to %s", neo4jCmdFlags.outputFile)
+		u.PrintInfo(fmt.Sprintf("Successfully executed queries and saved results to %s", neo4jCmdFlags.outputFile))
 	},
 }
 

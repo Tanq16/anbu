@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 	"golang.org/x/crypto/ssh"
 )
 
 func GenerateKeyPair(outputDir, name string, keySize int) {
-	fmt.Println()
+	u.LineBreak()
 	os.MkdirAll(outputDir, 0755)
 
 	privateKey, _ := rsa.GenerateKey(rand.Reader, keySize)
@@ -28,7 +27,7 @@ func GenerateKeyPair(outputDir, name string, keySize int) {
 	err := pem.Encode(privateKeyFile, privateKeyBlock)
 	privateKeyFile.Close()
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to write private key to file")
+		u.PrintFatal("failed to write private key to file", err)
 	}
 
 	publicKeyBytes, _ := x509.MarshalPKIXPublicKey(publicKey)
@@ -41,16 +40,16 @@ func GenerateKeyPair(outputDir, name string, keySize int) {
 	err = pem.Encode(publicKeyFile, publicKeyBlock)
 	publicKeyFile.Close()
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to write public key to file")
+		u.PrintFatal("failed to write public key to file", err)
 	}
 
-	fmt.Printf("RSA key pair (%d bits) generated", keySize)
-	fmt.Println("Public key: " + u.FInfo(publicKeyPath))
-	fmt.Println("Private key: " + u.FInfo(privateKeyPath))
+	u.PrintGeneric(fmt.Sprintf("RSA key pair (%d bits) generated", keySize))
+	u.PrintGeneric(fmt.Sprintf("Public key: %s", u.FInfo(publicKeyPath)))
+	u.PrintGeneric(fmt.Sprintf("Private key: %s", u.FInfo(privateKeyPath)))
 }
 
 func GenerateSSHKeyPair(outputDir, name string, keySize int) {
-	fmt.Println()
+	u.LineBreak()
 	os.MkdirAll(outputDir, 0755)
 	privateKey, _ := rsa.GenerateKey(rand.Reader, keySize)
 	publicKey, _ := ssh.NewPublicKey(&privateKey.PublicKey)
@@ -58,7 +57,7 @@ func GenerateSSHKeyPair(outputDir, name string, keySize int) {
 
 	publicKeyPath := fmt.Sprintf("%s/%s.pub", outputDir, name)
 	if err := os.WriteFile(publicKeyPath, sshPublicKeyBytes, 0644); err != nil {
-		log.Fatal().Err(err).Msg("failed to write SSH public key file")
+		u.PrintFatal("failed to write SSH public key file", err)
 	}
 	privatePEM := &pem.Block{
 		Type:  "RSA PRIVATE KEY",
@@ -69,11 +68,11 @@ func GenerateSSHKeyPair(outputDir, name string, keySize int) {
 	err := pem.Encode(privateKeyFile, privatePEM)
 	privateKeyFile.Close()
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to write private key to file")
+		u.PrintFatal("failed to write private key to file", err)
 	}
 	os.Chmod(privateKeyPath, 0600)
 
-	fmt.Printf("SSH key pair (%d bits) generated", keySize)
-	fmt.Println("Public key: " + u.FInfo(publicKeyPath))
-	fmt.Println("Private key: " + u.FInfo(privateKeyPath))
+	u.PrintGeneric(fmt.Sprintf("SSH key pair (%d bits) generated", keySize))
+	u.PrintGeneric(fmt.Sprintf("Public key: %s", u.FInfo(publicKeyPath)))
+	u.PrintGeneric(fmt.Sprintf("Private key: %s", u.FInfo(privateKeyPath)))
 }

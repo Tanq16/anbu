@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -213,7 +212,7 @@ func StashList() error {
 		return err
 	}
 	if len(index.Entries) == 0 {
-		fmt.Println("No stashed entries.")
+		u.PrintInfo("No stashed entries")
 		return nil
 	}
 	sort.Slice(index.Entries, func(i, j int) bool {
@@ -275,7 +274,7 @@ func StashApply(id int) error {
 		if err != nil {
 			return fmt.Errorf("failed to read blob: %w", err)
 		}
-		fmt.Print(string(data))
+		u.PrintGeneric(string(data))
 	} else {
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -314,7 +313,7 @@ func StashPop(id int) error {
 	}
 	blobPath := filepath.Join(stashDir, "blobs", entry.BlobName)
 	if err := os.Remove(blobPath); err != nil {
-		log.Warn().Err(err).Msg("failed to remove blob file")
+		u.PrintWarning("failed to remove blob file", err)
 	}
 	if !removeEntryByID(index, id) {
 		return fmt.Errorf("failed to remove entry from index")
@@ -344,7 +343,7 @@ func StashClear(id int) error {
 	}
 	blobPath := filepath.Join(stashDir, "blobs", entry.BlobName)
 	if err := os.Remove(blobPath); err != nil {
-		log.Warn().Err(err).Msg("failed to remove blob file")
+		u.PrintWarning("failed to remove blob file", err)
 	}
 	if !removeEntryByID(index, id) {
 		return fmt.Errorf("failed to remove entry from index")

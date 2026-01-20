@@ -3,12 +3,11 @@ package anbuGenerics
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
+	u "github.com/tanq16/anbu/utils"
 )
 
 func GenerateRandomString(length int) {
@@ -18,7 +17,7 @@ func GenerateRandomString(length int) {
 	randomBytes := make([]byte, length)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to generate random bytes")
+		u.PrintFatal("failed to generate random bytes", err)
 	}
 	encoded := base64.StdEncoding.EncodeToString(randomBytes)
 	encoded = strings.Map(func(r rune) rune {
@@ -32,12 +31,12 @@ func GenerateRandomString(length int) {
 	if len(encoded) > length {
 		encoded = encoded[:length]
 	}
-	fmt.Println(encoded)
+	u.PrintGeneric(encoded)
 }
 
 func GenerateSequenceString(length int) {
 	if length <= 0 {
-		log.Warn().Msg("length must be greater than 0; using 100")
+		u.PrintWarning("length must be greater than 0; using 100", nil)
 		length = 100
 	}
 	alphabet := "abcdefghijklmnopqrstuvxyz"
@@ -45,38 +44,38 @@ func GenerateSequenceString(length int) {
 	for result.Len() < length {
 		result.WriteString(alphabet)
 	}
-	fmt.Println(result.String()[:length])
+	u.PrintGeneric(result.String()[:length])
 }
 
 func GenerateRepetitionString(count int, str string) {
 	if count <= 0 {
-		log.Warn().Msg("count must be greater than 0; using 10")
+		u.PrintWarning("count must be greater than 0; using 10", nil)
 		count = 10
 	}
 	var result strings.Builder
 	for range count {
 		result.WriteString(str)
 	}
-	fmt.Println(result.String())
+	u.PrintGeneric(result.String())
 }
 
 func GenerateUUIDString() {
 	uuid, _ := uuid.NewRandom()
-	fmt.Println(uuid.String())
+	u.PrintGeneric(uuid.String())
 }
 
 // generates shorter UUID string
 func GenerateRUIDString(len string) {
 	length, err := strconv.Atoi(len)
 	if err != nil {
-		log.Fatal().Msg("not a valid length")
+		u.PrintFatal("not a valid length", err)
 	}
 	if length <= 0 || length > 30 {
-		log.Warn().Msg("length must be between 1 and 30; using 18")
+		u.PrintWarning("length must be between 1 and 30; using 18", nil)
 		length = 18
 	}
 	uuid, _ := uuid.NewRandom()
 	// remove version and variant bits from UUID
 	shortUUID := uuid.String()[0:8] + uuid.String()[9:13] + uuid.String()[15:18] + uuid.String()[20:23] + uuid.String()[24:]
-	fmt.Println(shortUUID[:length])
+	u.PrintGeneric(shortUUID[:length])
 }

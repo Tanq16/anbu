@@ -2,7 +2,6 @@ package cloudCmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	anbuCloud "github.com/tanq16/anbu/internal/cloud/aws"
@@ -38,8 +37,7 @@ var awsIidcLoginCmd = &cobra.Command{
 	Short: "Configure AWS SSO with IAM Identity Center for multi-role access",
 	Run: func(cmd *cobra.Command, args []string) {
 		if awsIidcLoginFlags.startURL == "" || awsIidcLoginFlags.ssoRegion == "" {
-			u.PrintError("Both --start-url and --sso-region flags are required")
-			os.Exit(1)
+			u.PrintFatal("Both --start-url and --sso-region flags are required", nil)
 		}
 		config := anbuCloud.SSOConfig{
 			StartURL:    awsIidcLoginFlags.startURL,
@@ -48,8 +46,7 @@ var awsIidcLoginCmd = &cobra.Command{
 			SessionName: awsIidcLoginFlags.sessionName,
 		}
 		if err := anbuCloud.ConfigureSSO(config); err != nil {
-			u.PrintError("Failed to configure SSO")
-			os.Exit(1)
+			u.PrintFatal("Failed to configure SSO", err)
 		}
 		u.PrintSuccess("Successfully configured AWS SSO")
 	},
@@ -60,8 +57,7 @@ var awsSamlDirectLoginCmd = &cobra.Command{
 	Short: "Login to AWS CLI with SAML response grabbed from a browser session directly",
 	Run: func(cmd *cobra.Command, args []string) {
 		if awsSamlDirectLoginFlags.roleArn == "" || awsSamlDirectLoginFlags.principalArn == "" {
-			u.PrintError("Both --role-arn and --principal-arn flags are required")
-			os.Exit(1)
+			u.PrintFatal("Both --role-arn and --principal-arn flags are required", nil)
 		}
 		if awsSamlDirectLoginFlags.profile == "" {
 			awsSamlDirectLoginFlags.profile = "default"
@@ -73,8 +69,7 @@ var awsSamlDirectLoginCmd = &cobra.Command{
 			CLIRegion:    awsSamlDirectLoginFlags.cliRegion,
 		}
 		if err := anbuCloud.LoginWithSAMLResponse(config, awsSamlDirectLoginFlags.samlResponseFile); err != nil {
-			u.PrintError("Failed to login via SAML")
-			os.Exit(1)
+			u.PrintFatal("Failed to login via SAML", err)
 		}
 		u.PrintSuccess(fmt.Sprintf("Successfully logged in via SAML (profile: %s)", awsSamlDirectLoginFlags.profile))
 	},
@@ -86,10 +81,10 @@ var awsCliUiCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		consoleURL, err := anbuCloud.GenerateConsoleURLFromProfile(awsCliUiFlags.profile)
 		if err != nil {
-			u.PrintError("Failed to generate console URL")
-			os.Exit(1)
+			u.PrintFatal("Failed to generate console URL", err)
 		}
-		fmt.Printf("%s\n", u.FSuccess(consoleURL))
+		u.PrintInfo("Console URL:")
+		u.PrintGeneric(consoleURL)
 		u.PrintInfo("URL valid for 12 hours")
 	},
 }

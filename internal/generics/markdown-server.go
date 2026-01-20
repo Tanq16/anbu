@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rs/zerolog/log"
+	u "github.com/tanq16/anbu/utils"
 )
 
 //go:embed markdown-viewer.html
@@ -53,7 +53,7 @@ func StartMarkdownServer(listenAddr string) error {
 	mux.HandleFunc("/", server.serveHTML)
 	mux.HandleFunc("/api/tree", server.serveFileTree)
 	mux.HandleFunc("/api/blob", server.serveFileContent)
-	log.Info().Msgf("Markdown viewer started at http://%s/", listenAddr)
+	u.PrintInfo(fmt.Sprintf("Markdown viewer started at http://%s/", listenAddr))
 	return http.ListenAndServe(listenAddr, loggingMiddleware(mux))
 }
 
@@ -69,7 +69,7 @@ func (s *MarkdownServer) serveHTML(w http.ResponseWriter, r *http.Request) {
 func (s *MarkdownServer) serveFileTree(w http.ResponseWriter, r *http.Request) {
 	tree, err := s.buildFileTree(s.Options.RootDir)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to build file tree")
+		u.PrintError("failed to build file tree", err)
 		http.Error(w, "Failed to build file tree", http.StatusInternalServerError)
 		return
 	}
@@ -104,7 +104,7 @@ func (s *MarkdownServer) serveFileContent(w http.ResponseWriter, r *http.Request
 	}
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
-		log.Error().Err(err).Str("path", fullPath).Msg("Failed to read file")
+		u.PrintError("failed to read file", err)
 		http.Error(w, "Failed to read file", http.StatusInternalServerError)
 		return
 	}
@@ -264,7 +264,7 @@ func (s *MarkdownServer) buildFileTree(rootPath string) (map[string]FileNode, er
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Debug().Msgf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path)
+		u.PrintStream(fmt.Sprintf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path))
 		next.ServeHTTP(w, r)
 	})
 }

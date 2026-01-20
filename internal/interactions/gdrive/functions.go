@@ -301,16 +301,14 @@ func UploadFolder(srv *drive.Service, localPath string, driveFolder string) erro
 		if d.IsDir() {
 			driveFolderId, err := findOrCreateFolder(srv, d.Name(), parentDriveId)
 			if err != nil {
-				u.PrintError(fmt.Sprintf("Failed to create directory %s, skipping", currentLocalPath))
-				log.Debug().Err(err).Msgf("Failed to create directory %s, skipping", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to create directory %s, skipping", currentLocalPath), err)
 				return nil
 			}
 			folderIdMap[currentLocalPath] = driveFolderId
 		} else {
 			file, err := os.Open(currentLocalPath)
 			if err != nil {
-				u.PrintError(fmt.Sprintf("Failed to open local file %s, skipping", currentLocalPath))
-				log.Debug().Err(err).Msgf("Failed to open local file %s, skipping", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to open local file %s, skipping", currentLocalPath), err)
 				return nil
 			}
 			defer file.Close()
@@ -320,8 +318,7 @@ func UploadFolder(srv *drive.Service, localPath string, driveFolder string) erro
 			}
 			_, err = srv.Files.Create(fileMetadata).Media(file).Fields("id").Do()
 			if err != nil {
-				u.PrintError(fmt.Sprintf("Failed to upload file %s, skipping", currentLocalPath))
-				log.Debug().Err(err).Msgf("Failed to upload file %s, skipping", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to upload file %s, skipping", currentLocalPath), err)
 				return nil
 			}
 			fmt.Printf("Uploaded %s %s %s\n", u.FDebug(currentLocalPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(d.Name()))
@@ -360,18 +357,15 @@ func downloadDriveFolderContents(srv *drive.Service, folderId string, localDestP
 			currentLocalPath := filepath.Join(localDestPath, f.Name)
 			if f.MimeType == googleFolderMimeType {
 				if err := os.Mkdir(currentLocalPath, 0755); err != nil && !os.IsExist(err) {
-					u.PrintError(fmt.Sprintf("Failed to create local directory %s, skipping", currentLocalPath))
-					log.Debug().Err(err).Msgf("Failed to create local directory %s, skipping", currentLocalPath)
+					u.PrintError(fmt.Sprintf("Failed to create local directory %s, skipping", currentLocalPath), err)
 					continue
 				}
 				if err := downloadDriveFolderContents(srv, f.Id, currentLocalPath); err != nil {
-					u.PrintError(fmt.Sprintf("Failed to download subfolder %s, skipping", f.Name))
-					log.Debug().Err(err).Msgf("Failed to download subfolder %s, skipping", f.Name)
+					u.PrintError(fmt.Sprintf("Failed to download subfolder %s, skipping", f.Name), err)
 				}
 			} else {
 				if err := downloadFileById(srv, f, currentLocalPath); err != nil {
-					u.PrintError(fmt.Sprintf("Failed to download file %s, skipping", f.Name))
-					log.Debug().Err(err).Msgf("Failed to download file %s, skipping", f.Name)
+					u.PrintError(fmt.Sprintf("Failed to download file %s, skipping", f.Name), err)
 				}
 			}
 		}

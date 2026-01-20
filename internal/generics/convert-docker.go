@@ -6,15 +6,13 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
-	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 )
 
 func convertDockerToCompose(input string) {
 	input = strings.TrimSpace(input)
 	if !strings.HasPrefix(input, "docker run") {
-		log.Fatal().Msg("Invalid docker run command. Must start with 'docker run'")
-		return
+		u.PrintFatal("Invalid docker run command. Must start with 'docker run'", nil)
 	}
 	composeConfig := map[string]any{
 		"services": map[string]any{
@@ -114,11 +112,11 @@ func convertDockerToCompose(input string) {
 	// Convert to YAML
 	yamlData, err := yaml.Marshal(composeConfig)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to generate YAML")
+		u.PrintFatal("failed to generate YAML", err)
 	}
 	outputFile := "docker-compose.yml"
 	if err := os.WriteFile(outputFile, yamlData, 0644); err != nil {
-		log.Fatal().Err(err).Msg("Failed to write output file")
+		u.PrintFatal("Failed to write output file", err)
 	}
 	u.PrintSuccess(fmt.Sprintf("Docker run command converted to Docker Compose: %s", outputFile))
 }
@@ -126,15 +124,15 @@ func convertDockerToCompose(input string) {
 func convertComposeToDocker(inputFile string) {
 	data, err := os.ReadFile(inputFile)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to read input file")
+		u.PrintFatal("Failed to read input file", err)
 	}
 	var composeConfig map[string]any
 	if err := yaml.Unmarshal(data, &composeConfig); err != nil {
-		log.Fatal().Err(err).Msg("Failed to parse YAML")
+		u.PrintFatal("Failed to parse YAML", err)
 	}
 	services, ok := composeConfig["services"].(map[string]any)
 	if !ok {
-		log.Fatal().Msg("No services found in the Docker Compose file")
+		u.PrintFatal("No services found in the Docker Compose file", nil)
 	}
 
 	var dockerCommands []string
@@ -173,9 +171,9 @@ func convertComposeToDocker(inputFile string) {
 		}
 		dockerCommands = append(dockerCommands, command.String())
 	}
-	fmt.Println("\nDocker run commands for services in Docker Compose file:")
+	u.PrintGeneric("\nDocker run commands for services in Docker Compose file:")
 	for _, cmd := range dockerCommands {
-		fmt.Println("\n" + u.FSuccess(cmd))
+		u.PrintGeneric("\n" + u.FSuccess(cmd))
 	}
 }
 

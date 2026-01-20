@@ -1,9 +1,11 @@
 package interactionsCmd
 
 import (
-	"github.com/rs/zerolog/log"
+	"fmt"
+
 	"github.com/spf13/cobra"
 	fssync "github.com/tanq16/anbu/internal/interactions/fs-sync"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var (
@@ -35,8 +37,7 @@ var fsSyncServeCmd = &cobra.Command{
 		if fsSyncServeFlags.enableTLS {
 			protocol = "https"
 		}
-		log.Info().Msgf("Starting fs-sync server: %s://localhost:%d directory=%s",
-			protocol, fsSyncServeFlags.port, fsSyncServeFlags.dir)
+		u.PrintInfo(fmt.Sprintf("Starting fs-sync server: %s://localhost:%d directory=%s", protocol, fsSyncServeFlags.port, fsSyncServeFlags.dir))
 		cfg := fssync.ServerConfig{
 			Port:        fsSyncServeFlags.port,
 			SyncDir:     fsSyncServeFlags.dir,
@@ -45,10 +46,10 @@ var fsSyncServeCmd = &cobra.Command{
 		}
 		s, err := fssync.NewServer(cfg)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to initialize server")
+			u.PrintFatal("Failed to initialize server", err)
 		}
 		if err := s.Run(); err != nil {
-			log.Fatal().Err(err).Msg("Server error")
+			u.PrintFatal("Failed to run server", err)
 		}
 	},
 }
@@ -66,10 +67,10 @@ var fsSyncSyncCmd = &cobra.Command{
 		}
 		c, err := fssync.NewClient(cfg)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to initialize client")
+			u.PrintFatal("Failed to initialize client", err)
 		}
 		if err := c.Run(); err != nil {
-			log.Fatal().Err(err).Msg("Sync failed")
+			u.PrintFatal("Failed to sync", err)
 		}
 	},
 }

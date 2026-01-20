@@ -8,26 +8,22 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rs/zerolog/log"
-
 	u "github.com/tanq16/anbu/utils"
 )
 
 func Sed(pattern string, replacement string, path string, dryRun bool) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Invalid regex pattern")
+		u.PrintFatal("Invalid regex pattern", err)
 	}
-
 	info, err := os.Stat(path)
 	if err != nil {
-		log.Fatal().Err(err).Msgf("Path does not exist: %s", path)
+		u.PrintFatal(fmt.Sprintf("Path does not exist: %s", path), err)
 	}
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	processedCount := 0
-
 	if info.IsDir() {
 		err := filepath.Walk(path, func(filePath string, fileInfo os.FileInfo, err error) error {
 			if err != nil {
@@ -48,7 +44,7 @@ func Sed(pattern string, replacement string, path string, dryRun bool) {
 			return nil
 		})
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to walk directory")
+			u.PrintFatal("Failed to walk directory", err)
 		}
 	} else {
 		wg.Add(1)
@@ -63,40 +59,36 @@ func Sed(pattern string, replacement string, path string, dryRun bool) {
 	}
 
 	wg.Wait()
-
 	if processedCount == 0 {
-		log.Warn().Msg("no files were processed")
+		u.PrintWarning("no files were processed", nil)
 	} else {
-		fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
-			u.FSuccess(fmt.Sprintf("%d file(s) processed", processedCount)))
+		u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d file(s) processed", processedCount))))
 	}
 }
 
 func processFile(filePath string, re *regexp.Regexp, replacement string, dryRun bool) bool {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		u.PrintError(fmt.Sprintf("Failed to read file %s: %v", filePath, err))
+		u.PrintError("Failed to read file", err)
 		return false
 	}
-
 	originalContent := string(content)
 	modifiedContent := replaceWithGroups(originalContent, re, replacement)
-
 	if originalContent == modifiedContent {
 		return false
 	}
 
 	if dryRun {
-		fmt.Printf("Dry Run: %s\n", u.FDebug(filePath))
-		fmt.Println(modifiedContent)
-		fmt.Println()
+		u.PrintGeneric(fmt.Sprintf("Dry Run: %s", u.FDebug(filePath)))
+		u.PrintGeneric(modifiedContent)
+		u.LineBreak()
 	} else {
 		err := os.WriteFile(filePath, []byte(modifiedContent), 0644)
 		if err != nil {
-			u.PrintError(fmt.Sprintf("Failed to write file %s: %v", filePath, err))
+			u.PrintError("Failed to write file", err)
 			return false
 		}
-		fmt.Printf("Modified: %s\n", u.FSuccess(filePath))
+		u.PrintGeneric(fmt.Sprintf("Modified: %s", u.FSuccess(filePath)))
 	}
 	return true
 }

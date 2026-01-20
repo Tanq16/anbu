@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -21,9 +20,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 	// Listen on the local address
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
-		u.PrintError(fmt.Sprintf("failed to listen on %s", localAddr))
-		log.Debug().Err(err).Msgf("failed to listen on %s", localAddr)
-		os.Exit(1)
+		u.PrintFatal(fmt.Sprintf("failed to listen on %s", localAddr), err)
 	}
 	defer listener.Close()
 	u.PrintInfo(fmt.Sprintf("Listening on %s", localAddr))
@@ -59,8 +56,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 				if opErr, ok := err.(*net.OpError); ok && !opErr.Temporary() {
 					return
 				}
-				u.PrintError("Failed to accept connection")
-				log.Debug().Err(err).Msg("Failed to accept connection")
+				u.PrintError("Failed to accept connection", err)
 				continue
 			}
 
@@ -82,8 +78,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 					remoteConn, err = net.Dial("tcp", remoteAddr)
 				}
 				if err != nil {
-					u.PrintError(fmt.Sprintf("Failed to connect to remote %s", remoteAddr))
-					log.Debug().Err(err).Msgf("Failed to connect to remote %s", remoteAddr)
+					u.PrintError(fmt.Sprintf("Failed to connect to remote %s", remoteAddr), err)
 					return
 				}
 				defer remoteConn.Close()
@@ -97,8 +92,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 					// Local to Remote
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
-						u.PrintError("Error copying data to remote")
-						log.Debug().Err(err).Msg("Error copying data to remote")
+						u.PrintError("Error copying data to remote", err)
 					}
 					u.PrintStream(fmt.Sprintf("→ Sent %d bytes to remote", n))
 				}()
@@ -107,8 +101,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 					// Remote to Local
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
-						u.PrintError("Error copying data from remote")
-						log.Debug().Err(err).Msg("Error copying data from remote")
+						u.PrintError("Error copying data from remote", err)
 					}
 					u.PrintStream(fmt.Sprintf("← Received %d bytes from remote", n))
 				}()

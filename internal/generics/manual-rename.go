@@ -15,11 +15,11 @@ import (
 func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 	currentDir, err := os.Getwd()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to get current directory")
+		u.PrintFatal("failed to get current directory", err)
 	}
 	entries, err := os.ReadDir(currentDir)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to read directory")
+		u.PrintFatal("failed to read directory", err)
 	}
 	var items []os.DirEntry
 	for _, entry := range entries {
@@ -34,7 +34,7 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 		}
 	}
 	if len(items) == 0 {
-		log.Warn().Msg("no items found to rename")
+		u.PrintWarning("no items found to rename", nil)
 		return
 	}
 	log.Debug().Int("count", len(items)).Msg("items to process")
@@ -46,9 +46,9 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 		fmt.Printf("%s %s ", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]))
 		input, err := reader.ReadString('\n')
 		if err != nil {
-			log.Error().Err(err).Msg("failed to read input")
+			u.PrintError("failed to read input", err)
 			if !u.GlobalDebugFlag {
-				fmt.Print("\033[A\r\033[K")
+				u.ClearTerminal(1)
 			}
 			fmt.Printf("%s %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FDebug(oldName), u.FWarning("(skipped)"))
 			continue
@@ -86,7 +86,7 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 	}
 	fmt.Println()
 	if renameCount == 0 {
-		log.Warn().Msg("no items were renamed")
+		u.PrintWarning("no items were renamed", nil)
 	}
-	fmt.Printf("%s %s\n", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d items renamed", renameCount)))
+	u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d items renamed", renameCount))))
 }

@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -14,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
-	"golang.org/x/term"
 	"gopkg.in/ini.v1"
 )
 
@@ -36,23 +34,7 @@ func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlResponseFile string
 		}
 		samlAssertion = strings.TrimSpace(string(data))
 	} else {
-		u.PrintInfo("Enter SAML assertion (press Enter when done):")
-		reader := bufio.NewReader(os.Stdin)
-		samlAssertion, err = reader.ReadString('\n')
-		if err != nil {
-			return fmt.Errorf("failed to read SAML assertion: %w", err)
-		}
-		samlAssertion = strings.TrimSpace(samlAssertion)
-
-		if !u.GlobalDebugFlag {
-			terminalWidth := -1
-			if width, _, err := term.GetSize(0); err == nil {
-				terminalWidth = width
-			}
-			inputLength := len(samlAssertion)
-			linesToClear := (inputLength / terminalWidth) + 1
-			u.ClearTerminal(linesToClear)
-		}
+		samlAssertion = u.InputWithClear("Enter SAML assertion: ")
 	}
 
 	if samlAssertion == "" {

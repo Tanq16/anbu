@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
-	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -91,17 +90,17 @@ var supportedConverters = map[string]converterInfo{
 func ConvertData(converterType string, input string) {
 	converter, exists := supportedConverters[converterType]
 	if !exists {
-		log.Fatal().Msgf("unsupported converter type: %s", converterType)
+		u.PrintError(fmt.Sprintf("unsupported converter type: %s", converterType), nil)
 	}
 	switch converter.InputType {
 	case "file":
 		_, err := os.Stat(input)
 		if os.IsNotExist(err) {
-			log.Fatal().Msgf("input file does not exist: %s", input)
+			u.PrintError(fmt.Sprintf("input file does not exist: %s", input), err)
 		}
 	case "string":
 		if input == "" {
-			log.Fatal().Msg("input string cannot be empty")
+			u.PrintError("input string cannot be empty", nil)
 		}
 	}
 	converter.Handler(input)
@@ -112,19 +111,19 @@ func ConvertData(converterType string, input string) {
 func convertYAMLToJSON(inputFile string) {
 	data, err := converterReadInputFile(inputFile)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to read input file")
+		u.PrintFatal("failed to read input file", err)
 	}
 	var parsedData any
 	if err := yaml.Unmarshal(data, &parsedData); err != nil {
-		log.Fatal().Err(err).Msg("failed to parse YAML")
+		u.PrintFatal("failed to parse YAML", err)
 	}
 	jsonData, err := json.MarshalIndent(parsedData, "", "  ")
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to generate JSON")
+		u.PrintFatal("failed to generate JSON", err)
 	}
 	outputFile := generateOutputFileName(inputFile, "json")
 	if err := converterWriteOutputFile(outputFile, jsonData); err != nil {
-		log.Fatal().Err(err).Msg("failed to write output file")
+		u.PrintFatal("failed to write output file", err)
 	}
 	u.PrintSuccess(fmt.Sprintf("Converted YAML to JSON: %s", outputFile))
 }
@@ -132,19 +131,19 @@ func convertYAMLToJSON(inputFile string) {
 func convertJSONToYAML(inputFile string) {
 	data, err := converterReadInputFile(inputFile)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to read input file")
+		u.PrintFatal("failed to read input file", err)
 	}
 	var parsedData any
 	if err := json.Unmarshal(data, &parsedData); err != nil {
-		log.Fatal().Err(err).Msg("failed to parse JSON")
+		u.PrintFatal("failed to parse JSON", err)
 	}
 	yamlData, err := yaml.Marshal(parsedData)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to generate YAML")
+		u.PrintFatal("failed to generate YAML", err)
 	}
 	outputFile := generateOutputFileName(inputFile, "yaml")
 	if err := converterWriteOutputFile(outputFile, yamlData); err != nil {
-		log.Fatal().Err(err).Msg("failed to write output file")
+		u.PrintFatal("failed to write output file", err)
 	}
 	u.PrintSuccess(fmt.Sprintf("Converted JSON to YAML: %s", outputFile))
 }

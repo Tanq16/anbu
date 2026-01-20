@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -58,28 +59,28 @@ func getOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
 			}
 			token = newToken
 			if err := saveToken(tokenFile, token); err != nil {
-				u.PrintWarning("unable to save refreshed token")
-				log.Debug().Err(err).Msgf("unable to save refreshed token: %v", err)
+				u.PrintWarning("unable to save refreshed token", err)
 			}
 			return token, nil
 		}
 	}
-	log.Debug().Msgf("no valid token, starting new OAuth flow")
+	log.Debug().Msg("no valid token, starting new OAuth flow")
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
-	fmt.Printf("\nVisit this URL to authorize Anbu:\n\n%s\n", u.FInfo(authURL))
-	fmt.Printf("\nAfter authorizing, enter the authorization code: ")
-
-	var authCode string
-	if _, err := fmt.Scan(&authCode); err != nil {
-		return nil, fmt.Errorf("unable to read authorization code: %v", err)
+	authCodeURL := u.DeviceCodeFlow(authURL, "")
+	parsedURL, err := url.Parse(authCodeURL)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse the pasted URL: %v", err)
+	}
+	authCode := parsedURL.Query().Get("code")
+	if authCode == "" {
+		return nil, fmt.Errorf("pasted URL did not contain an authorization 'code'")
 	}
 	token, err = config.Exchange(context.Background(), authCode)
 	if err != nil {
 		return nil, fmt.Errorf("unable to exchange auth code for token: %v", err)
 	}
 	if err := saveToken(tokenFile, token); err != nil {
-		u.PrintWarning("unable to save new token")
-		log.Debug().Err(err).Msgf("unable to save new token: %v", err)
+		u.PrintWarning("unable to save new token", err)
 	}
 	u.PrintSuccess("Authentication successful. Token saved.")
 	return token, nil

@@ -8,84 +8,78 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 )
 
 func textToBase64(input string) {
 	encoded := base64.StdEncoding.EncodeToString([]byte(input))
-	fmt.Println(encoded)
+	u.PrintGeneric(encoded)
 }
 
 func base64ToText(input string) {
 	decoded, err := base64.StdEncoding.DecodeString(input)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to decode base64")
-		return
+		u.PrintFatal("Failed to decode base64", err)
 	}
-	fmt.Println(string(decoded))
+	u.PrintGeneric(string(decoded))
 }
 
 func textToHex(input string) {
 	encoded := hex.EncodeToString([]byte(input))
-	fmt.Println(encoded)
+	u.PrintGeneric(encoded)
 }
 
 func hexToText(input string) {
 	decoded, err := hex.DecodeString(strings.TrimSpace(input))
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to decode hex")
-		return
+		u.PrintFatal("Failed to decode hex", err)
 	}
-	fmt.Println(string(decoded))
+	u.PrintGeneric(string(decoded))
 }
 
 func base64ToHex(input string) {
 	decoded, err := base64.StdEncoding.DecodeString(input)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to decode base64")
-		return
+		u.PrintFatal("Failed to decode base64", err)
 	}
 	hexEncoded := hex.EncodeToString(decoded)
-	fmt.Println(hexEncoded)
+	u.PrintGeneric(hexEncoded)
 }
 
 func hexToBase64(input string) {
 	decoded, err := hex.DecodeString(strings.TrimSpace(input))
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to decode hex")
-		return
+		u.PrintFatal("Failed to decode hex", err)
 	}
 	base64Encoded := base64.StdEncoding.EncodeToString(decoded)
-	fmt.Println(base64Encoded)
+	u.PrintGeneric(base64Encoded)
 }
 
 func urlToText(input string) {
 	decoded, err := url.QueryUnescape(input)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to decode URL")
-		return
+		u.PrintFatal("Failed to decode URL", err)
 	}
-	fmt.Println(decoded)
+	u.PrintGeneric(decoded)
 }
 
 func textToUrl(input string) {
 	encoded := url.QueryEscape(input)
-	fmt.Println(encoded)
+	u.PrintGeneric(encoded)
 }
 
 func jwtDecode(tokenString string) {
 	parts := strings.Split(tokenString, ".")
 	if len(parts) != 3 {
-		log.Error().Msg("invalid token format")
+		u.PrintError("invalid token format", nil)
 	}
 	header, err := jwtDecodeSegment(parts[0])
 	if err != nil {
-		log.Error().Err(err).Msg("failed to decode header")
+		u.PrintError("failed to decode header", err)
 	}
 	payload, err := jwtDecodeSegment(parts[1])
 	if err != nil {
-		log.Error().Err(err).Msg("failed to decode payload")
+		u.PrintError("failed to decode payload", err)
 	}
 
 	// Print the header and payload in a table format

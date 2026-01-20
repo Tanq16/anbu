@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuCrypto "github.com/tanq16/anbu/internal/crypto"
 	u "github.com/tanq16/anbu/utils"
@@ -27,13 +26,13 @@ var secretsListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		secrets, err := anbuCrypto.ListSecrets(secretsFile)
 		if err != nil {
-			log.Fatal().Err(err)
+			u.PrintFatal("failed to list secrets", err)
 		}
 		u.PrintSuccess("Stored secrets:")
 		for i, id := range secrets {
-			fmt.Printf("  %d. %s\n", i+1, u.FInfo(id))
+			u.PrintGeneric(fmt.Sprintf("  %d. %s", i+1, u.FInfo(id)))
 		}
-		fmt.Printf("\nTotal: %d secrets\n", len(secrets))
+		u.PrintGeneric(fmt.Sprintf("Total: %d secrets", len(secrets)))
 	},
 }
 var secretsGetCmd = &cobra.Command{
@@ -44,9 +43,9 @@ var secretsGetCmd = &cobra.Command{
 		password := passwordFlag
 		value, err := anbuCrypto.GetSecret(secretsFile, args[0], password)
 		if err != nil {
-			log.Fatal().Err(err)
+			u.PrintFatal("failed to get secret", err)
 		}
-		fmt.Println(value)
+		u.PrintGeneric(value)
 	},
 }
 var secretsSetCmd = &cobra.Command{
@@ -55,22 +54,22 @@ var secretsSetCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		secretID := args[0]
-		fmt.Printf("Enter value for secret '%s': ", secretID)
+		u.PrintGeneric(fmt.Sprintf("Enter value for secret '%s': ", secretID))
 		var value string
 		var err error
 		if multilineFlag {
-			value, err = anbuCrypto.ReadMultilineInput()
+			value = u.MultilineInputWithClear(fmt.Sprintf("Enter value for secret '%s': ", secretID))
 		} else {
-			value, err = anbuCrypto.ReadSingleLineInput()
+			value = u.InputWithClear(fmt.Sprintf("Enter value for secret '%s': ", secretID))
 		}
 		if err != nil {
-			log.Fatal().Err(err).Msg("failed to read secret value")
+			u.PrintFatal("failed to read secret value", err)
 		}
 		password := passwordFlag
 		if err := anbuCrypto.SetSecret(secretsFile, secretID, value, password); err != nil {
-			log.Fatal().Err(err)
+			u.PrintFatal("failed to set secret", err)
 		}
-		log.Info().Msgf("Secret '%s' set successfully", secretID)
+		u.PrintInfo(fmt.Sprintf("Secret '%s' set successfully", secretID))
 	},
 }
 var secretsDeleteCmd = &cobra.Command{
@@ -79,9 +78,9 @@ var secretsDeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuCrypto.DeleteSecret(secretsFile, args[0]); err != nil {
-			log.Fatal().Err(err)
+			u.PrintFatal("failed to delete secret", err)
 		}
-		log.Info().Msgf("Secret '%s' deleted successfully", args[0])
+		u.PrintInfo(fmt.Sprintf("Secret '%s' deleted successfully", args[0]))
 	},
 }
 var secretsImportCmd = &cobra.Command{
@@ -92,7 +91,7 @@ var secretsImportCmd = &cobra.Command{
 		importFile := args[0]
 		password := passwordFlag
 		if err := anbuCrypto.ImportSecrets(secretsFile, importFile, password); err != nil {
-			log.Fatal().Err(err)
+			u.PrintFatal("failed to import secrets", err)
 		}
 		u.PrintSuccess(fmt.Sprintf("Imported secrets from %s successfully", importFile))
 	},
@@ -105,9 +104,9 @@ var secretsExportCmd = &cobra.Command{
 		exportFile := args[0]
 		password := passwordFlag
 		if err := anbuCrypto.ExportSecrets(secretsFile, exportFile, password); err != nil {
-			log.Fatal().Err(err)
+			u.PrintFatal("failed to export secrets", err)
 		}
-		log.Info().Msgf("Exported secrets to %s successfully", exportFile)
+		u.PrintInfo(fmt.Sprintf("Exported secrets to %s successfully", exportFile))
 	},
 }
 
@@ -117,13 +116,13 @@ func init() {
 	if err == nil {
 		anbuDir := filepath.Join(homeDir, ".anbu")
 		if err := os.MkdirAll(anbuDir, 0755); err != nil {
-			log.Fatal().Err(err)
+			u.PrintFatal("failed to create anbu directory", err)
 		}
 		secretsFile = filepath.Join(anbuDir, "secrets.json")
 	}
 	err = anbuCrypto.InitializeSecretsStore(secretsFile)
 	if err != nil {
-		log.Fatal().Err(err)
+		u.PrintFatal("failed to initialize secrets store", err)
 	}
 
 	// default known password is fine here - we would anyway use a password inline or in env. var. direct workstation access is anyway a risk, intention is secrets are not in plain text in history or logs. not a huge risk with default password, but option for custom password is nice.

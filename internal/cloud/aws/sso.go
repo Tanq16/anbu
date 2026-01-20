@@ -96,10 +96,8 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Visit this URL to sign in: %s\n", u.FSuccess(aws.ToString(deviceAuth.VerificationUriComplete)))
-	u.PrintInfo("Hit enter when done signing in!")
-
-	bufio.NewReader(os.Stdin).ReadString('\n')
+	u.LineBreak()
+	u.DeviceCodeFlow(aws.ToString(deviceAuth.VerificationUriComplete), "")
 	tokenResp, err := getAccessToken(oidcClient, regResp, deviceAuth.DeviceCode)
 	if err != nil {
 		return err
@@ -160,8 +158,7 @@ func processAccounts(client *sso.Client, accessToken *string, accounts sso.ListA
 			log.Debug().Str("id", accountID).Str("name", accountName).Msg("processing account")
 			roles, err := listAccountRoles(client, accessToken, accountID)
 			if err != nil {
-				log.Debug().Err(err).Str("account", accountID).Str("accountName", accountName).Msg("role listing failed for account")
-				log.Warn().Err(err).Str("account", accountID).Msg("failed to list roles")
+				u.PrintWarning("failed to list roles", err)
 				return
 			}
 			for _, role := range roles.RoleList {
@@ -192,7 +189,7 @@ func processAccounts(client *sso.Client, accessToken *string, accounts sso.ListA
 	}
 	wg.Wait()
 	if err := createProfileList(profileList); err != nil {
-		log.Warn().Err(err).Msg("failed to create profile string list")
+		u.PrintWarning("failed to create profile string list", err)
 	}
 	return configData, nil
 }

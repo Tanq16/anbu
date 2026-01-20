@@ -1,9 +1,9 @@
 package cryptoCmd
 
 import (
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuCrypto "github.com/tanq16/anbu/internal/crypto"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var fileCryptoFlags struct {
@@ -19,7 +19,7 @@ var FileCryptoCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if fileCryptoFlags.password == "" {
-			log.Fatal().Msg("No password specified")
+			u.PrintFatal("No password specified", nil)
 		}
 		if fileCryptoFlags.decrypt {
 			anbuCrypto.DecryptFileSymmetric(args[0], fileCryptoFlags.password)

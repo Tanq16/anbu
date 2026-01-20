@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tanq16/anbu/internal/interactions/gdrive"
 	u "github.com/tanq16/anbu/utils"
@@ -52,12 +52,12 @@ var gdriveListCmd = &cobra.Command{
 
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
+			u.PrintFatal("Failed to get Google Drive service", err)
 		}
 
 		folders, files, err := gdrive.ListDriveContents(srv, path)
 		if err != nil {
-			log.Fatal().Err(err).Msgf("Failed to list contents for '%s'", path)
+			u.PrintFatal(fmt.Sprintf("Failed to list contents for '%s'", path), err)
 		}
 
 		table := u.NewTable([]string{"Type", "Name", "Size", "Modified"})
@@ -79,7 +79,7 @@ var gdriveListCmd = &cobra.Command{
 		}
 
 		if len(table.Rows) == 0 {
-			fmt.Printf("No items found in '%s'\n", u.FDebug(path))
+			u.PrintGeneric(fmt.Sprintf("No items found in '%s'", u.FDebug(path)))
 			return
 		}
 
@@ -101,14 +101,14 @@ var gdriveUploadCmd = &cobra.Command{
 
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
+			u.PrintFatal("Failed to get Google Drive service", err)
 		}
-		fmt.Printf("Starting upload of %s to %s...\n", u.FDebug(localPath), u.FDebug(driveFolder))
+		u.PrintGeneric(fmt.Sprintf("Starting upload of %s to %s", u.FDebug(localPath), u.FDebug(driveFolder)))
 
 		if err := gdrive.UploadDriveItem(srv, localPath, driveFolder); err != nil {
-			log.Fatal().Err(err).Msg("Failed to upload")
+			u.PrintFatal("Failed to upload", err)
 		}
-		fmt.Printf("%s Upload completed successfully\n", u.FSuccess("✓"))
+		u.PrintSuccess(fmt.Sprintf("%s Upload completed successfully", u.StyleSymbols["pass"]))
 	},
 }
 
@@ -125,18 +125,18 @@ var gdriveDownloadCmd = &cobra.Command{
 		}
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
+			u.PrintFatal("Failed to get Google Drive service", err)
 		}
-		fmt.Printf("Starting download of %s...\n", u.FDebug(drivePath))
+		u.PrintGeneric(fmt.Sprintf("Starting download of %s", u.FDebug(drivePath)))
 
 		downloadedPath, err := gdrive.DownloadDriveItem(srv, drivePath, localPath)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to download")
+			u.PrintFatal("Failed to download", err)
 		}
 		if downloadedPath != "" {
-			fmt.Printf("Successfully downloaded %s %s %s\n", u.FDebug(drivePath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(downloadedPath))
+			u.PrintGeneric(fmt.Sprintf("Successfully downloaded %s %s %s", u.FDebug(drivePath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(downloadedPath)))
 		}
-		fmt.Printf("%s Download completed successfully\n", u.FSuccess("✓"))
+		u.PrintSuccess(fmt.Sprintf("%s Download completed successfully", u.StyleSymbols["pass"]))
 	},
 }
 
@@ -150,13 +150,13 @@ var gdriveSyncCmd = &cobra.Command{
 		ignore := parseIgnoreArg(gdriveSyncFlags.ignore)
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
+			u.PrintFatal("Failed to get Google Drive service", err)
 		}
-		fmt.Printf("Starting sync of %s to %s...\n", u.FDebug(localDir), u.FDebug(remotePath))
+		u.PrintGeneric(fmt.Sprintf("Starting sync of %s to %s", u.FDebug(localDir), u.FDebug(remotePath)))
 		if err := gdrive.SyncDriveDirectory(srv, localDir, remotePath, gdriveSyncFlags.concurrency, ignore); err != nil {
-			log.Fatal().Err(err).Msg("Failed to sync")
+			u.PrintFatal("Failed to sync", err)
 		}
-		fmt.Printf("%s Sync completed successfully\n", u.FSuccess("✓"))
+		u.PrintSuccess(fmt.Sprintf("%s Sync completed successfully", u.StyleSymbols["pass"]))
 	},
 }
 
@@ -170,12 +170,12 @@ var gdriveIndexCmd = &cobra.Command{
 		}
 		srv, err := gdrive.GetDriveService(gdriveFlags.credentialsFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Google Drive service")
+			u.PrintFatal("Failed to get Google Drive service", err)
 		}
 		if err := gdrive.GenerateIndex(srv, path); err != nil {
-			log.Fatal().Err(err).Msg("Indexing failed")
+			u.PrintFatal("Indexing failed", err)
 		}
-		u.PrintSuccess("Google Drive indexing completed.")
+		u.PrintSuccess("Google Drive indexing completed")
 	},
 }
 
@@ -194,10 +194,10 @@ var gdriveSearchCmd = &cobra.Command{
 		if len(args) > 1 {
 			path, _ = gdrive.ResolvePath(args[1])
 		}
-		u.PrintInfo(fmt.Sprintf("Searching Google Drive index in '%s'...", path))
+		u.PrintInfo(fmt.Sprintf("Searching Google Drive index in '%s'", path))
 		items, err := gdrive.SearchIndex(regex, path, gdriveSearchFlags.excludeDirs, gdriveSearchFlags.excludeFiles)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Search failed")
+			u.PrintFatal("Search failed", err)
 		}
 		table := u.NewTable([]string{"Type", "Path", "Size", "Modified"})
 		for _, item := range items {
@@ -217,7 +217,7 @@ var gdriveSearchCmd = &cobra.Command{
 			})
 		}
 		if len(table.Rows) == 0 {
-			u.PrintWarning("No matches found.")
+			u.PrintWarning("No matches found", nil)
 			return
 		}
 		table.PrintTable(false)
@@ -238,4 +238,20 @@ func init() {
 	gdriveSyncCmd.Flags().StringVarP(&gdriveSyncFlags.ignore, "ignore", "i", "", "Comma-separated list of file or folder names to ignore")
 	gdriveSearchCmd.Flags().BoolVar(&gdriveSearchFlags.excludeDirs, "exclude-dirs", false, "Exclude directories from results")
 	gdriveSearchCmd.Flags().BoolVar(&gdriveSearchFlags.excludeFiles, "exclude-files", false, "Exclude files from results")
+}
+
+// helper function to parse ignore arg
+// also used in Box sync command
+func parseIgnoreArg(value string) []string {
+	if value == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if v := strings.TrimSpace(p); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }

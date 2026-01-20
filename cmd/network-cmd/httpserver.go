@@ -1,9 +1,9 @@
 package networkCmd
 
 import (
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var httpServerFlags struct {
@@ -26,7 +26,7 @@ var HTTPServerCmd = &cobra.Command{
 		}
 		err := server.Start()
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to start HTTP server")
+			u.PrintFatal("Failed to start HTTP server", err)
 		}
 		defer server.Stop()
 	},

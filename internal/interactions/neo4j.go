@@ -66,8 +66,7 @@ func ExecuteNeo4jQueries(ctx context.Context, uri, user, password, database stri
 		log.Debug().Msgf("executing query: %s", query)
 		records, err := executeQuery(ctx, session, query)
 		if err != nil {
-			u.PrintError("error executing query, but continuing")
-			log.Debug().Err(err).Msgf("error executing query, but continuing...")
+			u.PrintError("error executing query, but continuing", err)
 			allResults = append(allResults, QueryResult{
 				Query:  query,
 				Result: []map[string]any{{"error": err.Error()}},

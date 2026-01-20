@@ -3,9 +3,9 @@ package genericsCmd
 import (
 	"strconv"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var StashCmd = &cobra.Command{
@@ -19,7 +19,7 @@ var stashFSCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuGenerics.StashFS(args[0]); err != nil {
-			log.Fatal().Err(err).Msg("failed to stash")
+			u.PrintFatal("failed to stash", err)
 		}
 	},
 }
@@ -30,7 +30,7 @@ var stashTextCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuGenerics.StashText(args[0]); err != nil {
-			log.Fatal().Err(err).Msg("failed to stash text")
+			u.PrintFatal("failed to stash text", err)
 		}
 	},
 }
@@ -41,7 +41,7 @@ var stashListCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuGenerics.StashList(); err != nil {
-			log.Fatal().Err(err).Msg("failed to list stashes")
+			u.PrintFatal("failed to list stashes", err)
 		}
 	},
 }
@@ -53,10 +53,10 @@ var stashApplyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := strconv.Atoi(args[0])
 		if err != nil {
-			log.Fatal().Msg("invalid stash ID")
+			u.PrintFatal("invalid stash ID", nil)
 		}
 		if err := anbuGenerics.StashApply(id); err != nil {
-			log.Fatal().Err(err).Msg("failed to apply stash")
+			u.PrintFatal("failed to apply stash", err)
 		}
 	},
 }
@@ -68,10 +68,10 @@ var stashPopCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := strconv.Atoi(args[0])
 		if err != nil {
-			log.Fatal().Msg("invalid stash ID")
+			u.PrintFatal("invalid stash ID", nil)
 		}
 		if err := anbuGenerics.StashPop(id); err != nil {
-			log.Fatal().Err(err).Msg("failed to pop stash")
+			u.PrintFatal("failed to pop stash", err)
 		}
 	},
 }
@@ -83,10 +83,10 @@ var stashClearCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := strconv.Atoi(args[0])
 		if err != nil {
-			log.Fatal().Msg("invalid stash ID")
+			u.PrintFatal("invalid stash ID", nil)
 		}
 		if err := anbuGenerics.StashClear(id); err != nil {
-			log.Fatal().Err(err).Msg("failed to clear stash")
+			u.PrintFatal("failed to clear stash", err)
 		}
 	},
 }

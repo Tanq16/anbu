@@ -1,9 +1,9 @@
 package cloudCmd
 
 import (
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuCloud "github.com/tanq16/anbu/internal/cloud/azure"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var AzureCmd = &cobra.Command{
@@ -18,7 +18,7 @@ var azureSwitchCmd = &cobra.Command{
 	Short:   "Switch between Azure subscriptions interactively",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := anbuCloud.SwitchSubscription(); err != nil {
-			log.Fatal().Err(err).Msg("failed to switch subscription")
+			u.PrintFatal("failed to switch subscription", err)
 		}
 	},
 }

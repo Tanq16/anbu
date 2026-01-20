@@ -1,7 +1,6 @@
 package anbuCrypto
 
 import (
-	"bufio"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -12,7 +11,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type SecretsStore struct {
@@ -140,37 +138,6 @@ func ExportSecrets(filePath, exportFilePath string, password string) error {
 		return fmt.Errorf("failed to marshal export data: %w", err)
 	}
 	return os.WriteFile(exportFilePath, exportData, 0600)
-}
-
-func ReadMultilineInput() (string, error) {
-	var sb strings.Builder
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("Enter value (type 'EOF' on a new line to finish):")
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "EOF" {
-			break
-		}
-		sb.WriteString(line)
-		sb.WriteString("\n")
-	}
-	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("error reading input: %w", err)
-	}
-	text := sb.String()
-	if len(text) > 0 {
-		text = text[:len(text)-1]
-	}
-	return text, nil
-}
-
-func ReadSingleLineInput() (string, error) {
-	reader := bufio.NewReader(os.Stdin)
-	text, err := reader.ReadString('\n')
-	if err != nil {
-		return "", fmt.Errorf("error reading input: %w", err)
-	}
-	return strings.TrimSpace(text), nil
 }
 
 // Private helper methods for encryption/decryption

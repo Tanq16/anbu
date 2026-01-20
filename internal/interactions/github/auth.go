@@ -1,7 +1,6 @@
 package github
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -92,19 +91,14 @@ func getGitHubOAuthToken(clientID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable to request device code: %v", err)
 	}
-	fmt.Printf("\nVisit this URL to authorize Anbu:\n\n%s\n", u.FInfo(deviceResp.VerificationURI))
-	fmt.Printf("\nEnter the code: %s\n\n", u.FInfo(deviceResp.UserCode))
-	fmt.Println("Press Enter after you have completed the authorization in your browser...")
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	fmt.Println("Checking for authorization...")
+	u.DeviceCodeFlow(deviceResp.VerificationURI, deviceResp.UserCode)
+	u.PrintDebug("Checking for authorization")
 	token, err = pollForAccessToken(clientID, deviceResp)
 	if err != nil {
 		return "", fmt.Errorf("unable to get access token: %v", err)
 	}
 	if err := saveGitHubToken(tokenFile, token); err != nil {
-		u.PrintWarning("unable to save new token")
-		log.Debug().Str("op", "github/auth").Msgf("unable to save new token: %v", err)
+		u.PrintWarning("unable to save new token", err)
 	}
 	u.PrintSuccess("Authentication successful. Token saved.")
 	return token, nil

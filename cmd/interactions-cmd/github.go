@@ -1,14 +1,12 @@
 package interactionsCmd
 
 import (
-	"bufio"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tanq16/anbu/internal/interactions/github"
 	u "github.com/tanq16/anbu/utils"
@@ -64,20 +62,20 @@ Examples:
 		}
 		client, err := github.GetGitHubClient(githubFlags.credentialsFile, githubFlags.pat)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get GitHub client")
+			u.PrintFatal("Failed to get GitHub client", err)
 		}
 		parts := strings.Split(path, "/")
 		if len(parts) < 2 {
-			log.Fatal().Msg("Invalid path format. Expected: owner/repo/PATHS")
+			u.PrintFatal("Invalid path format. Expected: owner/repo/PATHS", nil)
 		}
 		owner := parts[0]
 		repo := parts[1]
 		resourcePath := strings.Join(parts[2:], "/")
 		if resourcePath == "" {
-			log.Fatal().Msg("No resource path specified")
+			u.PrintFatal("No resource path specified", nil)
 		}
 		if err := handleList(client, owner, repo, resourcePath); err != nil {
-			log.Fatal().Err(err).Msg("Failed to list resource")
+			u.PrintFatal("Failed to list resource", err)
 		}
 	},
 }
@@ -94,44 +92,34 @@ Examples:
 		path := args[0]
 		client, err := github.GetGitHubClient(githubFlags.credentialsFile, githubFlags.pat)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get GitHub client")
+			u.PrintFatal("Failed to get GitHub client", err)
 		}
 		parts := strings.Split(path, "/")
 		if len(parts) < 3 {
-			log.Fatal().Msg("Invalid path format. Expected: owner/repo/i/NUMBER or owner/repo/pr/NUMBER")
+			u.PrintFatal("Invalid path format. Expected: owner/repo/i/NUMBER or owner/repo/pr/NUMBER", nil)
 		}
 		owner := parts[0]
 		repo := parts[1]
 		resourceType := parts[2]
 		if len(parts) < 4 {
-			log.Fatal().Msg("Missing issue/PR number")
+			u.PrintFatal("Missing issue/PR number", nil)
 		}
 		var num int
 		if _, err := fmt.Sscanf(parts[3], "%d", &num); err != nil {
-			log.Fatal().Err(err).Msg("Invalid issue/PR number")
+			u.PrintFatal("Invalid issue/PR number", err)
 		}
-		fmt.Println("Enter your comment (type 'EOF' on a new line to finish):")
-		scanner := bufio.NewScanner(os.Stdin)
-		var lines []string
-		for scanner.Scan() {
-			line := scanner.Text()
-			if line == "EOF" {
-				break
-			}
-			lines = append(lines, line)
-		}
-		body := strings.Join(lines, "\n")
+		body := u.MultilineInputWithClear("Enter your comment:")
 		switch resourceType {
 		case "i":
 			if err := github.AddIssueComment(client, owner, repo, num, body); err != nil {
-				log.Fatal().Err(err).Msg("Failed to add issue comment")
+				u.PrintFatal("Failed to add issue comment", err)
 			}
 		case "pr":
 			if err := github.AddPRComment(client, owner, repo, num, body); err != nil {
-				log.Fatal().Err(err).Msg("Failed to add PR comment")
+				u.PrintFatal("Failed to add PR comment", err)
 			}
 		default:
-			log.Fatal().Msg("Invalid resource type. Use 'i' for issues or 'pr' for PRs")
+			u.PrintFatal("Invalid resource type. Use 'i' for issues or 'pr' for PRs", nil)
 		}
 		u.PrintSuccess("Comment added successfully")
 	},
@@ -150,37 +138,26 @@ Examples:
 		path := args[0]
 		client, err := github.GetGitHubClient(githubFlags.credentialsFile, githubFlags.pat)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get GitHub client")
+			u.PrintFatal("Failed to get GitHub client", err)
 		}
 		parts := strings.Split(path, "/")
 		if len(parts) < 3 {
-			log.Fatal().Msg("Invalid path format")
+			u.PrintFatal("Invalid path format", nil)
 		}
 		owner := parts[0]
 		repo := parts[1]
 		resourceType := parts[2]
-		if resourceType == "i" {
-			fmt.Print("Enter issue title: ")
-			scanner := bufio.NewScanner(os.Stdin)
-			scanner.Scan()
-			title := scanner.Text()
-			fmt.Println("Enter issue body (type 'EOF' on a new line to finish):")
-			var lines []string
-			for scanner.Scan() {
-				line := scanner.Text()
-				if line == "EOF" {
-					break
-				}
-				lines = append(lines, line)
-			}
-			body := strings.Join(lines, "\n")
+		switch resourceType {
+		case "i":
+			title := u.InputWithClear("Enter issue title: ")
+			body := u.MultilineInputWithClear("Enter issue body:")
 			if err := github.CreateIssue(client, owner, repo, title, body); err != nil {
-				log.Fatal().Err(err).Msg("Failed to create issue")
+				u.PrintFatal("Failed to create issue", err)
 			}
 			u.PrintSuccess("Issue created successfully")
-		} else if resourceType == "pr" {
+		case "pr":
 			if len(parts) < 4 {
-				log.Fatal().Msg("Missing branch name")
+				u.PrintFatal("Missing branch name", nil)
 			}
 			head := parts[3]
 			base := "main"
@@ -188,11 +165,11 @@ Examples:
 				base = parts[4]
 			}
 			if err := github.CreatePR(client, owner, repo, head, base); err != nil {
-				log.Fatal().Err(err).Msg("Failed to create PR")
+				u.PrintFatal("Failed to create PR", err)
 			}
 			u.PrintSuccess("PR created successfully")
-		} else {
-			log.Fatal().Msg("Invalid resource type. Use 'i' for issues or 'pr' for PRs")
+		default:
+			u.PrintFatal("Invalid resource type. Use 'i' for issues or 'pr' for PRs", nil)
 		}
 	},
 }
@@ -213,10 +190,10 @@ Examples:
 		url := args[0]
 		client, err := github.GetGitHubClient(githubFlags.credentialsFile, githubFlags.pat)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get GitHub client")
+			u.PrintFatal("Failed to get GitHub client", err)
 		}
 		if err := github.DownloadFromURL(client, url); err != nil {
-			log.Fatal().Err(err).Msg("Failed to download")
+			u.PrintFatal("Failed to download", err)
 		}
 		u.PrintSuccess("Download completed successfully")
 	},

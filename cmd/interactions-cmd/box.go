@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tanq16/anbu/internal/interactions/box"
 	u "github.com/tanq16/anbu/utils"
@@ -50,11 +49,11 @@ var boxListCmd = &cobra.Command{
 		}
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Box client")
+			u.PrintFatal("Failed to get Box client", err)
 		}
 		folders, files, err := box.ListBoxContents(client, path)
 		if err != nil {
-			log.Fatal().Err(err).Msgf("Failed to list contents for '%s'", path)
+			u.PrintFatal(fmt.Sprintf("Failed to list contents for '%s'", path), err)
 		}
 		table := u.NewTable([]string{"Type", "Name", "Size", "Modified"})
 		for _, f := range folders {
@@ -74,7 +73,7 @@ var boxListCmd = &cobra.Command{
 			})
 		}
 		if len(table.Rows) == 0 {
-			fmt.Printf("No items found in '%s'\n", u.FDebug(path))
+			u.PrintGeneric(fmt.Sprintf("No items found in '%s'", u.FDebug(path)))
 			return
 		}
 		table.PrintTable(false)
@@ -94,13 +93,13 @@ var boxUploadCmd = &cobra.Command{
 		}
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Box client")
+			u.PrintFatal("Failed to get Box client", err)
 		}
 		fmt.Printf("Starting upload of %s to %s...\n", u.FDebug(localPath), u.FDebug(boxFolderPath))
 		if err := box.UploadBoxItem(client, localPath, boxFolderPath); err != nil {
-			log.Fatal().Err(err).Msg("Failed to upload")
+			u.PrintFatal("Failed to upload", err)
 		}
-		fmt.Printf("%s Upload completed successfully\n", u.FSuccess("✓"))
+		u.PrintSuccess(fmt.Sprintf("%s Upload completed successfully", u.StyleSymbols["pass"]))
 	},
 }
 
@@ -117,17 +116,17 @@ var boxDownloadCmd = &cobra.Command{
 		}
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Box client")
+			u.PrintFatal("Failed to get Box client", err)
 		}
-		fmt.Printf("Starting download of %s...\n", u.FDebug(boxPath))
+		u.PrintGeneric(fmt.Sprintf("Starting download of %s", u.FDebug(boxPath)))
 		downloadedPath, err := box.DownloadBoxItem(client, boxPath, localPath)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to download")
+			u.PrintFatal("Failed to download", err)
 		}
 		if downloadedPath != "" {
-			fmt.Printf("Successfully downloaded %s %s %s\n", u.FDebug(boxPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(downloadedPath))
+			u.PrintGeneric(fmt.Sprintf("Successfully downloaded %s %s %s", u.FDebug(boxPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(downloadedPath)))
 		}
-		fmt.Printf("%s Download completed successfully\n", u.FSuccess("✓"))
+		u.PrintSuccess(fmt.Sprintf("%s Download completed successfully", u.StyleSymbols["pass"]))
 	},
 }
 
@@ -141,13 +140,13 @@ var boxSyncCmd = &cobra.Command{
 		ignore := parseIgnoreArg(boxSyncFlags.ignore)
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Box client")
+			u.PrintFatal("Failed to get Box client", err)
 		}
-		fmt.Printf("Starting sync of %s to %s...\n", u.FDebug(localDir), u.FDebug(remotePath))
+		u.PrintGeneric(fmt.Sprintf("Starting sync of %s to %s", u.FDebug(localDir), u.FDebug(remotePath)))
 		if err := box.SyncBoxDirectory(client, localDir, remotePath, boxSyncFlags.concurrency, ignore); err != nil {
-			log.Fatal().Err(err).Msg("Failed to sync")
+			u.PrintFatal("Failed to sync", err)
 		}
-		fmt.Printf("%s Sync completed successfully\n", u.FSuccess("✓"))
+		u.PrintSuccess(fmt.Sprintf("%s Sync completed successfully", u.StyleSymbols["pass"]))
 	},
 }
 
@@ -161,12 +160,12 @@ var boxIndexCmd = &cobra.Command{
 		}
 		client, err := box.GetBoxClient(boxFlags.credentialsFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get Box client")
+			u.PrintFatal("Failed to get Box client", err)
 		}
 		if err := box.GenerateIndex(client, path); err != nil {
-			log.Fatal().Err(err).Msg("Indexing failed")
+			u.PrintFatal("Indexing failed", err)
 		}
-		u.PrintSuccess("Box indexing completed.")
+		u.PrintSuccess("Box indexing completed")
 	},
 }
 
@@ -189,10 +188,10 @@ var boxSearchCmd = &cobra.Command{
 		if displayPath == "" {
 			displayPath = "/"
 		}
-		u.PrintInfo(fmt.Sprintf("Searching Box index in '%s'...", displayPath))
+		u.PrintInfo(fmt.Sprintf("Searching Box index in '%s'", displayPath))
 		items, err := box.SearchIndex(regex, path, boxSearchFlags.excludeDirs, boxSearchFlags.excludeFiles)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Search failed")
+			u.PrintFatal("Search failed", err)
 		}
 		table := u.NewTable([]string{"Type", "Path", "Size", "Modified"})
 		for _, item := range items {
@@ -212,7 +211,7 @@ var boxSearchCmd = &cobra.Command{
 			})
 		}
 		if len(table.Rows) == 0 {
-			u.PrintWarning("No matches found.")
+			u.PrintWarning("No matches found", nil)
 			return
 		}
 		table.PrintTable(false)

@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/rs/zerolog/log"
-
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -72,8 +70,7 @@ func (c *Client) Run() error {
 			totalCount += len(toDelete)
 		}
 		if totalCount == 0 {
-			u.PrintWarning("no files would be synced")
-			log.Debug().Msg("no files would be synced")
+			u.PrintWarning("no files would be synced", nil)
 		} else {
 			fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
 				u.FSuccess(fmt.Sprintf("%d file(s) would be synced", totalCount)))
@@ -97,8 +94,7 @@ func (c *Client) Run() error {
 	u.LineBreak()
 	totalCount := syncedCount + deletedCount
 	if totalCount == 0 {
-		u.PrintWarning("no files were synced")
-		log.Debug().Msg("no files were synced")
+		u.PrintWarning("no files were synced", nil)
 	} else {
 		fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
 			u.FSuccess(fmt.Sprintf("%d file(s) synced", totalCount)))
@@ -176,8 +172,7 @@ func (c *Client) deleteFiles(paths []string) (int, error) {
 	for _, path := range paths {
 		fullPath := filepath.Join(c.cfg.SyncDir, path)
 		if err := os.RemoveAll(fullPath); err != nil {
-			u.PrintError(fmt.Sprintf("Failed to delete %s", path))
-			log.Debug().Err(err).Msgf("Failed to delete %s", path)
+			u.PrintError(fmt.Sprintf("Failed to delete %s", path), err)
 		} else {
 			fmt.Printf("Deleted: %s\n", u.FSuccess(path))
 			count++

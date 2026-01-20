@@ -74,8 +74,7 @@ func getBoxOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
 			}
 			token = newToken
 			if err := saveBoxToken(token); err != nil {
-				u.PrintWarning("unable to save refreshed token")
-				log.Debug().Err(err).Msgf("unable to save refreshed token: %v", err)
+				u.PrintWarning("unable to save refreshed token", err)
 			}
 			return token, nil
 		}
@@ -83,13 +82,7 @@ func getBoxOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
 	log.Debug().Str("op", "box/auth").Msg("no valid token, starting new OAuth flow")
 	state := fmt.Sprintf("st%d", os.Getpid())
 	authURL := config.AuthCodeURL(state, oauth2.AccessTypeOffline)
-	fmt.Printf("\nVisit this URL to authorize Anbu:\n\n%s\n", u.FInfo(authURL))
-	fmt.Printf("\nAfter authorizing, you will be redirected to a 'localhost' URL.\n")
-	fmt.Printf("Copy the *entire* 'localhost' URL from your browser and paste it here: ")
-	var redirectURLStr string
-	if _, err := fmt.Scanln(&redirectURLStr); err != nil {
-		return nil, fmt.Errorf("unable to read redirect URL: %v", err)
-	}
+	redirectURLStr := u.DeviceCodeFlow(authURL, "")
 	parsedURL, err := url.Parse(redirectURLStr)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse the pasted URL: %v", err)
@@ -108,8 +101,7 @@ func getBoxOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
 		return nil, fmt.Errorf("unable to exchange auth code for token: %v", err)
 	}
 	if err := saveBoxToken(token); err != nil {
-		u.PrintWarning("unable to save new token")
-		log.Debug().Err(err).Msgf("unable to save new token: %v", err)
+		u.PrintWarning("unable to save new token", err)
 	}
 	u.PrintSuccess("Authentication successful. Token saved.")
 	return token, nil

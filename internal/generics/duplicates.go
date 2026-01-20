@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog/log"
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -16,7 +15,7 @@ const sizeThreshold = 100 * 1024 * 1024
 func FindDuplicates(recursive bool, delete bool) {
 	currentDir, err := os.Getwd()
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to get current directory")
+		u.PrintFatal("failed to get current directory", err)
 	}
 	var files []string
 	if recursive {
@@ -30,12 +29,12 @@ func FindDuplicates(recursive bool, delete bool) {
 			return nil
 		})
 		if err != nil {
-			log.Fatal().Err(err).Msg("failed to walk directory")
+			u.PrintFatal("failed to walk directory", err)
 		}
 	} else {
 		entries, err := os.ReadDir(currentDir)
 		if err != nil {
-			log.Fatal().Err(err).Msg("failed to read directory")
+			u.PrintFatal("failed to read directory", err)
 		}
 		for _, entry := range entries {
 			if !entry.IsDir() {
@@ -105,10 +104,10 @@ func FindDuplicates(recursive bool, delete bool) {
 				for i := 1; i < len(fileList); i++ {
 					if err := os.Remove(fileList[i]); err != nil {
 						relPath, _ := filepath.Rel(currentDir, fileList[i])
-						u.PrintError(fmt.Sprintf("Failed to delete %s: %v", relPath, err))
+						u.PrintError(fmt.Sprintf("Failed to delete %s", relPath), err)
 					} else {
 						relPath, _ := filepath.Rel(currentDir, fileList[i])
-						fmt.Printf("Deleted: %s\n", u.FSuccess(relPath))
+						u.PrintGeneric(fmt.Sprintf("Deleted: %s", u.FSuccess(relPath)))
 					}
 				}
 			}
@@ -116,8 +115,8 @@ func FindDuplicates(recursive bool, delete bool) {
 	}
 
 	if len(unhashedDuplicates) > 0 {
-		fmt.Println()
-		u.PrintWarning("Unhashed duplicates due to huge size:")
+		u.LineBreak()
+		u.PrintWarning("Unhashed duplicates due to huge size:", nil)
 		table := u.NewTable([]string{"Set ID", "Files"})
 		startID := len(hashedDuplicates) + 1
 		for i, fileList := range unhashedDuplicates {
@@ -140,10 +139,10 @@ func FindDuplicates(recursive bool, delete bool) {
 				for i := 1; i < len(fileList); i++ {
 					if err := os.Remove(fileList[i]); err != nil {
 						relPath, _ := filepath.Rel(currentDir, fileList[i])
-						u.PrintError(fmt.Sprintf("Failed to delete %s: %v", relPath, err))
+						u.PrintError(fmt.Sprintf("Failed to delete %s", relPath), err)
 					} else {
 						relPath, _ := filepath.Rel(currentDir, fileList[i])
-						fmt.Printf("Deleted: %s\n", u.FSuccess(relPath))
+						u.PrintGeneric(fmt.Sprintf("Deleted: %s", u.FSuccess(relPath)))
 					}
 				}
 			}

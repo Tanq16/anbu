@@ -79,8 +79,7 @@ func buildLocalTree(rootDir string, ignoreSet map[string]struct{}) (*FileTree, e
 		} else {
 			hash, err := computeLocalHash(path)
 			if err != nil {
-				u.PrintError(fmt.Sprintf("Failed to compute hash for %s", path))
-				log.Debug().Err(err).Msgf("Failed to compute hash for %s", path)
+				u.PrintError(fmt.Sprintf("Failed to compute hash for %s", path), err)
 				return nil
 			}
 			parts := strings.Split(relPath, string(filepath.Separator))
@@ -134,16 +133,14 @@ func buildRemoteTree(srv *drive.Service, folderID string, basePath string, ignor
 			if f.MimeType == googleFolderMimeType {
 				subTree, err := buildRemoteTree(srv, f.Id, itemPath, ignoreSet)
 				if err != nil {
-					u.PrintError(fmt.Sprintf("Failed to build tree for folder %s", itemPath))
-					log.Debug().Err(err).Msgf("Failed to build tree for folder %s", itemPath)
+					u.PrintError(fmt.Sprintf("Failed to build tree for folder %s", itemPath), err)
 					continue
 				}
 				tree.Dirs[f.Name] = subTree
 			} else {
 				hash := f.Md5Checksum
 				if hash == "" {
-					u.PrintWarning(fmt.Sprintf("No MD5 hash for file %s", itemPath))
-					log.Debug().Msgf("No MD5 hash for file %s", itemPath)
+					u.PrintWarning(fmt.Sprintf("No MD5 hash for file %s", itemPath), err)
 					continue
 				}
 				tree.Files[f.Name] = FileInfo{
@@ -206,8 +203,7 @@ func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, loc
 				defer func() { <-sem }()
 				fmt.Printf("Uploading %s\n", u.FDebug(localFile.Path))
 				if _, err := uploadDriveFileToFolder(srv, localPath, remoteFolderID); err != nil {
-					u.PrintError(fmt.Sprintf("Failed to upload %s", localFile.Path))
-					log.Debug().Err(err).Msgf("Failed to upload %s", localFile.Path)
+					u.PrintError(fmt.Sprintf("Failed to upload %s", localFile.Path), err)
 				}
 			}(localPath, localFile)
 		case localFile.Hash != remoteFile.Hash:
@@ -218,8 +214,7 @@ func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, loc
 				defer func() { <-sem }()
 				fmt.Printf("Updating %s\n", u.FDebug(localFile.Path))
 				if err := updateDriveFile(srv, remoteFile.ID, localPath); err != nil {
-					u.PrintError(fmt.Sprintf("Failed to update %s", localFile.Path))
-					log.Debug().Err(err).Msgf("Failed to update %s", localFile.Path)
+					u.PrintError(fmt.Sprintf("Failed to update %s", localFile.Path), err)
 				}
 			}(localPath, localFile, remoteFile)
 		}
@@ -233,8 +228,7 @@ func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, loc
 				defer func() { <-sem }()
 				fmt.Printf("%s %s\n", u.FError("Deleting"), u.FDebug(remoteFile.Path))
 				if err := deleteDriveFile(srv, remoteFile.ID); err != nil {
-					u.PrintError(fmt.Sprintf("Failed to delete %s", remoteFile.Path))
-					log.Debug().Err(err).Msgf("Failed to delete %s", remoteFile.Path)
+					u.PrintError(fmt.Sprintf("Failed to delete %s", remoteFile.Path), err)
 				}
 			}(remoteFile)
 		}
@@ -250,8 +244,7 @@ func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, loc
 			}
 			f, err := srv.Files.Create(folderMetadata).Fields("id").Do()
 			if err != nil {
-				u.PrintError(fmt.Sprintf("Failed to create folder %s", dirName))
-				log.Debug().Err(err).Msgf("Failed to create folder %s", dirName)
+				u.PrintError(fmt.Sprintf("Failed to create folder %s", dirName), err)
 				continue
 			}
 			subFolderID = f.Id
@@ -263,16 +256,14 @@ func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, loc
 			query := fmt.Sprintf("name = '%s' and '%s' in parents and mimeType = '%s' and trashed = false", dirName, remoteFolderID, googleFolderMimeType)
 			r, err := srv.Files.List().Q(query).Fields("files(id)").PageSize(1).Do()
 			if err != nil || len(r.Files) == 0 {
-				u.PrintError(fmt.Sprintf("Failed to find folder ID for %s", dirName))
-				log.Debug().Msgf("Failed to find folder ID for %s", dirName)
+				u.PrintError(fmt.Sprintf("Failed to find folder ID for %s", dirName), err)
 				continue
 			}
 			subFolderID = r.Files[0].Id
 		}
 		subLocalBase := filepath.Join(localBase, dirName)
 		if err := syncTree(srv, localSubTree, remoteSubTree, subLocalBase, subFolderID, sem, wg); err != nil {
-			u.PrintError(fmt.Sprintf("Failed to sync subtree %s", dirName))
-			log.Debug().Err(err).Msgf("Failed to sync subtree %s", dirName)
+			u.PrintError(fmt.Sprintf("Failed to sync subtree %s", dirName), err)
 		}
 	}
 	for dirName := range remoteTree.Dirs {
@@ -286,8 +277,7 @@ func syncTree(srv *drive.Service, localTree *FileTree, remoteTree *FileTree, loc
 				r, err := srv.Files.List().Q(query).Fields("files(id)").PageSize(1).Do()
 				if err == nil && len(r.Files) > 0 {
 					if err := deleteDriveFolderRecursive(srv, r.Files[0].Id); err != nil {
-						u.PrintError(fmt.Sprintf("Failed to delete folder %s", dirName))
-						log.Debug().Err(err).Msgf("Failed to delete folder %s", dirName)
+						u.PrintError(fmt.Sprintf("Failed to delete folder %s", dirName), err)
 					} else {
 						fmt.Printf("%s %s\n", u.FError("Deleting folder"), u.FDebug(dirName))
 					}

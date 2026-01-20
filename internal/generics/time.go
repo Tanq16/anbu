@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
 	u "github.com/tanq16/anbu/utils"
 )
@@ -53,7 +52,7 @@ func printTimeTablePurple(concern time.Time) {
 	}
 	ipAddr, err := anbuNetwork.GetPublicIP()
 	if err != nil {
-		log.Warn().Msg("could not get public IP address")
+		u.PrintWarning("could not get public IP address", err)
 	} else {
 		ipAddress := ipAddr.UnwindString("ip")
 		table.Rows = append(table.Rows, []string{"Public IP", ipAddress})
@@ -72,10 +71,10 @@ func printTimeDifferenceFromNow(targetTime time.Time) {
 		diff = now.Sub(targetTime)
 		direction = "ago"
 	}
-	fmt.Println()
+	u.LineBreak()
 	fmt.Printf("Target time: %s\n", u.FDebug(targetTime.Format("Mon Jan 2 15:04:05 MST 2006")))
 	fmt.Printf("Current time: %s\n", u.FDebug(now.Format("Mon Jan 2 15:04:05 MST 2006")))
-	fmt.Println()
+	u.LineBreak()
 	// Print direction-aware message
 	if direction == "until" {
 		fmt.Printf("Target time is %s from now\n", u.FInfo(timeFormatDuration(diff)))
@@ -150,7 +149,7 @@ func TimeParse(timeStr string, printType string) {
 		if err == nil {
 			parsedTime = time.Unix(checkEpock, 0)
 		} else {
-			u.PrintError("could not parse time string with any known format")
+			u.PrintError("could not parse time string with any known format", err)
 			return
 		}
 	}
@@ -178,13 +177,14 @@ func TimePurple() {
 
 func TimeISO() {
 	currentTime := time.Now().UTC()
-	fmt.Println(currentTime.Format(time.RFC3339))
+	u.PrintGeneric(currentTime.Format(time.RFC3339))
 }
 
 func TimeEpochDiff(epochs []int64) {
 	var epoch1, epoch2 int64
 	if len(epochs) == 0 {
-		log.Fatal().Msg("No epochs provided")
+		u.PrintError("No epochs provided", nil)
+		return
 	} else if len(epochs) == 1 {
 		epoch1, epoch2 = epochs[0], time.Now().Unix()
 	} else {
@@ -195,15 +195,15 @@ func TimeEpochDiff(epochs []int64) {
 	t2 := time.Unix(epoch2, 0)
 	diff := t2.Sub(t1)
 	// Show difference in multiple units
-	fmt.Println("Time difference:")
-	fmt.Printf("  %s  %d\n", u.FSuccess("Seconds:"), int64(diff.Seconds()))
-	fmt.Printf("  %s  %.1f\n", u.FSuccess("Minutes:"), diff.Minutes())
-	fmt.Printf("  %s  %.1f\n", u.FSuccess("Hours:"), diff.Hours())
-	fmt.Printf("  %s  %.1f\n", u.FSuccess("Days:"), diff.Hours()/24)
+	u.PrintGeneric("Time difference:")
+	u.PrintGeneric(fmt.Sprintf("  %s  %d", u.FSuccess("Seconds:"), int64(diff.Seconds())))
+	u.PrintGeneric(fmt.Sprintf("  %s  %.1f", u.FSuccess("Minutes:"), diff.Minutes()))
+	u.PrintGeneric(fmt.Sprintf("  %s  %.1f", u.FSuccess("Hours:"), diff.Hours()))
+	u.PrintGeneric(fmt.Sprintf("  %s  %.1f", u.FSuccess("Days:"), diff.Hours()/24))
 	// Add human readable description
 	if diff > 0 {
-		fmt.Printf("\n%s is %s after %s\n", u.FInfo("Time 2"), u.FSuccess(timeFormatDuration(diff)), u.FInfo("Time 1"))
+		u.PrintGeneric(fmt.Sprintf("\n%s is %s after %s", u.FInfo("Time 2"), u.FSuccess(timeFormatDuration(diff)), u.FInfo("Time 1")))
 	} else {
-		fmt.Printf("\n%s is %s before %s\n", u.FInfo("Time 2"), u.FSuccess(timeFormatDuration(-diff)), u.FInfo("Time 1"))
+		u.PrintGeneric(fmt.Sprintf("\n%s is %s before %s", u.FInfo("Time 2"), u.FSuccess(timeFormatDuration(-diff)), u.FInfo("Time 1")))
 	}
 }

@@ -1,13 +1,10 @@
 package azure
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"strconv"
-	"strings"
 
 	u "github.com/tanq16/anbu/utils"
 )
@@ -39,14 +36,9 @@ func SwitchSubscription() error {
 		})
 	}
 	table.PrintTable(false)
-	fmt.Println()
-	fmt.Print(u.FInfo("Select subscription number to activate: "))
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("failed to read input: %w", err)
-	}
-	subNumber, err := strconv.Atoi(strings.TrimSpace(input))
+	u.LineBreak()
+	input := u.InputWithClear("Select subscription number to activate: ")
+	subNumber, err := strconv.Atoi(input)
 	if err != nil {
 		return fmt.Errorf("invalid subscription number: %w", err)
 	}
@@ -58,6 +50,6 @@ func SwitchSubscription() error {
 	if err := setCmd.Run(); err != nil {
 		return fmt.Errorf("failed to set subscription: %w", err)
 	}
-	fmt.Println(u.FSuccess("Subscription switched successfully"), u.FInfo(selectedSub.Name), u.FDebug(selectedSub.ID))
+	u.PrintSuccess(fmt.Sprintf("Subscription switched successfully: %s (%s)", u.FInfo(selectedSub.Name), u.FDebug(selectedSub.ID)))
 	return nil
 }

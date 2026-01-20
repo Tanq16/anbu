@@ -2,21 +2,20 @@ package anbuGenerics
 
 import (
 	cryptoRand "crypto/rand"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
 
-	"github.com/rs/zerolog/log"
+	u "github.com/tanq16/anbu/utils"
 )
 
 func GeneratePassword(lengthS string, simple bool) {
 	length, err := strconv.Atoi(lengthS)
 	if err != nil {
-		log.Fatal().Msg("invalid length")
+		u.PrintFatal("invalid length", err)
 	}
 	if length <= 0 {
-		log.Warn().Msg("length must be greater than 0; using 15")
+		u.PrintWarning("length must be greater than 0; using 15", nil)
 		length = 15
 	}
 	alphabet := "abcdefghijklmnopqrstuvwxyz"
@@ -31,23 +30,23 @@ func GeneratePassword(lengthS string, simple bool) {
 			result.WriteByte(alphabet[b%byte(len(alphabet))])
 		}
 	}
-	fmt.Println(result.String()[:length])
+	u.PrintGeneric(result.String()[:length])
 }
 
 func GeneratePassPhrase(lengthS string, separator string, simple bool) {
 	length, err := strconv.Atoi(lengthS)
 	if err != nil {
-		log.Fatal().Msg("invalid length")
+		u.PrintFatal("invalid length", err)
 	}
 	if length < 2 || length > 50 {
-		log.Warn().Msg("length must be between 2 to 50; using 3")
+		u.PrintWarning("length must be between 2 to 50; using 3", nil)
 		length = 3
 	}
 	if separator == "" {
 		separator = "-"
 	}
 	if len(separator) > 1 {
-		log.Warn().Msg("separator must be a single character; using -")
+		u.PrintWarning("separator must be a single character; using -", nil)
 	}
 	numberList := "0123456789"
 	var result strings.Builder
@@ -67,7 +66,7 @@ func GeneratePassPhrase(lengthS string, separator string, simple bool) {
 			result.WriteString(separator)
 		}
 	}
-	fmt.Println(result.String())
+	u.PrintGeneric(result.String())
 }
 
 var passphraseWords = []string{

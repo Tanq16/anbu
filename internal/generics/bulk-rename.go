@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 
 	u "github.com/tanq16/anbu/utils"
 )
@@ -16,7 +15,7 @@ import (
 func BulkRename(pattern string, replacement string, renameDirectories bool, dryRun bool) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Invalid regex pattern")
+		u.PrintFatal("Invalid regex pattern", err)
 	}
 	currentDir, _ := os.Getwd()
 	entries, _ := os.ReadDir(currentDir)
@@ -54,22 +53,22 @@ func BulkRename(pattern string, replacement string, renameDirectories bool, dryR
 			continue
 		}
 		if dryRun {
-			fmt.Printf("Dry Run: Renaming %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName))
+			u.PrintGeneric(fmt.Sprintf("Dry Run: Renaming %s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName)))
 		} else {
 			err := os.Rename(filepath.Join(currentDir, oldName), filepath.Join(currentDir, newName))
 			if err != nil {
-				u.PrintError(fmt.Sprintf("Failed to rename %s to %s: %v", oldName, newName, err))
+				u.PrintError(fmt.Sprintf("Failed to rename %s to %s", oldName, newName), err)
 				continue
 			}
-			fmt.Printf("Renamed: %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName))
+			u.PrintGeneric(fmt.Sprintf("Renamed: %s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName)))
 		}
 		renameCount++
 	}
-	fmt.Println()
+	u.LineBreak()
 	if renameCount == 0 {
-		log.Warn().Msg("no items were renamed")
+		u.PrintWarning("no items were renamed", nil)
 	} else {
-		fmt.Printf("%s %s\n", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories])))
+		u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories]))))
 	}
 }
 
@@ -82,7 +81,7 @@ func generateUUIDString() string {
 // same logic as GenerateRUIDString but returns instead of printing
 func generateRUIDString(length int) string {
 	if length <= 0 || length > 30 {
-		log.Warn().Msg("length must be between 1 and 30; using 18")
+		u.PrintWarning("length must be between 1 and 30; using 18", nil)
 		length = 18
 	}
 	uuid, _ := uuid.NewRandom()

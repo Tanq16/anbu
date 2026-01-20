@@ -1,9 +1,9 @@
 package genericsCmd
 
 import (
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var markdownFlags struct {
@@ -17,7 +17,7 @@ var MarkdownCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := anbuGenerics.StartMarkdownServer(markdownFlags.listenAddress)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to start markdown viewer")
+			u.PrintFatal("Failed to start markdown viewer", err)
 		}
 	},
 }

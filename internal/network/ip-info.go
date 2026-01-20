@@ -26,8 +26,7 @@ type NetworkInterface struct {
 func GetLocalIPInfo(includeIPv6 bool) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		u.PrintError("failed to get network interfaces")
-		log.Debug().Err(err).Msg("failed to get network interfaces")
+		u.PrintError("failed to get network interfaces", err)
 		return
 	}
 	ipv4Table := u.NewTable([]string{"Interface", "IP Address", "Subnet Mask", "MAC Address", "Status"})
@@ -121,7 +120,7 @@ func GetLocalIPInfo(includeIPv6 bool) {
 		pubIPTable.Rows = append(pubIPTable.Rows, []string{"geography", fmt.Sprintf("%s, %s, %s, %s (TZ: %s)", geography.Postal, geography.City, geography.Region, geography.Country, geography.Timezone)})
 		pubIPTable.PrintTable(false)
 	} else {
-		u.PrintWarning("Could not retrieve public IP")
+		u.PrintWarning("Could not retrieve public IP", err)
 	}
 }
 
