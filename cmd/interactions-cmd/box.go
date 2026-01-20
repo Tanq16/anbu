@@ -95,7 +95,7 @@ var boxUploadCmd = &cobra.Command{
 		if err != nil {
 			u.PrintFatal("Failed to get Box client", err)
 		}
-		fmt.Printf("Starting upload of %s to %s...\n", u.FDebug(localPath), u.FDebug(boxFolderPath))
+		u.PrintGeneric(fmt.Sprintf("Starting upload of %s to %s", u.FDebug(localPath), u.FDebug(boxFolderPath)))
 		if err := box.UploadBoxItem(client, localPath, boxFolderPath); err != nil {
 			u.PrintFatal("Failed to upload", err)
 		}

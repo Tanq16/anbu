@@ -79,7 +79,7 @@ func downloadFile(client *http.Client, content *github.RepositoryContent, localP
 		if err := os.WriteFile(localPath, decoded, 0644); err != nil {
 			return fmt.Errorf("failed to write file: %v", err)
 		}
-		fmt.Printf("Downloaded %s %s %s\n", u.FDebug(*content.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(localPath))
+		u.PrintGeneric(fmt.Sprintf("Downloaded %s %s %s", u.FDebug(*content.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(localPath)))
 		return nil
 	}
 
@@ -104,7 +104,7 @@ func downloadFile(client *http.Client, content *github.RepositoryContent, localP
 	if _, err := io.Copy(out, resp.Body); err != nil {
 		return fmt.Errorf("failed to write file: %v", err)
 	}
-	fmt.Printf("Downloaded %s %s %s\n", u.FDebug(*content.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(localPath))
+	u.PrintGeneric(fmt.Sprintf("Downloaded %s %s %s", u.FDebug(*content.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(localPath)))
 	return nil
 }
 

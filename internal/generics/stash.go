@@ -164,7 +164,7 @@ func StashFS(path string) error {
 	if err := saveIndex(index); err != nil {
 		return err
 	}
-	fmt.Printf("%s %s %s\n", u.FDebug(absPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Stashed (ID: %d)", entry.ID)))
+	u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(absPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Stashed (ID: %d)", entry.ID))))
 	return nil
 }
 
@@ -202,7 +202,7 @@ func StashText(name string) error {
 	if err := saveIndex(index); err != nil {
 		return err
 	}
-	fmt.Printf("%s %s %s\n", u.FDebug(name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Stashed (ID: %d)", entry.ID)))
+	u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Stashed (ID: %d)", entry.ID))))
 	return nil
 }
 
@@ -290,7 +290,7 @@ func StashApply(id int) error {
 		if err := unzipDir(blobPath, cwd); err != nil {
 			return fmt.Errorf("failed to unzip: %w", err)
 		}
-		fmt.Printf("%s %s %s\n", u.FDebug(cwd), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Applied stash (ID: %d)", id)))
+		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(cwd), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Applied stash (ID: %d)", id))))
 	}
 	return nil
 }
@@ -324,7 +324,7 @@ func StashPop(id int) error {
 	if err := saveIndex(index); err != nil {
 		return err
 	}
-	fmt.Printf("%s %s %s\n", u.FDebug(fmt.Sprintf("%d", id)), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Popped stash (ID: %d)", id)))
+	u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(fmt.Sprintf("%d", id)), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Popped stash (ID: %d)", id))))
 	return nil
 }
 
@@ -354,7 +354,7 @@ func StashClear(id int) error {
 	if err := saveIndex(index); err != nil {
 		return err
 	}
-	fmt.Printf("%s %s %s\n", u.FDebug(fmt.Sprintf("%d", id)), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Cleared stash (ID: %d)", id)))
+	u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(fmt.Sprintf("%d", id)), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Cleared stash (ID: %d)", id))))
 	return nil
 }
 

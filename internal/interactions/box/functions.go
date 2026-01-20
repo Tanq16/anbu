@@ -355,9 +355,9 @@ func uploadBoxFile(client *http.Client, localPath string, boxFolderPath string) 
 		return fmt.Errorf("failed to parse upload response: %v", err)
 	}
 	if len(result.Entries) > 0 {
-		fmt.Printf("Successfully uploaded %s %s %s (ID: %s)\n", u.FDebug(localPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(result.Entries[0].Name), u.FDebug(result.Entries[0].ID))
+		u.PrintGeneric(fmt.Sprintf("Successfully uploaded %s %s %s (ID: %s)", u.FDebug(localPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(result.Entries[0].Name), u.FDebug(result.Entries[0].ID)))
 	} else {
-		fmt.Printf("Successfully uploaded %s\n", u.FSuccess(fileName))
+		u.PrintGeneric(fmt.Sprintf("Successfully uploaded %s", u.FSuccess(fileName)))
 	}
 	return nil
 }
@@ -428,7 +428,7 @@ func downloadBoxFile(client *http.Client, fileID string, boxFilePath string, loc
 	if _, err := io.Copy(out, resp.Body); err != nil {
 		return "", fmt.Errorf("failed to write to local file: %v", err)
 	}
-	fmt.Printf("Downloaded %s %s %s\n", u.FDebug(boxFilePath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(localPath))
+	u.PrintGeneric(fmt.Sprintf("Downloaded %s %s %s", u.FDebug(boxFilePath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(localPath)))
 	return localPath, nil
 }
 
@@ -511,7 +511,7 @@ func UploadBoxFolder(client *http.Client, localPath string, boxFolderPath string
 				u.PrintError(fmt.Sprintf("Failed to upload file %s (status %d), skipping", currentLocalPath, resp.StatusCode), nil)
 				return nil
 			}
-			fmt.Printf("Uploaded %s %s %s\n", u.FDebug(currentLocalPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(d.Name()))
+			u.PrintGeneric(fmt.Sprintf("Uploaded %s %s %s", u.FDebug(currentLocalPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(d.Name())))
 		}
 		return nil
 	})
@@ -573,7 +573,7 @@ func findOrCreateBoxFolder(client *http.Client, folderName string, parentId stri
 	if err := json.NewDecoder(resp.Body).Decode(&folder); err != nil {
 		return "", fmt.Errorf("failed to parse folder response: %v", err)
 	}
-	fmt.Printf("Created Box folder %s\n", u.FSuccess(folderName))
+	u.PrintGeneric(fmt.Sprintf("Created Box folder %s", u.FSuccess(folderName)))
 	return folder.ID, nil
 }
 
@@ -673,7 +673,7 @@ func downloadBoxFolderContents(client *http.Client, folderID string, localDestPa
 			}
 			resp.Body.Close()
 			out.Close()
-			fmt.Printf("Downloaded %s %s %s\n", u.FDebug(item.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(currentLocalPath))
+			u.PrintGeneric(fmt.Sprintf("Downloaded %s %s %s", u.FDebug(item.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(currentLocalPath)))
 		}
 	}
 	return nil

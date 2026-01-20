@@ -84,7 +84,7 @@ func ListIssueComments(client *http.Client, owner, repo string, issueNum int) er
 		body = *issue.Body
 	}
 	if body != "" && body != "--" {
-		fmt.Printf("%s: %s\n", author, body)
+		u.PrintGeneric(fmt.Sprintf("%s: %s", author, body))
 	}
 	comments, _, err := ghClient.Issues.ListComments(ctx, owner, repo, issueNum, nil)
 	if err != nil {
@@ -93,11 +93,11 @@ func ListIssueComments(client *http.Client, owner, repo string, issueNum int) er
 
 	if len(comments) > 0 {
 		if body != "" && body != "--" {
-			fmt.Println(strings.Repeat(u.StyleSymbols["hline"], 80))
+			u.PrintGeneric(strings.Repeat(u.StyleSymbols["hline"], 80))
 		}
 		for i, comment := range comments {
 			if i > 0 {
-				fmt.Println(strings.Repeat(u.StyleSymbols["hline"], 80))
+				u.PrintGeneric(strings.Repeat(u.StyleSymbols["hline"], 80))
 			}
 			commentAuthor := "--"
 			commentBody := "--"
@@ -107,7 +107,7 @@ func ListIssueComments(client *http.Client, owner, repo string, issueNum int) er
 			if comment.Body != nil {
 				commentBody = *comment.Body
 			}
-			fmt.Printf("%s: %s\n", commentAuthor, commentBody)
+			u.PrintGeneric(fmt.Sprintf("%s: %s", commentAuthor, commentBody))
 		}
 	}
 	return nil
@@ -181,7 +181,7 @@ func ListPRComments(client *http.Client, owner, repo string, prNum int) error {
 		body = *pr.Body
 	}
 	if body != "" && body != "--" {
-		fmt.Printf("%s: %s\n", author, body)
+		u.PrintGeneric(fmt.Sprintf("%s: %s", author, body))
 	}
 	comments, _, err := ghClient.Issues.ListComments(ctx, owner, repo, prNum, nil)
 	if err != nil {
@@ -190,11 +190,11 @@ func ListPRComments(client *http.Client, owner, repo string, prNum int) error {
 
 	if len(comments) > 0 {
 		if body != "" && body != "--" {
-			fmt.Println(strings.Repeat(u.StyleSymbols["hline"], 80))
+			u.PrintGeneric(strings.Repeat(u.StyleSymbols["hline"], 80))
 		}
 		for i, comment := range comments {
 			if i > 0 {
-				fmt.Println(strings.Repeat(u.StyleSymbols["hline"], 80))
+				u.PrintGeneric(strings.Repeat(u.StyleSymbols["hline"], 80))
 			}
 			commentAuthor := "--"
 			commentBody := "--"
@@ -204,7 +204,7 @@ func ListPRComments(client *http.Client, owner, repo string, prNum int) error {
 			if comment.Body != nil {
 				commentBody = *comment.Body
 			}
-			fmt.Printf("%s: %s\n", commentAuthor, commentBody)
+			u.PrintGeneric(fmt.Sprintf("%s: %s", commentAuthor, commentBody))
 		}
 	}
 	return nil
@@ -367,24 +367,24 @@ func GetActionJobInfo(client *http.Client, owner, repo string, runID, jobID int)
 		return fmt.Errorf("job ID %d out of range (1-%d)", jobID, len(jobs.Jobs))
 	}
 	job := jobs.Jobs[jobID-1]
-	fmt.Printf("Job Name: %s\n", getString(job.Name))
-	fmt.Printf("Status: %s\n", getString(job.Status))
-	fmt.Printf("Conclusion: %s\n", getString(job.Conclusion))
+	u.PrintGeneric(fmt.Sprintf("Job Name: %s", getString(job.Name)))
+	u.PrintGeneric(fmt.Sprintf("Status: %s", getString(job.Status)))
+	u.PrintGeneric(fmt.Sprintf("Conclusion: %s", getString(job.Conclusion)))
 	if job.StartedAt != nil {
-		fmt.Printf("Started: %s\n", job.StartedAt.Time.Format("2006-01-02 15:04:05"))
+		u.PrintGeneric(fmt.Sprintf("Started: %s", job.StartedAt.Time.Format("2006-01-02 15:04:05")))
 	}
 	if job.CompletedAt != nil {
-		fmt.Printf("Completed: %s\n", job.CompletedAt.Time.Format("2006-01-02 15:04:05"))
+		u.PrintGeneric(fmt.Sprintf("Completed: %s", job.CompletedAt.Time.Format("2006-01-02 15:04:05")))
 	}
 	if job.RunnerName != nil {
-		fmt.Printf("Runner: %s\n", *job.RunnerName)
+		u.PrintGeneric(fmt.Sprintf("Runner: %s", *job.RunnerName))
 	}
 	if job.Steps != nil {
-		fmt.Printf("\nSteps:\n")
+		u.PrintGeneric("\nSteps:")
 		for i, step := range job.Steps {
-			fmt.Printf("  %d. %s - %s", i+1, getString(step.Name), getString(step.Status))
+			u.PrintGeneric(fmt.Sprintf("  %d. %s - %s", i+1, getString(step.Name), getString(step.Status)))
 			if step.Conclusion != nil {
-				fmt.Printf(" (%s)", *step.Conclusion)
+				u.PrintGeneric(fmt.Sprintf(" (%s)", *step.Conclusion))
 			}
 			u.LineBreak()
 		}

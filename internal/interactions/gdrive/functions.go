@@ -78,7 +78,7 @@ func findOrCreateFolder(srv *drive.Service, folderName string, parentId string) 
 	if err != nil {
 		return "", fmt.Errorf("failed to create folder '%s': %v", folderName, err)
 	}
-	fmt.Printf("Created Drive folder %s\n", u.FSuccess(folderName))
+	u.PrintGeneric(fmt.Sprintf("Created Drive folder %s", u.FSuccess(folderName)))
 	return f.Id, nil
 }
 
@@ -160,7 +160,7 @@ func UploadDriveItem(srv *drive.Service, localPath string, driveFolder string) e
 	}
 	driveFile, err := uploadDriveFile(srv, localPath, driveFolder)
 	if err == nil {
-		fmt.Printf("Successfully uploaded %s %s %s (ID: %s)\n", u.FDebug(localPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(driveFile.Name), u.FDebug(driveFile.Id))
+		u.PrintGeneric(fmt.Sprintf("Successfully uploaded %s %s %s (ID: %s)", u.FDebug(localPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(driveFile.Name), u.FDebug(driveFile.Id)))
 	}
 	return err
 }
@@ -259,7 +259,7 @@ func downloadFileById(srv *drive.Service, file *drive.File, localPath string) er
 	if err != nil {
 		return fmt.Errorf("failed to write to local file %s: %v", localPath, err)
 	}
-	fmt.Printf("Downloaded %s %s %s\n", u.FDebug(file.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(localPath))
+	u.PrintGeneric(fmt.Sprintf("Downloaded %s %s %s", u.FDebug(file.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(localPath)))
 	return nil
 }
 
@@ -321,7 +321,7 @@ func UploadFolder(srv *drive.Service, localPath string, driveFolder string) erro
 				u.PrintError(fmt.Sprintf("Failed to upload file %s, skipping", currentLocalPath), err)
 				return nil
 			}
-			fmt.Printf("Uploaded %s %s %s\n", u.FDebug(currentLocalPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(d.Name()))
+			u.PrintGeneric(fmt.Sprintf("Uploaded %s %s %s", u.FDebug(currentLocalPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(d.Name())))
 		}
 		return nil
 	})

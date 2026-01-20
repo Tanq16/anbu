@@ -57,11 +57,11 @@ func (c *Client) Run() error {
 	toRequest, toDelete := c.compareManifests(serverManifest, localManifest)
 	if c.cfg.DryRun {
 		for _, path := range toRequest {
-			fmt.Printf("Dry Run: %s\n", u.FDebug(path))
+			u.PrintGeneric(fmt.Sprintf("Dry Run: %s", u.FDebug(path)))
 		}
 		if c.cfg.DeleteExtra {
 			for _, path := range toDelete {
-				fmt.Printf("Dry Run: %s\n", u.FDebug(path))
+				u.PrintGeneric(fmt.Sprintf("Dry Run: %s", u.FDebug(path)))
 			}
 		}
 		u.LineBreak()
@@ -72,8 +72,7 @@ func (c *Client) Run() error {
 		if totalCount == 0 {
 			u.PrintWarning("no files would be synced", nil)
 		} else {
-			fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
-				u.FSuccess(fmt.Sprintf("%d file(s) would be synced", totalCount)))
+			u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d file(s) would be synced", totalCount))))
 		}
 		return nil
 	}
@@ -96,8 +95,7 @@ func (c *Client) Run() error {
 	if totalCount == 0 {
 		u.PrintWarning("no files were synced", nil)
 	} else {
-		fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
-			u.FSuccess(fmt.Sprintf("%d file(s) synced", totalCount)))
+		u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d file(s) synced", totalCount))))
 	}
 	return nil
 }
@@ -147,7 +145,7 @@ func (c *Client) fetchFiles(paths []string) (int, error) {
 		if err := os.WriteFile(fullPath, file.Content, 0644); err != nil {
 			return count, fmt.Errorf("failed to write file %s: %w", file.Path, err)
 		}
-		fmt.Printf("Synced: %s\n", u.FSuccess(file.Path))
+		u.PrintGeneric(fmt.Sprintf("Synced: %s", u.FSuccess(file.Path)))
 		count++
 	}
 	return count, nil
@@ -174,7 +172,7 @@ func (c *Client) deleteFiles(paths []string) (int, error) {
 		if err := os.RemoveAll(fullPath); err != nil {
 			u.PrintError(fmt.Sprintf("Failed to delete %s", path), err)
 		} else {
-			fmt.Printf("Deleted: %s\n", u.FSuccess(path))
+			u.PrintGeneric(fmt.Sprintf("Deleted: %s", u.FSuccess(path)))
 			count++
 		}
 	}

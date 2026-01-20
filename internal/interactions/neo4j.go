@@ -62,7 +62,7 @@ func ExecuteNeo4jQueries(ctx context.Context, uri, user, password, database stri
 	defer session.Close(ctx)
 	var allResults []QueryResult
 	for _, query := range queries {
-		fmt.Println(u.FDebug("executing query:"), u.FStream(query))
+		u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("executing query:"), u.FStream(query)))
 		log.Debug().Msgf("executing query: %s", query)
 		records, err := executeQuery(ctx, session, query)
 		if err != nil {

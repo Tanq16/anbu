@@ -72,14 +72,14 @@ func printTimeDifferenceFromNow(targetTime time.Time) {
 		direction = "ago"
 	}
 	u.LineBreak()
-	fmt.Printf("Target time: %s\n", u.FDebug(targetTime.Format("Mon Jan 2 15:04:05 MST 2006")))
-	fmt.Printf("Current time: %s\n", u.FDebug(now.Format("Mon Jan 2 15:04:05 MST 2006")))
+	u.PrintGeneric(fmt.Sprintf("Target time: %s", u.FDebug(targetTime.Format("Mon Jan 2 15:04:05 MST 2006"))))
+	u.PrintGeneric(fmt.Sprintf("Current time: %s", u.FDebug(now.Format("Mon Jan 2 15:04:05 MST 2006"))))
 	u.LineBreak()
 	// Print direction-aware message
 	if direction == "until" {
-		fmt.Printf("Target time is %s from now\n", u.FInfo(timeFormatDuration(diff)))
+		u.PrintGeneric(fmt.Sprintf("Target time is %s from now", u.FInfo(timeFormatDuration(diff))))
 	} else {
-		fmt.Printf("Target time was %s ago\n", u.FInfo(timeFormatDuration(diff)))
+		u.PrintGeneric(fmt.Sprintf("Target time was %s ago", u.FInfo(timeFormatDuration(diff))))
 	}
 }
 

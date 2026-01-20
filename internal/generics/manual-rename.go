@@ -43,14 +43,14 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 	renameCount := 0
 	for _, entry := range items {
 		oldName := entry.Name()
-		fmt.Printf("%s %s ", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]))
+		u.PrintGeneric(fmt.Sprintf("%s %s ", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"])))
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			u.PrintError("failed to read input", err)
 			if !u.GlobalDebugFlag {
 				u.ClearTerminal(1)
 			}
-			fmt.Printf("%s %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FDebug(oldName), u.FWarning("(skipped)"))
+			u.PrintGeneric(fmt.Sprintf("%s %s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FDebug(oldName), u.FWarning("(skipped)")))
 			continue
 		}
 		newName := strings.TrimSpace(input)
@@ -58,7 +58,7 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 			fmt.Print("\033[A\r\033[K")
 		}
 		if newName == "" || newName == oldName {
-			fmt.Printf("%s %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FDebug(oldName), u.FWarning("(skipped)"))
+			u.PrintGeneric(fmt.Sprintf("%s %s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FDebug(oldName), u.FWarning("(skipped)")))
 			continue
 		}
 		if !includeExtension && !entry.IsDir() {
@@ -68,7 +68,7 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 			}
 		}
 		if oldName == newName {
-			fmt.Printf("%s %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FDebug(oldName), u.FWarning("(skipped)"))
+			u.PrintGeneric(fmt.Sprintf("%s %s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FDebug(oldName), u.FWarning("(skipped)")))
 			continue
 		}
 		oldPath := filepath.Join(currentDir, oldName)
@@ -77,14 +77,14 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 
 		err = os.Rename(oldPath, newPath)
 		if err != nil {
-			log.Error().Err(err).Str("old", oldName).Str("new", newName).Msg("failed to rename")
-			fmt.Printf("%s %s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FError(newName), u.FWarning("(failed)"))
+			u.PrintError("failed to rename", err)
+			u.PrintGeneric(fmt.Sprintf("%s %s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FError(newName), u.FWarning("(failed)")))
 			continue
 		}
-		fmt.Printf("%s %s %s\n", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName))
+		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName)))
 		renameCount++
 	}
-	fmt.Println()
+	u.LineBreak()
 	if renameCount == 0 {
 		u.PrintWarning("no items were renamed", nil)
 	}
