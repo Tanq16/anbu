@@ -83,19 +83,36 @@ textarea.drag-over { border-color: #4a9eff; background-color: #252525; }
 input[type="file"] { margin: 15px 0; color: #fff; }
 button { background-color: #4a9eff; color: #fff; padding: 10px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
 button:hover { background-color: #3a8eef; }
+button:disabled { background-color: #555; cursor: not-allowed; }
+.progress-container { display: none; margin: 15px 0; }
+.progress-bar { width: 100%; height: 20px; background-color: #1a1a1a; border-radius: 10px; overflow: hidden; }
+.progress-fill { height: 100%; background-color: #4a9eff; width: 0%; transition: width 0.1s; }
+.progress-text { margin-top: 5px; font-size: 14px; color: #aaa; }
 </style>
 </head>
 <body>
 <div class="container">
 <h2>Upload</h2>
-<form method="POST" enctype="multipart/form-data">
+<form method="POST" enctype="multipart/form-data" id="uploadForm">
 <textarea name="text" id="textarea" placeholder="Paste or drag files here..."></textarea>
-<input type="file" name="files" multiple>
-<button type="submit">Upload</button>
+<input type="file" name="files" multiple id="fileInput">
+<button type="submit" id="submitBtn">Upload</button>
+<div class="progress-container" id="progressContainer">
+<div class="progress-bar">
+<div class="progress-fill" id="progressFill"></div>
+</div>
+<div class="progress-text" id="progressText">0%</div>
+</div>
 </form>
 </div>
 <script>
 var textarea = document.getElementById('textarea');
+var form = document.getElementById('uploadForm');
+var submitBtn = document.getElementById('submitBtn');
+var progressContainer = document.getElementById('progressContainer');
+var progressFill = document.getElementById('progressFill');
+var progressText = document.getElementById('progressText');
+
 textarea.addEventListener('dragover', function(e) { e.preventDefault(); textarea.classList.add('drag-over'); });
 textarea.addEventListener('dragleave', function(e) { e.preventDefault(); textarea.classList.remove('drag-over'); });
 textarea.addEventListener('drop', function(e) {
@@ -106,6 +123,37 @@ textarea.addEventListener('drop', function(e) {
     var fileInput = document.querySelector('input[type="file"]');
     fileInput.files = files;
   }
+});
+
+form.addEventListener('submit', function(e) {
+  e.preventDefault();
+  var formData = new FormData(form);
+  var xhr = new XMLHttpRequest();
+  progressContainer.style.display = 'block';
+  submitBtn.disabled = true;
+  progressFill.style.width = '0%';
+  progressText.textContent = '0%';
+  xhr.upload.addEventListener('progress', function(e) {
+    if (e.lengthComputable) {
+      var percent = (e.loaded / e.total) * 100;
+      progressFill.style.width = percent + '%';
+      progressText.textContent = Math.round(percent) + '%';
+    }
+  });
+  xhr.addEventListener('load', function() {
+    if (xhr.status === 200) {
+      document.body.innerHTML = xhr.responseText;
+    } else {
+      progressText.textContent = 'Upload failed';
+      submitBtn.disabled = false;
+    }
+  });
+  xhr.addEventListener('error', function() {
+    progressText.textContent = 'Upload failed';
+    submitBtn.disabled = false;
+  });
+  xhr.open('POST', '/');
+  xhr.send(formData);
 });
 </script>
 </body>
