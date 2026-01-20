@@ -17,7 +17,9 @@ require (
 	github.com/spf13/cobra v1.9.1
 	golang.org/x/crypto v0.43.0
 	golang.org/x/oauth2 v0.32.0
+	golang.org/x/term v0.36.0
 	google.golang.org/api v0.254.0
+	gopkg.in/ini.v1 v1.67.1
 )
 
 require (

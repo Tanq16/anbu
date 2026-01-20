@@ -66,13 +66,14 @@ func (c *Client) Run() error {
 				fmt.Printf("Dry Run: %s\n", u.FDebug(path))
 			}
 		}
-		fmt.Println()
+		u.LineBreak()
 		totalCount := len(toRequest)
 		if c.cfg.DeleteExtra {
 			totalCount += len(toDelete)
 		}
 		if totalCount == 0 {
-			log.Warn().Msg("no files would be synced")
+			u.PrintWarning("no files would be synced")
+			log.Debug().Msg("no files would be synced")
 		} else {
 			fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
 				u.FSuccess(fmt.Sprintf("%d file(s) would be synced", totalCount)))
@@ -93,10 +94,11 @@ func (c *Client) Run() error {
 			return fmt.Errorf("failed to delete files: %w", err)
 		}
 	}
-	fmt.Println()
+	u.LineBreak()
 	totalCount := syncedCount + deletedCount
 	if totalCount == 0 {
-		log.Warn().Msg("no files were synced")
+		u.PrintWarning("no files were synced")
+		log.Debug().Msg("no files were synced")
 	} else {
 		fmt.Printf("%s %s\n", u.FDebug("Operation completed:"),
 			u.FSuccess(fmt.Sprintf("%d file(s) synced", totalCount)))
@@ -174,7 +176,8 @@ func (c *Client) deleteFiles(paths []string) (int, error) {
 	for _, path := range paths {
 		fullPath := filepath.Join(c.cfg.SyncDir, path)
 		if err := os.RemoveAll(fullPath); err != nil {
-			u.PrintError(fmt.Sprintf("Failed to delete %s: %v", path, err))
+			u.PrintError(fmt.Sprintf("Failed to delete %s", path))
+			log.Debug().Err(err).Msgf("Failed to delete %s", path)
 		} else {
 			fmt.Printf("Deleted: %s\n", u.FSuccess(path))
 			count++

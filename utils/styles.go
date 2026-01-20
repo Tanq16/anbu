@@ -6,6 +6,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var GlobalDebugFlag bool
+
 var (
 	// Core styles
 	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("37"))  // dark green
@@ -33,38 +35,109 @@ var StyleSymbols = map[string]string{
 }
 
 func PrintSuccess(text string) {
-	fmt.Println(successStyle.Render(text))
+	if !GlobalDebugFlag {
+		fmt.Println(successStyle.Render(text))
+	} else {
+		fmt.Println(text)
+	}
 }
 func PrintError(text string) {
-	fmt.Println(errorStyle.Render(text))
+	if !GlobalDebugFlag {
+		fmt.Println(errorStyle.Render(text))
+	} else {
+		fmt.Println(text)
+	}
 }
 func PrintWarning(text string) {
-	fmt.Println(warningStyle.Render(text))
+	if !GlobalDebugFlag {
+		fmt.Println(warningStyle.Render(text))
+	} else {
+		fmt.Println(text)
+	}
 }
 func PrintInfo(text string) {
-	fmt.Println(infoStyle.Render(text))
+	if !GlobalDebugFlag {
+		fmt.Println(infoStyle.Render(text))
+	} else {
+		fmt.Println(text)
+	}
 }
 func PrintDebug(text string) {
-	fmt.Println(debugStyle.Render(text))
+	if !GlobalDebugFlag {
+		fmt.Println(debugStyle.Render(text))
+	} else {
+		fmt.Println(text)
+	}
 }
 func PrintStream(text string) {
-	fmt.Println(streamStyle.Render(text))
+	if !GlobalDebugFlag {
+		fmt.Println(streamStyle.Render(text))
+	} else {
+		fmt.Println(text)
+	}
+}
+func PrintGeneric(text string) {
+	if !GlobalDebugFlag {
+		fmt.Println(text)
+	} else {
+		fmt.Println(text)
+	}
 }
 func FSuccess(text string) string {
-	return successStyle.Render(text)
+	if !GlobalDebugFlag {
+		return successStyle.Render(text)
+	} else {
+		return text
+	}
 }
 func FError(text string) string {
-	return errorStyle.Render(text)
+	if !GlobalDebugFlag {
+		return errorStyle.Render(text)
+	} else {
+		return text
+	}
 }
 func FWarning(text string) string {
-	return warningStyle.Render(text)
+	if !GlobalDebugFlag {
+		return warningStyle.Render(text)
+	} else {
+		return text
+	}
 }
 func FInfo(text string) string {
-	return infoStyle.Render(text)
+	if !GlobalDebugFlag {
+		return infoStyle.Render(text)
+	} else {
+		return text
+	}
 }
 func FDebug(text string) string {
-	return debugStyle.Render(text)
+	if !GlobalDebugFlag {
+		return debugStyle.Render(text)
+	} else {
+		return text
+	}
 }
 func FStream(text string) string {
-	return streamStyle.Render(text)
+	if !GlobalDebugFlag {
+		return streamStyle.Render(text)
+	} else {
+		return text
+	}
+}
+func FGeneric(text string) string {
+	if !GlobalDebugFlag {
+		return text
+	} else {
+		return text
+	}
+}
+
+func LineBreak() {
+	fmt.Println()
+}
+func ClearTerminal(lines int) {
+	if lines > 0 {
+		fmt.Printf("\033[%dA\r\033[K", lines)
+	}
 }

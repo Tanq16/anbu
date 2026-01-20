@@ -2,6 +2,7 @@ package anbuNetwork
 
 import (
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -11,20 +12,23 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	u "github.com/tanq16/anbu/utils"
 )
 
 func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
-	log.Info().Msgf("TCP tunnel %s → %s", localAddr, remoteAddr)
+	u.PrintInfo(fmt.Sprintf("TCP tunnel %s → %s", localAddr, remoteAddr))
 
 	// Listen on the local address
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
-		log.Fatal().Err(err).Msgf("failed to listen on %s", localAddr)
+		u.PrintError(fmt.Sprintf("failed to listen on %s", localAddr))
+		log.Debug().Err(err).Msgf("failed to listen on %s", localAddr)
+		os.Exit(1)
 	}
 	defer listener.Close()
-	log.Info().Msgf("Listening on %s", localAddr)
+	u.PrintInfo(fmt.Sprintf("Listening on %s", localAddr))
 	if useTLS {
-		log.Info().Msg("Using TLS for remote connections")
+		u.PrintStream("Using TLS for remote connections")
 	}
 
 	// For graceful shutdown
@@ -35,7 +39,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 	go func() {
 		<-sigChan
 		close(done)
-		log.Info().Msg("TCP tunnel stopped gracefully")
+		u.PrintInfo("TCP tunnel stopped gracefully")
 		listener.Close()
 	}()
 
@@ -55,7 +59,8 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 				if opErr, ok := err.(*net.OpError); ok && !opErr.Temporary() {
 					return
 				}
-				log.Error().Err(err).Msg("Failed to accept connection")
+				u.PrintError("Failed to accept connection")
+				log.Debug().Err(err).Msg("Failed to accept connection")
 				continue
 			}
 
@@ -64,7 +69,7 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 			go func() {
 				defer activeConns.Done()
 				defer localConn.Close()
-				log.Info().Msgf("New connection from %s", localConn.RemoteAddr())
+				u.PrintInfo(fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
 
 				// Connect to remote
 				var remoteConn net.Conn
@@ -77,11 +82,12 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 					remoteConn, err = net.Dial("tcp", remoteAddr)
 				}
 				if err != nil {
-					log.Error().Err(err).Msgf("Failed to connect to remote %s", remoteAddr)
+					u.PrintError(fmt.Sprintf("Failed to connect to remote %s", remoteAddr))
+					log.Debug().Err(err).Msgf("Failed to connect to remote %s", remoteAddr)
 					return
 				}
 				defer remoteConn.Close()
-				log.Info().Msgf("Connected to remote %s", remoteAddr)
+				u.PrintInfo(fmt.Sprintf("Connected to remote %s", remoteAddr))
 
 				// Copy data bidirectionally
 				var wg sync.WaitGroup
@@ -91,21 +97,23 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 					// Local to Remote
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
-						log.Error().Err(err).Msg("Error copying data to remote")
+						u.PrintError("Error copying data to remote")
+						log.Debug().Err(err).Msg("Error copying data to remote")
 					}
-					log.Debug().Msgf("→ Sent %d bytes to remote", n)
+					u.PrintStream(fmt.Sprintf("→ Sent %d bytes to remote", n))
 				}()
 				go func() {
 					defer wg.Done()
 					// Remote to Local
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
-						log.Error().Err(err).Msg("Error copying data from remote")
+						u.PrintError("Error copying data from remote")
+						log.Debug().Err(err).Msg("Error copying data from remote")
 					}
-					log.Debug().Msgf("← Received %d bytes from remote", n)
+					u.PrintStream(fmt.Sprintf("← Received %d bytes from remote", n))
 				}()
 				wg.Wait()
-				log.Info().Msgf("Connection closed from %s", localConn.RemoteAddr())
+				u.PrintSuccess(fmt.Sprintf("Connection closed from %s", localConn.RemoteAddr()))
 			}()
 		}
 	}

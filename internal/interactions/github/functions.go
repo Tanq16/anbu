@@ -386,7 +386,7 @@ func GetActionJobInfo(client *http.Client, owner, repo string, runID, jobID int)
 			if step.Conclusion != nil {
 				fmt.Printf(" (%s)", *step.Conclusion)
 			}
-			fmt.Println()
+			u.LineBreak()
 		}
 	}
 	return nil

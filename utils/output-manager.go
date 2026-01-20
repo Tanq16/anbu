@@ -42,8 +42,6 @@ type Manager struct {
 	displayWg     sync.WaitGroup // WaitGroup for display goroutine shutdown
 }
 
-var GlobalDebugFlag bool
-
 func NewManager() *Manager {
 	retMgr := &Manager{
 		outputs:       make(map[string]*FunctionOutput),

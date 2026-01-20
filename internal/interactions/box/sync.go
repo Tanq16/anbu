@@ -82,7 +82,8 @@ func buildLocalTree(rootDir string, ignoreSet map[string]struct{}) (*FileTree, e
 		} else {
 			hash, err := computeLocalHash(path)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to compute hash for %s", path)
+				u.PrintError(fmt.Sprintf("Failed to compute hash for %s", path))
+				log.Debug().Err(err).Msgf("Failed to compute hash for %s", path)
 				return nil
 			}
 			parts := strings.Split(relPath, string(filepath.Separator))
@@ -170,14 +171,16 @@ func buildRemoteTree(client *http.Client, folderID string, basePath string, igno
 		if item.Type == "folder" {
 			subTree, err := buildRemoteTree(client, item.ID, itemPath, ignoreSet)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to build tree for folder %s", itemPath)
+				u.PrintError(fmt.Sprintf("Failed to build tree for folder %s", itemPath))
+				log.Debug().Err(err).Msgf("Failed to build tree for folder %s", itemPath)
 				continue
 			}
 			tree.Dirs[item.Name] = subTree
 		} else {
 			hash, err := getRemoteFileHash(client, item.ID)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to get hash for file %s", itemPath)
+				u.PrintError(fmt.Sprintf("Failed to get hash for file %s", itemPath))
+				log.Debug().Err(err).Msgf("Failed to get hash for file %s", itemPath)
 				continue
 			}
 			tree.Files[item.Name] = FileInfo{
@@ -346,7 +349,8 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 				defer func() { <-sem }()
 				fmt.Printf("Uploading %s\n", u.FDebug(localFile.Path))
 				if err := uploadBoxFileToFolder(client, localPath, remoteFolderID); err != nil {
-					log.Error().Err(err).Msgf("Failed to upload %s", localFile.Path)
+					u.PrintError(fmt.Sprintf("Failed to upload %s", localFile.Path))
+					log.Debug().Err(err).Msgf("Failed to upload %s", localFile.Path)
 				}
 			}(localPath, localFile)
 		case localFile.Hash != remoteFile.Hash:
@@ -358,11 +362,13 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 				log.Debug().Str("path", localFile.Path).Msg("file hash mismatch, update needed")
 				fmt.Printf("Updating %s\n", u.FDebug(localFile.Path))
 				if err := deleteBoxFile(client, remoteFile.ID); err != nil {
-					log.Error().Err(err).Msgf("Failed to delete %s for update", localFile.Path)
+					u.PrintError(fmt.Sprintf("Failed to delete %s for update", localFile.Path))
+					log.Debug().Err(err).Msgf("Failed to delete %s for update", localFile.Path)
 					return
 				}
 				if err := uploadBoxFileToFolder(client, localPath, remoteFolderID); err != nil {
-					log.Error().Err(err).Msgf("Failed to upload updated %s", localFile.Path)
+					u.PrintError(fmt.Sprintf("Failed to upload updated %s", localFile.Path))
+					log.Debug().Err(err).Msgf("Failed to upload updated %s", localFile.Path)
 				}
 			}(localPath, localFile, remoteFile)
 		}
@@ -376,7 +382,8 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 				defer func() { <-sem }()
 				fmt.Printf("%s %s\n", u.FError("Deleting"), u.FDebug(remoteFile.Path))
 				if err := deleteBoxFile(client, remoteFile.ID); err != nil {
-					log.Error().Err(err).Msgf("Failed to delete %s", remoteFile.Path)
+					u.PrintError(fmt.Sprintf("Failed to delete %s", remoteFile.Path))
+					log.Debug().Err(err).Msgf("Failed to delete %s", remoteFile.Path)
 				}
 			}(remoteFile)
 		}
@@ -392,23 +399,27 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 			folderJSON := fmt.Sprintf(`{"name":"%s", "parent":{"id":"%s"}}`, dirName, remoteFolderID)
 			req, err := http.NewRequest("POST", uploadFolderURL, bytes.NewBufferString(folderJSON))
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to create folder request for %s", dirName)
+				u.PrintError(fmt.Sprintf("Failed to create folder request for %s", dirName))
+				log.Debug().Err(err).Msgf("Failed to create folder request for %s", dirName)
 				continue
 			}
 			req.Header.Set("Content-Type", "application/json")
 			resp, err := client.Do(req)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to create folder %s", dirName)
+				u.PrintError(fmt.Sprintf("Failed to create folder %s", dirName))
+				log.Debug().Err(err).Msgf("Failed to create folder %s", dirName)
 				continue
 			}
 			defer resp.Body.Close()
 			if resp.StatusCode != http.StatusCreated {
-				log.Error().Msgf("Failed to create folder %s (status %d)", dirName, resp.StatusCode)
+				u.PrintError(fmt.Sprintf("Failed to create folder %s (status %d)", dirName, resp.StatusCode))
+				log.Debug().Msgf("Failed to create folder %s (status %d)", dirName, resp.StatusCode)
 				continue
 			}
 			var folder BoxItem
 			if err := json.NewDecoder(resp.Body).Decode(&folder); err != nil {
-				log.Error().Err(err).Msgf("Failed to parse folder response for %s", dirName)
+				u.PrintError(fmt.Sprintf("Failed to parse folder response for %s", dirName))
+				log.Debug().Err(err).Msgf("Failed to parse folder response for %s", dirName)
 				continue
 			}
 			subFolderID = folder.ID
@@ -437,7 +448,8 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 				}
 			}
 			if subFolderID == "" {
-				log.Error().Msgf("Failed to find folder ID for %s", dirName)
+				u.PrintError(fmt.Sprintf("Failed to find folder ID for %s", dirName))
+				log.Debug().Msgf("Failed to find folder ID for %s", dirName)
 				continue
 			} else {
 				log.Debug().Str("dir", dirName).Str("folderID", subFolderID).Msg("folder found in remote tree")
@@ -445,7 +457,8 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 		}
 		subLocalBase := filepath.Join(localBase, dirName)
 		if err := syncTree(client, localSubTree, remoteSubTree, subLocalBase, subFolderID, sem, wg, depth+1); err != nil {
-			log.Error().Err(err).Msgf("Failed to sync subtree %s", dirName)
+			u.PrintError(fmt.Sprintf("Failed to sync subtree %s", dirName))
+			log.Debug().Err(err).Msgf("Failed to sync subtree %s", dirName)
 		}
 	}
 	for dirName := range remoteTree.Dirs {
@@ -477,7 +490,8 @@ func syncTree(client *http.Client, localTree *FileTree, remoteTree *FileTree, lo
 				for _, item := range items.Entries {
 					if item.Type == "folder" && item.Name == dirName {
 						if err := deleteBoxFolderRecursive(client, item.ID); err != nil {
-							log.Error().Err(err).Msgf("Failed to delete folder %s", dirName)
+							u.PrintError(fmt.Sprintf("Failed to delete folder %s", dirName))
+							log.Debug().Err(err).Msgf("Failed to delete folder %s", dirName)
 						} else {
 							fmt.Printf("%s %s\n", u.FError("Deleting folder"), u.FDebug(dirName))
 						}

@@ -463,14 +463,16 @@ func UploadBoxFolder(client *http.Client, localPath string, boxFolderPath string
 		if d.IsDir() {
 			boxFolderId, err := findOrCreateBoxFolder(client, d.Name(), parentBoxId)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to create directory %s, skipping...", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to create directory %s, skipping", currentLocalPath))
+				log.Debug().Err(err).Msgf("Failed to create directory %s, skipping", currentLocalPath)
 				return nil
 			}
 			folderIdMap[currentLocalPath] = boxFolderId
 		} else {
 			file, err := os.Open(currentLocalPath)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to open local file %s, skipping...", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to open local file %s, skipping", currentLocalPath))
+				log.Debug().Err(err).Msgf("Failed to open local file %s, skipping", currentLocalPath)
 				return nil
 			}
 			defer file.Close()
@@ -478,18 +480,21 @@ func UploadBoxFolder(client *http.Client, localPath string, boxFolderPath string
 			writer := multipart.NewWriter(body)
 			attributesJSON := fmt.Sprintf(`{"name":"%s", "parent":{"id":"%s"}}`, d.Name(), parentBoxId)
 			if err := writer.WriteField("attributes", attributesJSON); err != nil {
-				log.Error().Err(err).Msgf("Failed to write attributes for %s, skipping...", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to write attributes for %s, skipping", currentLocalPath))
+				log.Debug().Err(err).Msgf("Failed to write attributes for %s, skipping", currentLocalPath)
 				file.Close()
 				return nil
 			}
 			part, err := writer.CreateFormFile("file", d.Name())
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to create form file for %s, skipping...", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to create form file for %s, skipping", currentLocalPath))
+				log.Debug().Err(err).Msgf("Failed to create form file for %s, skipping", currentLocalPath)
 				file.Close()
 				return nil
 			}
 			if _, err := io.Copy(part, file); err != nil {
-				log.Error().Err(err).Msgf("Failed to copy file %s, skipping...", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to copy file %s, skipping", currentLocalPath))
+				log.Debug().Err(err).Msgf("Failed to copy file %s, skipping", currentLocalPath)
 				file.Close()
 				return nil
 			}
@@ -497,18 +502,21 @@ func UploadBoxFolder(client *http.Client, localPath string, boxFolderPath string
 			file.Close()
 			req, err := http.NewRequest("POST", uploadFileURL, body)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to create upload request for %s, skipping...", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to create upload request for %s, skipping", currentLocalPath))
+				log.Debug().Err(err).Msgf("Failed to create upload request for %s, skipping", currentLocalPath)
 				return nil
 			}
 			req.Header.Set("Content-Type", writer.FormDataContentType())
 			resp, err := client.Do(req)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to upload file %s, skipping...", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to upload file %s, skipping", currentLocalPath))
+				log.Debug().Err(err).Msgf("Failed to upload file %s, skipping", currentLocalPath)
 				return nil
 			}
 			resp.Body.Close()
 			if resp.StatusCode != http.StatusCreated {
-				log.Error().Msgf("Failed to upload file %s (status %d), skipping...", currentLocalPath, resp.StatusCode)
+				u.PrintError(fmt.Sprintf("Failed to upload file %s (status %d), skipping", currentLocalPath, resp.StatusCode))
+				log.Debug().Msgf("Failed to upload file %s (status %d), skipping", currentLocalPath, resp.StatusCode)
 				return nil
 			}
 			fmt.Printf("Uploaded %s %s %s\n", u.FDebug(currentLocalPath), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(d.Name()))
@@ -554,7 +562,7 @@ func findOrCreateBoxFolder(client *http.Client, folderName string, parentId stri
 			break
 		}
 	}
-	log.Debug().Msgf("Folder '%s' not found, creating it...", folderName)
+	log.Debug().Msgf("Folder '%s' not found, creating it", folderName)
 	folderJSON := fmt.Sprintf(`{"name":"%s", "parent":{"id":"%s"}}`, folderName, parentId)
 	req, err := http.NewRequest("POST", uploadFolderURL, bytes.NewBufferString(folderJSON))
 	if err != nil {
@@ -635,40 +643,47 @@ func downloadBoxFolderContents(client *http.Client, folderID string, localDestPa
 		currentLocalPath := filepath.Join(localDestPath, item.Name)
 		if item.Type == "folder" {
 			if err := os.Mkdir(currentLocalPath, 0755); err != nil && !os.IsExist(err) {
-				log.Error().Err(err).Msgf("Failed to create local directory %s, skipping...", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to create local directory %s, skipping", currentLocalPath))
+				log.Debug().Err(err).Msgf("Failed to create local directory %s, skipping", currentLocalPath)
 				continue
 			}
 			if err := downloadBoxFolderContents(client, item.ID, currentLocalPath); err != nil {
-				log.Error().Err(err).Msgf("Failed to download subfolder %s, skipping...", item.Name)
+				u.PrintError(fmt.Sprintf("Failed to download subfolder %s, skipping", item.Name))
+				log.Debug().Err(err).Msgf("Failed to download subfolder %s, skipping", item.Name)
 			}
 		} else {
 			out, err := os.Create(currentLocalPath)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to create local file %s, skipping...", currentLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to create local file %s, skipping", currentLocalPath))
+				log.Debug().Err(err).Msgf("Failed to create local file %s, skipping", currentLocalPath)
 				continue
 			}
 			req, err := http.NewRequest("GET", fmt.Sprintf(fileContentURL, item.ID), nil)
 			if err != nil {
 				out.Close()
-				log.Error().Err(err).Msgf("Failed to create download request for %s, skipping...", item.Name)
+				u.PrintError(fmt.Sprintf("Failed to create download request for %s, skipping", item.Name))
+				log.Debug().Err(err).Msgf("Failed to create download request for %s, skipping", item.Name)
 				continue
 			}
 			resp, err := client.Do(req)
 			if err != nil {
 				out.Close()
-				log.Error().Err(err).Msgf("Failed to download file %s, skipping...", item.Name)
+				u.PrintError(fmt.Sprintf("Failed to download file %s, skipping", item.Name))
+				log.Debug().Err(err).Msgf("Failed to download file %s, skipping", item.Name)
 				continue
 			}
 			if resp.StatusCode != http.StatusOK {
 				resp.Body.Close()
 				out.Close()
-				log.Error().Msgf("Failed to download file %s (status %d), skipping...", item.Name, resp.StatusCode)
+				u.PrintError(fmt.Sprintf("Failed to download file %s (status %d), skipping", item.Name, resp.StatusCode))
+				log.Debug().Msgf("Failed to download file %s (status %d), skipping", item.Name, resp.StatusCode)
 				continue
 			}
 			if _, err := io.Copy(out, resp.Body); err != nil {
 				resp.Body.Close()
 				out.Close()
-				log.Error().Err(err).Msgf("Failed to write file %s, skipping...", item.Name)
+				u.PrintError(fmt.Sprintf("Failed to write file %s, skipping", item.Name))
+				log.Debug().Err(err).Msgf("Failed to write file %s, skipping", item.Name)
 				continue
 			}
 			resp.Body.Close()

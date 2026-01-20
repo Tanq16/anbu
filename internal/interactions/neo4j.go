@@ -8,6 +8,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/rs/zerolog/log"
+	u "github.com/tanq16/anbu/utils"
 )
 
 type QueryResult struct {
@@ -61,10 +62,12 @@ func ExecuteNeo4jQueries(ctx context.Context, uri, user, password, database stri
 	defer session.Close(ctx)
 	var allResults []QueryResult
 	for _, query := range queries {
+		fmt.Println(u.FDebug("executing query:"), u.FStream(query))
 		log.Debug().Msgf("executing query: %s", query)
 		records, err := executeQuery(ctx, session, query)
 		if err != nil {
-			log.Error().Err(err).Msgf("error executing query, but continuing...")
+			u.PrintError("error executing query, but continuing")
+			log.Debug().Err(err).Msgf("error executing query, but continuing...")
 			allResults = append(allResults, QueryResult{
 				Query:  query,
 				Result: []map[string]any{{"error": err.Error()}},

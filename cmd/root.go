@@ -82,4 +82,17 @@ func init() {
 
 	rootCmd.AddCommand(cloudCmd.AwsCmd)
 	rootCmd.AddCommand(cloudCmd.AzureCmd)
+
+	// test func
+	testfunc()
+}
+
+func testfunc() {
+	utils.PrintError("test error")
+	utils.PrintSuccess("test success")
+	utils.PrintWarning("test warning")
+	utils.PrintInfo("test info")
+	utils.PrintDebug("test debug")
+	utils.PrintStream("test stream")
+	utils.PrintGeneric("test generic")
 }

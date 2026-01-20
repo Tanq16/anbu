@@ -58,7 +58,8 @@ func getOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
 			}
 			token = newToken
 			if err := saveToken(tokenFile, token); err != nil {
-				log.Warn().Msgf("unable to save refreshed token: %v", err)
+				u.PrintWarning("unable to save refreshed token")
+				log.Debug().Err(err).Msgf("unable to save refreshed token: %v", err)
 			}
 			return token, nil
 		}
@@ -77,9 +78,10 @@ func getOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
 		return nil, fmt.Errorf("unable to exchange auth code for token: %v", err)
 	}
 	if err := saveToken(tokenFile, token); err != nil {
-		log.Warn().Msgf("unable to save new token: %v", err)
+		u.PrintWarning("unable to save new token")
+		log.Debug().Err(err).Msgf("unable to save new token: %v", err)
 	}
-	fmt.Println(u.FSuccess("\nAuthentication successful. Token saved."))
+	u.PrintSuccess("Authentication successful. Token saved.")
 	return token, nil
 }
 

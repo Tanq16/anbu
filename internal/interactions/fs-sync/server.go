@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	u "github.com/tanq16/anbu/utils"
 )
 
 type ServerConfig struct {
@@ -73,7 +74,8 @@ func (s *Server) Run() error {
 			err = server.ListenAndServe()
 		}
 		if err != nil && err != http.ErrServerClosed {
-			log.Error().Err(err).Msg("Server error")
+			u.PrintError("Server error")
+			log.Debug().Err(err).Msg("Server error")
 		}
 	}()
 	<-s.serveDone
@@ -114,13 +116,15 @@ func (s *Server) handleFiles(w http.ResponseWriter, r *http.Request) {
 		}
 		relPath := filepath.Clean(path)
 		if strings.HasPrefix(relPath, "..") || filepath.IsAbs(relPath) {
-			log.Warn().Msgf("Invalid path: %s", path)
+			u.PrintWarning(fmt.Sprintf("Invalid path: %s", path))
+			log.Debug().Msgf("Invalid path: %s", path)
 			continue
 		}
 		fullPath := filepath.Join(s.cfg.SyncDir, relPath)
 		content, err := os.ReadFile(fullPath)
 		if err != nil {
-			log.Warn().Err(err).Msgf("Failed to read file: %s", path)
+			u.PrintWarning(fmt.Sprintf("Failed to read file: %s", path))
+			log.Debug().Err(err).Msgf("Failed to read file: %s", path)
 			continue
 		}
 		files = append(files, FileContent{

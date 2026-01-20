@@ -74,7 +74,8 @@ func getBoxOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
 			}
 			token = newToken
 			if err := saveBoxToken(token); err != nil {
-				log.Warn().Str("op", "box/auth").Msgf("unable to save refreshed token: %v", err)
+				u.PrintWarning("unable to save refreshed token")
+				log.Debug().Err(err).Msgf("unable to save refreshed token: %v", err)
 			}
 			return token, nil
 		}
@@ -101,15 +102,16 @@ func getBoxOAuthToken(config *oauth2.Config) (*oauth2.Token, error) {
 	if returnedState != state {
 		return nil, fmt.Errorf("CSRF state mismatch. Expected '%s' but got '%s'", state, returnedState)
 	}
-	fmt.Println("Trading code for token...")
+	u.PrintGeneric("Trading code for token")
 	token, err = config.Exchange(context.Background(), code)
 	if err != nil {
 		return nil, fmt.Errorf("unable to exchange auth code for token: %v", err)
 	}
 	if err := saveBoxToken(token); err != nil {
-		log.Warn().Str("op", "box/auth").Msgf("unable to save new token: %v", err)
+		u.PrintWarning("unable to save new token")
+		log.Debug().Err(err).Msgf("unable to save new token: %v", err)
 	}
-	fmt.Println(u.FSuccess("\nAuthentication successful. Token saved."))
+	u.PrintSuccess("Authentication successful. Token saved.")
 	return token, nil
 }
 

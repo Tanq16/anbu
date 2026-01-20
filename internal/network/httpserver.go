@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	u "github.com/tanq16/anbu/utils"
 )
 
 type HTTPServerOptions struct {
@@ -48,10 +49,10 @@ func (s *HTTPServer) Start() error {
 			return err
 		}
 		s.Server.TLSConfig = tlsConfig
-		log.Info().Msgf("HTTPS server started on https://%s/", s.Options.ListenAddress)
+		u.PrintInfo(fmt.Sprintf("HTTPS server started on https://%s/", s.Options.ListenAddress))
 		return s.Server.ListenAndServeTLS("", "")
 	}
-	log.Info().Msgf("HTTP server started on http://%s/", s.Options.ListenAddress)
+	u.PrintInfo(fmt.Sprintf("HTTP server started on http://%s/", s.Options.ListenAddress))
 	return s.Server.ListenAndServe()
 }
 
@@ -64,7 +65,7 @@ func (s *HTTPServer) Stop() error {
 
 func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Debug().Msgf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path)
+		u.PrintStream(fmt.Sprintf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -164,7 +165,8 @@ form.addEventListener('submit', function(e) {
 	if r.Method == http.MethodPost {
 		err := r.ParseMultipartForm(32 << 20)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to parse multipart form")
+			u.PrintError("failed to parse multipart form")
+			log.Debug().Err(err).Msg("failed to parse multipart form")
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
@@ -175,24 +177,27 @@ form.addEventListener('submit', function(e) {
 			filename := fmt.Sprintf("text-%d.txt", epoch)
 			filename = s.ensureUniqueFilename(filename)
 			if err := os.WriteFile(filename, []byte(textContent), 0644); err != nil {
-				log.Error().Err(err).Msg("failed to write text file")
+				u.PrintError("failed to write text file")
+				log.Debug().Err(err).Msg("failed to write text file")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
-			log.Info().Msgf("Text saved to %s", filename)
+			u.PrintInfo(fmt.Sprintf("Text saved to %s", filename))
 		}
 
 		files := r.MultipartForm.File["files"]
 		for _, fileHeader := range files {
 			file, err := fileHeader.Open()
 			if err != nil {
-				log.Error().Err(err).Msg("failed to open uploaded file")
+				u.PrintError("failed to open uploaded file")
+				log.Debug().Err(err).Msg("failed to open uploaded file")
 				continue
 			}
 			filename := s.ensureUniqueFilename(fileHeader.Filename)
 			outFile, err := os.Create(filename)
 			if err != nil {
-				log.Error().Err(err).Msg("failed to create file")
+				u.PrintError("failed to create file")
+				log.Debug().Err(err).Msg("failed to create file")
 				file.Close()
 				continue
 			}
@@ -200,10 +205,11 @@ form.addEventListener('submit', function(e) {
 			file.Close()
 			outFile.Close()
 			if err != nil {
-				log.Error().Err(err).Msg("failed to write file")
+				u.PrintError("failed to write file")
+				log.Debug().Err(err).Msg("failed to write file")
 				continue
 			}
-			log.Info().Msgf("File uploaded to %s", filename)
+			u.PrintInfo(fmt.Sprintf("File uploaded to %s", filename))
 		}
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprint(w, `<!DOCTYPE html>

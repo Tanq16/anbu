@@ -103,9 +103,10 @@ func getGitHubOAuthToken(clientID string) (string, error) {
 		return "", fmt.Errorf("unable to get access token: %v", err)
 	}
 	if err := saveGitHubToken(tokenFile, token); err != nil {
-		log.Warn().Str("op", "github/auth").Msgf("unable to save new token: %v", err)
+		u.PrintWarning("unable to save new token")
+		log.Debug().Str("op", "github/auth").Msgf("unable to save new token: %v", err)
 	}
-	fmt.Println(u.FSuccess("\nAuthentication successful. Token saved."))
+	u.PrintSuccess("Authentication successful. Token saved.")
 	return token, nil
 }
 

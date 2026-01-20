@@ -107,12 +107,12 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 	if err := createCacheFile(home, ssoConfig.SessionName, ssoConfig.StartURL, ssoConfig.SSORegion, regResp, tokenResp); err != nil {
 		return fmt.Errorf("failed to create cache file: %w", err)
 	}
-	log.Info().Msg("SSO login successful")
+	log.Debug().Msg("SSO login successful")
 	accounts, err := listAccounts(sso.NewFromConfig(cfg), tokenResp.AccessToken)
 	if err != nil {
 		return err
 	}
-	log.Info().Int("accounts", len(accounts.AccountList)).Msg("found accounts")
+	log.Debug().Int("accounts", len(accounts.AccountList)).Msg("found accounts")
 
 	configData, err := processAccounts(sso.NewFromConfig(cfg), tokenResp.AccessToken, accounts, ssoConfig)
 	if err != nil {
@@ -124,7 +124,7 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 	if err := writeConfigFile(configFilePath, configData); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
-	log.Info().Str("path", configFilePath).Msg("AWS config updated successfully")
+	log.Debug().Str("path", configFilePath).Msg("AWS config updated successfully")
 	return nil
 }
 

@@ -137,16 +137,19 @@ func downloadDirectory(ghClient *github.Client, httpClient *http.Client, ctx con
 		switch *item.Type {
 		case "file":
 			if err := downloadFile(httpClient, item, itemLocalPath); err != nil {
-				log.Error().Err(err).Msgf("Failed to download file %s, skipping...", *item.Name)
+				u.PrintError(fmt.Sprintf("Failed to download file %s, skipping", *item.Name))
+				log.Debug().Err(err).Msgf("Failed to download file %s, skipping", *item.Name)
 				continue
 			}
 		case "dir":
 			if err := os.MkdirAll(itemLocalPath, 0755); err != nil {
-				log.Error().Err(err).Msgf("Failed to create directory %s, skipping...", itemLocalPath)
+				u.PrintError(fmt.Sprintf("Failed to create directory %s, skipping", itemLocalPath))
+				log.Debug().Err(err).Msgf("Failed to create directory %s, skipping", itemLocalPath)
 				continue
 			}
 			if err := downloadDirectory(ghClient, httpClient, ctx, owner, repo, ref, itemRepoPath, itemLocalPath); err != nil {
-				log.Error().Err(err).Msgf("Failed to download directory %s, skipping...", *item.Name)
+				u.PrintError(fmt.Sprintf("Failed to download directory %s, skipping", *item.Name))
+				log.Debug().Err(err).Msgf("Failed to download directory %s, skipping", *item.Name)
 				continue
 			}
 		}
