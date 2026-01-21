@@ -37,7 +37,7 @@ func SwitchSubscription() error {
 	}
 	table.PrintTable(false)
 	u.LineBreak()
-	input := u.InputWithClear("Select subscription number to activate: ")
+	input := u.GetInput("Select subscription number to activate: ", "")
 	subNumber, err := strconv.Atoi(input)
 	if err != nil {
 		return fmt.Errorf("invalid subscription number: %w", err)

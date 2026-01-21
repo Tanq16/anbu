@@ -346,7 +346,7 @@ The specific details of each are:
   # Download logs for a job to anbu-github.log
   anbu gh ls owner/repo/a/3/4/logs
 
-  # Add comment to an issue or pr (end with 'EOF' on a new line)
+  # Add comment to an issue or pr (use Ctrl+D to submit multiline input)
   anbu gh add owner/repo/i/23
   anbu gh add owner/repo/pr/24
 
@@ -507,10 +507,10 @@ When you run a `gdrive` command for the first time, `anbu` will:
 2. Open this URL in your web browser. You will be prompted to sign in with your Google account.
 3. Since the app is not verified by Google, you will see a warning screen. Click **Advanced** and then **Go to (unsafe)** to proceed.
 4. After you grant permission, the browser will redirect to a `localhost` address, which will likely fail to load. This is expected.
-5. Copy the authorization code from the URL in your browser’s address bar (it will be a long string in the `code` parameter).
-6. Paste this code back into the terminal where `anbu` is waiting.
+5. Copy the *entire* redirect URL from your browser's address bar (it looks like `http://localhost:8080/?code=...&state=...`).
+6. Paste the URL back into the terminal where `anbu` is waiting.
 
-`anbu` will then use this code to get an access token and refresh token, which it will store for future use.
+`anbu` will then use this URL to extract the authorization code and exchange it for an access token and refresh token, which it will store for future use.
 
 </details>
 

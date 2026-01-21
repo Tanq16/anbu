@@ -54,13 +54,12 @@ var secretsSetCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		secretID := args[0]
-		u.PrintGeneric(fmt.Sprintf("Enter value for secret '%s': ", secretID))
 		var value string
 		var err error
 		if multilineFlag {
-			value = u.MultilineInputWithClear(fmt.Sprintf("Enter value for secret '%s': ", secretID))
+			value = u.GetMultilineInput(fmt.Sprintf("Enter value for secret '%s': ", secretID), "")
 		} else {
-			value = u.InputWithClear(fmt.Sprintf("Enter value for secret '%s': ", secretID))
+			value = u.GetInput(fmt.Sprintf("Enter value for secret '%s': ", secretID), "")
 		}
 		if err != nil {
 			u.PrintFatal("failed to read secret value", err)

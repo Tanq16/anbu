@@ -1,11 +1,12 @@
 package utils
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/textarea"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rs/zerolog/log"
 )
@@ -98,51 +99,41 @@ func PrintGeneric(text string) {
 func FSuccess(text string) string {
 	if !GlobalDebugFlag {
 		return successStyle.Render(text)
-	} else {
-		return text
 	}
+	return text
 }
 func FError(text string) string {
 	if !GlobalDebugFlag {
 		return errorStyle.Render(text)
-	} else {
-		return text
 	}
+	return text
 }
 func FWarning(text string) string {
 	if !GlobalDebugFlag {
 		return warningStyle.Render(text)
-	} else {
-		return text
 	}
+	return text
 }
 func FInfo(text string) string {
 	if !GlobalDebugFlag {
 		return infoStyle.Render(text)
-	} else {
-		return text
 	}
+	return text
 }
 func FDebug(text string) string {
 	if !GlobalDebugFlag {
 		return debugStyle.Render(text)
-	} else {
-		return text
 	}
+	return text
 }
 func FStream(text string) string {
 	if !GlobalDebugFlag {
 		return streamStyle.Render(text)
-	} else {
-		return text
 	}
+	return text
 }
 func FGeneric(text string) string {
-	if !GlobalDebugFlag {
-		return text
-	} else {
-		return text
-	}
+	return text
 }
 
 func LineBreak() {
@@ -154,81 +145,142 @@ func ClearTerminal(lines int) {
 	}
 }
 
-func readSingleLineInput() (string, error) {
-	reader := bufio.NewReader(os.Stdin)
-	text, err := reader.ReadString('\n')
-	if err != nil {
-		return "", fmt.Errorf("error reading input: %w", err)
-	}
-	return strings.TrimSpace(text), nil
+type inputModel struct {
+	textInput textarea.Model
+	header    string
+	width     int
+	multiline bool
+	quitting  bool
+	output    string
+	err       error
 }
 
-func readMultilineInput() (string, error) {
-	var sb strings.Builder
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "EOF" {
-			break
+func newInputModel(header string, placeholder string, multiline bool) inputModel {
+	ta := textarea.New()
+	ta.Placeholder = placeholder
+	ta.Focus()
+	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
+	ta.BlurredStyle.CursorLine = lipgloss.NewStyle()
+	if multiline {
+		ta.SetHeight(10)
+		ta.ShowLineNumbers = true
+		ta.Prompt = " ┃ "
+	} else {
+		ta.SetHeight(1)
+		ta.ShowLineNumbers = false
+		ta.Prompt = " > "
+	}
+	return inputModel{
+		textInput: ta,
+		header:    header,
+		multiline: multiline,
+	}
+}
+
+func (m inputModel) Init() tea.Cmd {
+	return textarea.Blink
+}
+
+func (m inputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.textInput.SetWidth(msg.Width - 4)
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyCtrlC, tea.KeyEsc:
+			m.quitting = true
+			return m, tea.Quit
+		case tea.KeyCtrlD:
+			if m.multiline {
+				m.output = strings.TrimSpace(m.textInput.Value())
+				m.quitting = true
+				return m, tea.Quit
+			}
+		case tea.KeyEnter:
+			if msg.Alt {
+				m.output = strings.TrimSpace(m.textInput.Value())
+				m.quitting = true
+				return m, tea.Quit
+			}
+			if !m.multiline {
+				m.output = strings.TrimSpace(m.textInput.Value())
+				m.quitting = true
+				return m, tea.Quit
+			}
 		}
-		sb.WriteString(line)
-		sb.WriteString("\n")
 	}
-	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("error reading input: %w", err)
-	}
-	text := sb.String()
-	if len(text) > 0 {
-		text = text[:len(text)-1]
-	}
-	return text, nil
+	m.textInput, cmd = m.textInput.Update(msg)
+	return m, cmd
 }
 
-func InputWithClear(prompt string) string {
-	fmt.Print("\0337")
-	fmt.Print(prompt)
-	input, err := readSingleLineInput()
-	if err != nil {
-		PrintError("error reading input", err)
+func (m inputModel) View() string {
+	if m.quitting {
 		return ""
 	}
-	fmt.Print("\0338")
-	fmt.Print("\0338\033[J")
-	return input
+	wrapper := lipgloss.NewStyle().Width(m.width - 2)
+	var view strings.Builder
+	if m.header != "" {
+		headerText := m.header
+		if m.multiline {
+			headerText += FStream(" (Press Ctrl+D to submit)")
+		}
+		view.WriteString(wrapper.Render(headerText))
+		view.WriteString("\n")
+	}
+	view.WriteString(m.textInput.View())
+	return view.String()
 }
 
-func MultilineInputWithClear(prompt string) string {
-	fmt.Print("\0337")
-	fmt.Println(prompt)
-	fmt.Print("Type 'EOF' on a new line to finish:")
-	input, err := readMultilineInput()
+func GetInput(prompt string, placeholder string) string {
+	LineBreak()
+	p := tea.NewProgram(newInputModel(prompt, placeholder, false))
+	m, err := p.Run()
 	if err != nil {
-		PrintError("error reading input", err)
+		PrintError("Input error", err)
 		return ""
 	}
-	fmt.Print("\0338")
-	fmt.Print("\0338\033[J")
-	return input
+	if model, ok := m.(inputModel); ok {
+		return model.output
+	}
+	return ""
+}
+
+func GetMultilineInput(prompt string, placeholder string) string {
+	LineBreak()
+	p := tea.NewProgram(newInputModel(prompt, placeholder, true))
+	m, err := p.Run()
+	if err != nil {
+		PrintError("Input error", err)
+		return ""
+	}
+	if model, ok := m.(inputModel); ok {
+		return model.output
+	}
+	return ""
 }
 
 func DeviceCodeFlow(url string, userCode string) string {
-	fmt.Print("\0337")
-	PrintDebug("Visit this URL to authorize Anbu:\n\n")
-	PrintInfo(url + "\n\n")
+	LineBreak()
+	var sb strings.Builder
+	sb.WriteString(FDebug("Visit this URL to authorize Anbu:") + "\n")
+	sb.WriteString(FGeneric(url) + "\n\n")
 	if userCode != "" {
-		PrintDebug("Enter the code: " + userCode + "\n\n")
-		PrintDebug("Press Return after you have completed the authorization in your browser")
+		sb.WriteString(FDebug("Enter the code: "+userCode) + "\n")
+		sb.WriteString(FDebug("Press Return after you have completed the authorization in your browser"))
 	} else {
-		PrintDebug("After authorizing, you will be redirected to a 'localhost' URL.\n\n")
-		PrintDebug("Copy the *entire* URL from your browser and paste it here:")
+		sb.WriteString(FDebug("After authorizing, you will be redirected to a 'localhost' URL.") + "\n")
+		sb.WriteString(FDebug("Copy the *entire* URL from your browser and paste it below:"))
 	}
-	input, err := readSingleLineInput()
+	p := tea.NewProgram(newInputModel(sb.String(), "Paste URL here", false))
+	m, err := p.Run()
 	if err != nil {
-		PrintError("error reading input", err)
+		PrintError("Bubbletea error", err)
 		return ""
 	}
-	input = strings.TrimSpace(input)
-	fmt.Print("\0338")
-	fmt.Print("\0338\033[J")
-	return input
+	if finalModel, ok := m.(inputModel); ok {
+		return finalModel.output
+	}
+	return ""
 }

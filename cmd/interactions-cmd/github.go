@@ -108,7 +108,7 @@ Examples:
 		if _, err := fmt.Sscanf(parts[3], "%d", &num); err != nil {
 			u.PrintFatal("Invalid issue/PR number", err)
 		}
-		body := u.MultilineInputWithClear("Enter your comment:")
+		body := u.GetMultilineInput("Enter your comment:", "")
 		switch resourceType {
 		case "i":
 			if err := github.AddIssueComment(client, owner, repo, num, body); err != nil {
@@ -149,8 +149,8 @@ Examples:
 		resourceType := parts[2]
 		switch resourceType {
 		case "i":
-			title := u.InputWithClear("Enter issue title: ")
-			body := u.MultilineInputWithClear("Enter issue body:")
+			title := u.GetInput("Enter issue title: ", "")
+			body := u.GetMultilineInput("Enter issue body:", "")
 			if err := github.CreateIssue(client, owner, repo, title, body); err != nil {
 				u.PrintFatal("Failed to create issue", err)
 			}
