@@ -224,7 +224,7 @@ func (m inputModel) View() string {
 	if m.header != "" {
 		headerText := m.header
 		if m.multiline {
-			headerText += FStream(" (Press Ctrl+D to submit)")
+			headerText += FDebug(" (Press Ctrl+D to submit)")
 		}
 		view.WriteString(wrapper.Render(headerText))
 		view.WriteString("\n")
