@@ -18,13 +18,9 @@ var (
 	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("37"))  // dark green
 	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))   // red
 	warningStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("11"))  // yellow
-	pendingStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))  // blue
 	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))  // cyan
 	debugStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("250")) // light grey
 	streamStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("240")) // grey
-
-	// Additional config
-	basePadding = 2
 )
 
 var StyleSymbols = map[string]string{
@@ -158,11 +154,12 @@ type inputModel struct {
 func newInputModel(header string, placeholder string, multiline bool) inputModel {
 	ta := textarea.New()
 	ta.Placeholder = placeholder
+	ta.MaxHeight = 0
 	ta.Focus()
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
 	ta.BlurredStyle.CursorLine = lipgloss.NewStyle()
 	if multiline {
-		ta.SetHeight(10)
+		ta.SetHeight(12)
 		ta.ShowLineNumbers = true
 		ta.Prompt = " ┃ "
 	} else {

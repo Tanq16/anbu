@@ -169,12 +169,26 @@ func StashFS(path string) error {
 }
 
 func StashText(name string) error {
-	input, err := io.ReadAll(os.Stdin)
-	if err != nil && err != io.EOF {
-		return fmt.Errorf("failed to read stdin: %w", err)
-	}
-	if len(input) == 0 {
-		return fmt.Errorf("no input provided")
+	var input []byte
+	var err error
+	stat, statErr := os.Stdin.Stat()
+	isTerminal := statErr == nil && (stat.Mode()&os.ModeCharDevice) != 0
+	if isTerminal {
+		// Interactive input
+		text := u.GetMultilineInput(fmt.Sprintf("Enter text to stash (name: %s):", name), "")
+		if text == "" {
+			return fmt.Errorf("no input provided")
+		}
+		input = []byte(text)
+	} else {
+		// Piped input
+		input, err = io.ReadAll(os.Stdin)
+		if err != nil && err != io.EOF {
+			return fmt.Errorf("failed to read stdin: %w", err)
+		}
+		if len(input) == 0 {
+			return fmt.Errorf("no input provided")
+		}
 	}
 	stashDir, err := getStashDir()
 	if err != nil {
