@@ -46,35 +46,25 @@ func (sm *SecretMatches) Add(match SecretMatch) {
 }
 
 func ScanSecretsInPath(path string, printFalsePositives bool) {
-	logger := u.NewManager()
-	logger.StartDisplay()
-	defer logger.StopDisplay()
-	funcID := logger.Register("secrets-scanner")
-	logger.SetMessage(funcID, "Scanning for secrets")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		logger.ReportError(funcID, err)
-		logger.SetMessage(funcID, "Path doesn't exist")
+		u.PrintError("Path doesn't exist", err)
 		return
 	}
-
+	u.PrintInfo(fmt.Sprintf("Scanning %s for secrets", path))
 	rules := make([]struct {
 		Name    string
 		Pattern *regexp.Regexp
 	}, len(secretRules))
 	for i, rule := range secretRules {
-		logger.SetMessage(funcID, "Compiling patterns")
 		pattern, err := regexp.Compile(rule.Pattern)
 		if err != nil {
-			logger.ReportError(funcID, err)
-			logger.SetMessage(funcID, fmt.Sprintf("Failed to compile pattern %s", rule.Name))
+			u.PrintError(fmt.Sprintf("Failed to compile pattern %s", rule.Name), err)
 			return
 		}
 		rules[i].Name = rule.Name
 		rules[i].Pattern = pattern
 	}
-
 	// Collect files to scan
-	logger.SetMessage(funcID, "Collecting files to scan")
 	var filesToScan []string
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -86,17 +76,16 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 		return nil
 	})
 	if err != nil {
-		logger.ReportError(funcID, err)
-		logger.SetMessage(funcID, "Error collecting files")
+		u.PrintError("Error collecting files", err)
 		return
 	}
-	logger.SetMessage(funcID, fmt.Sprintf("Found %d files to scan", len(filesToScan)))
 	matches := &SecretMatches{
 		matches: make([]SecretMatch, 0),
 	}
 
+	progressManager := u.NewManager()
+	progressManager.StartDisplay()
 	// Create scanner pool
-	logger.SetMessage(funcID, "Scanning files")
 	var wg sync.WaitGroup
 	var progWg sync.WaitGroup
 	progressChan := make(chan int64)
@@ -106,7 +95,7 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 		var completed int64
 		for i := range progCh {
 			completed += i
-			logger.AddProgressBarToStream(funcID, completed, int64(len(filesToScan)), fmt.Sprintf("Scanned %d files", completed))
+			progressManager.AddProgressBarToStream(completed, int64(len(filesToScan)), fmt.Sprintf("Scanned %d files", completed))
 		}
 	}(progressChan)
 	workers := make(chan struct{}, 30) // Limit to 30
@@ -138,25 +127,26 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 	close(progressChan)
 	close(errChan)
 	progWg.Wait()
-	if len(matches.matches) == 0 {
-		logger.SetMessage(funcID, "No secrets found")
-	} else {
-		logger.SetMessage(funcID, fmt.Sprintf("Found %d potential secrets", len(matches.matches)))
-	}
+	progressManager.StopDisplay()
 
+	if len(matches.matches) == 0 {
+		u.PrintInfo("No secrets found")
+	} else {
+		u.PrintInfo(fmt.Sprintf("Found %d potential secrets", len(matches.matches)))
+	}
 	if len(errChan) > 0 {
 		var errMsgs []string
 		for err := range errChan {
 			errMsgs = append(errMsgs, err.Error())
 		}
-		logger.ReportError(funcID, fmt.Errorf("scanning errors occurred: %s", strings.Join(errMsgs, "; ")))
-		logger.SetMessage(funcID, "Errors occurred during scanning")
+		u.PrintError(fmt.Sprintf("scanning errors occurred: %s", strings.Join(errMsgs, "; ")), nil)
 	} else {
-		logger.Complete(funcID, "Scanning completed successfully")
+		u.PrintSuccess("Scanning completed successfully")
 	}
+	u.LineBreak()
 
-	table := logger.RegisterTable("Primary Matches", []string{"Type", "Match", "File", "Line"})
-	falsepTable := logger.RegisterTable("Generic Matches", []string{"Match", "File", "Line"})
+	table := u.NewTable([]string{"Type", "Match", "File", "Line"})
+	falsepTable := u.NewTable([]string{"Match", "File", "Line"})
 	for _, match := range matches.matches {
 		if match.Type == "Generic Secrets & Keys" {
 			if !printFalsePositives {
@@ -176,6 +166,11 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 				fmt.Sprintf("%d", match.Line),
 			})
 		}
+	}
+	table.PrintTable(false)
+	u.LineBreak()
+	if len(falsepTable.Rows) > 0 {
+		falsepTable.PrintTable(false)
 	}
 }
 
