@@ -1,5 +1,5 @@
 <div align="center">
-  <img src=".github/assets/logo.png" alt="ANBU Logo" width="250"/>
+  <img src=".github/assets/logo.svg" alt="ANBU Logo" width="250"/>
 
   <h1 align="center">Anbu</h1>
 
