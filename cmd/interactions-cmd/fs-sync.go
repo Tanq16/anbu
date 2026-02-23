@@ -9,18 +9,25 @@ import (
 )
 
 var (
-	fsSyncServeFlags struct {
+	fsSyncSendFlags struct {
+		listen    bool
+		connect   string
 		port      int
 		dir       string
 		ignore    string
 		enableTLS bool
+		insecure  bool
 	}
-	fsSyncSyncFlags struct {
-		server   string
-		dir      string
-		delete   bool
-		dryRun   bool
-		insecure bool
+	fsSyncReceiveFlags struct {
+		listen    bool
+		connect   string
+		port      int
+		dir       string
+		ignore    string
+		delete    bool
+		dryRun    bool
+		enableTLS bool
+		insecure  bool
 	}
 )
 
@@ -29,64 +36,127 @@ var FSSyncCmd = &cobra.Command{
 	Short: "One-shot file synchronization over HTTP/HTTPS with optional TLS, ignore patterns, and dry-run mode",
 }
 
-var fsSyncServeCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Serve files to sync to a client",
+var fsSyncSendCmd = &cobra.Command{
+	Use:   "send",
+	Short: "Send files to a peer (use --listen or --connect)",
 	Run: func(cmd *cobra.Command, args []string) {
-		protocol := "http"
-		if fsSyncServeFlags.enableTLS {
-			protocol = "https"
+		if fsSyncSendFlags.listen && fsSyncSendFlags.connect != "" {
+			u.PrintFatal("cannot specify both --listen and --connect", nil)
 		}
-		u.PrintInfo(fmt.Sprintf("Starting fs-sync server: %s://localhost:%d directory=%s", protocol, fsSyncServeFlags.port, fsSyncServeFlags.dir))
-		cfg := fssync.ServerConfig{
-			Port:        fsSyncServeFlags.port,
-			SyncDir:     fsSyncServeFlags.dir,
-			IgnorePaths: fsSyncServeFlags.ignore,
-			EnableTLS:   fsSyncServeFlags.enableTLS,
+		if !fsSyncSendFlags.listen && fsSyncSendFlags.connect == "" {
+			u.PrintFatal("must specify either --listen or --connect", nil)
 		}
-		s, err := fssync.NewServer(cfg)
-		if err != nil {
-			u.PrintFatal("Failed to initialize server", err)
-		}
-		if err := s.Run(); err != nil {
-			u.PrintFatal("Failed to run server", err)
+		if fsSyncSendFlags.listen {
+			protocol := "http"
+			if fsSyncSendFlags.enableTLS {
+				protocol = "https"
+			}
+			u.PrintInfo(fmt.Sprintf("Starting fs-sync server (send): %s://localhost:%d directory=%s", protocol, fsSyncSendFlags.port, fsSyncSendFlags.dir))
+			cfg := fssync.ServerConfig{
+				Port:        fsSyncSendFlags.port,
+				SyncDir:     fsSyncSendFlags.dir,
+				IgnorePaths: fsSyncSendFlags.ignore,
+				EnableTLS:   fsSyncSendFlags.enableTLS,
+				Mode:        "send",
+			}
+			s, err := fssync.NewServer(cfg)
+			if err != nil {
+				u.PrintFatal("Failed to initialize server", err)
+			}
+			if err := s.Run(); err != nil {
+				u.PrintFatal("Failed to run server", err)
+			}
+		} else {
+			cfg := fssync.ClientConfig{
+				ServerAddr:  fsSyncSendFlags.connect,
+				SyncDir:     fsSyncSendFlags.dir,
+				Insecure:    fsSyncSendFlags.insecure,
+				Mode:        "send",
+				IgnorePaths: fsSyncSendFlags.ignore,
+			}
+			c, err := fssync.NewClient(cfg)
+			if err != nil {
+				u.PrintFatal("Failed to initialize client", err)
+			}
+			if err := c.Run(); err != nil {
+				u.PrintFatal("Failed to send", err)
+			}
 		}
 	},
 }
 
-var fsSyncSyncCmd = &cobra.Command{
-	Use:   "sync",
-	Short: "Connect to a server and sync files",
+var fsSyncReceiveCmd = &cobra.Command{
+	Use:   "receive",
+	Short: "Receive files from a peer (use --listen or --connect)",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := fssync.ClientConfig{
-			ServerAddr:  fsSyncSyncFlags.server,
-			SyncDir:     fsSyncSyncFlags.dir,
-			DeleteExtra: fsSyncSyncFlags.delete,
-			Insecure:    fsSyncSyncFlags.insecure,
-			DryRun:      fsSyncSyncFlags.dryRun,
+		if fsSyncReceiveFlags.listen && fsSyncReceiveFlags.connect != "" {
+			u.PrintFatal("cannot specify both --listen and --connect", nil)
 		}
-		c, err := fssync.NewClient(cfg)
-		if err != nil {
-			u.PrintFatal("Failed to initialize client", err)
+		if !fsSyncReceiveFlags.listen && fsSyncReceiveFlags.connect == "" {
+			u.PrintFatal("must specify either --listen or --connect", nil)
 		}
-		if err := c.Run(); err != nil {
-			u.PrintFatal("Failed to sync", err)
+		if fsSyncReceiveFlags.listen {
+			protocol := "http"
+			if fsSyncReceiveFlags.enableTLS {
+				protocol = "https"
+			}
+			u.PrintInfo(fmt.Sprintf("Starting fs-sync server (receive): %s://localhost:%d directory=%s", protocol, fsSyncReceiveFlags.port, fsSyncReceiveFlags.dir))
+			cfg := fssync.ServerConfig{
+				Port:        fsSyncReceiveFlags.port,
+				SyncDir:     fsSyncReceiveFlags.dir,
+				IgnorePaths: fsSyncReceiveFlags.ignore,
+				EnableTLS:   fsSyncReceiveFlags.enableTLS,
+				Mode:        "receive",
+				DeleteExtra: fsSyncReceiveFlags.delete,
+				DryRun:      fsSyncReceiveFlags.dryRun,
+			}
+			s, err := fssync.NewServer(cfg)
+			if err != nil {
+				u.PrintFatal("Failed to initialize server", err)
+			}
+			if err := s.Run(); err != nil {
+				u.PrintFatal("Failed to run server", err)
+			}
+		} else {
+			cfg := fssync.ClientConfig{
+				ServerAddr:  fsSyncReceiveFlags.connect,
+				SyncDir:     fsSyncReceiveFlags.dir,
+				DeleteExtra: fsSyncReceiveFlags.delete,
+				Insecure:    fsSyncReceiveFlags.insecure,
+				DryRun:      fsSyncReceiveFlags.dryRun,
+				Mode:        "receive",
+				IgnorePaths: fsSyncReceiveFlags.ignore,
+			}
+			c, err := fssync.NewClient(cfg)
+			if err != nil {
+				u.PrintFatal("Failed to initialize client", err)
+			}
+			if err := c.Run(); err != nil {
+				u.PrintFatal("Failed to receive", err)
+			}
 		}
 	},
 }
 
 func init() {
-	fsSyncServeCmd.Flags().IntVarP(&fsSyncServeFlags.port, "port", "p", 8080, "Port to listen on")
-	fsSyncServeCmd.Flags().StringVarP(&fsSyncServeFlags.dir, "dir", "d", ".", "Directory to serve")
-	fsSyncServeCmd.Flags().StringVar(&fsSyncServeFlags.ignore, "ignore", "", "Comma-separated patterns to ignore (e.g., '.git,node_modules')")
-	fsSyncServeCmd.Flags().BoolVarP(&fsSyncServeFlags.enableTLS, "tls", "t", false, "Enable HTTPS with a self-signed certificate")
+	fsSyncSendCmd.Flags().BoolVarP(&fsSyncSendFlags.listen, "listen", "l", false, "Listen for incoming connections")
+	fsSyncSendCmd.Flags().StringVarP(&fsSyncSendFlags.connect, "connect", "c", "", "Connect to a listening receiver (URL)")
+	fsSyncSendCmd.Flags().IntVarP(&fsSyncSendFlags.port, "port", "p", 8080, "Port to listen on (with --listen)")
+	fsSyncSendCmd.Flags().StringVarP(&fsSyncSendFlags.dir, "dir", "d", ".", "Directory to send")
+	fsSyncSendCmd.Flags().StringVar(&fsSyncSendFlags.ignore, "ignore", "", "Comma-separated patterns to ignore (e.g., '.git,node_modules')")
+	fsSyncSendCmd.Flags().BoolVarP(&fsSyncSendFlags.enableTLS, "tls", "t", false, "Enable HTTPS with self-signed cert (with --listen)")
+	fsSyncSendCmd.Flags().BoolVarP(&fsSyncSendFlags.insecure, "insecure", "k", false, "Skip TLS verification (with --connect)")
 
-	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.server, "server", "s", "http://localhost:8080", "Server URL (http:// or https://)")
-	fsSyncSyncCmd.Flags().StringVarP(&fsSyncSyncFlags.dir, "dir", "d", ".", "Local directory to sync to")
-	fsSyncSyncCmd.Flags().BoolVar(&fsSyncSyncFlags.delete, "delete", false, "Delete local files not present on server")
-	fsSyncSyncCmd.Flags().BoolVarP(&fsSyncSyncFlags.dryRun, "dry-run", "r", false, "Show what would be synced without doing it")
-	fsSyncSyncCmd.Flags().BoolVarP(&fsSyncSyncFlags.insecure, "insecure", "k", false, "Skip TLS certificate verification")
+	fsSyncReceiveCmd.Flags().BoolVarP(&fsSyncReceiveFlags.listen, "listen", "l", false, "Listen for incoming connections")
+	fsSyncReceiveCmd.Flags().StringVarP(&fsSyncReceiveFlags.connect, "connect", "c", "", "Connect to a listening sender (URL)")
+	fsSyncReceiveCmd.Flags().IntVarP(&fsSyncReceiveFlags.port, "port", "p", 8080, "Port to listen on (with --listen)")
+	fsSyncReceiveCmd.Flags().StringVarP(&fsSyncReceiveFlags.dir, "dir", "d", ".", "Directory to receive into")
+	fsSyncReceiveCmd.Flags().StringVar(&fsSyncReceiveFlags.ignore, "ignore", "", "Comma-separated patterns to ignore (e.g., '.git,node_modules')")
+	fsSyncReceiveCmd.Flags().BoolVar(&fsSyncReceiveFlags.delete, "delete", false, "Delete local files not present on sender")
+	fsSyncReceiveCmd.Flags().BoolVarP(&fsSyncReceiveFlags.dryRun, "dry-run", "r", false, "Show what would be synced without doing it")
+	fsSyncReceiveCmd.Flags().BoolVarP(&fsSyncReceiveFlags.enableTLS, "tls", "t", false, "Enable HTTPS with self-signed cert (with --listen)")
+	fsSyncReceiveCmd.Flags().BoolVarP(&fsSyncReceiveFlags.insecure, "insecure", "k", false, "Skip TLS verification (with --connect)")
 
-	FSSyncCmd.AddCommand(fsSyncServeCmd)
-	FSSyncCmd.AddCommand(fsSyncSyncCmd)
+	FSSyncCmd.AddCommand(fsSyncSendCmd)
+	FSSyncCmd.AddCommand(fsSyncReceiveCmd)
 }

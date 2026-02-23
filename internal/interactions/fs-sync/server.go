@@ -26,12 +26,16 @@ type ServerConfig struct {
 	SyncDir     string
 	IgnorePaths string
 	EnableTLS   bool
+	Mode        string // "send" or "receive"
+	DeleteExtra bool   // receive mode only
+	DryRun      bool   // receive mode only
 }
 
 type Server struct {
-	cfg       ServerConfig
-	ignorer   *PathIgnorer
-	serveDone chan struct{}
+	cfg            ServerConfig
+	ignorer        *PathIgnorer
+	serveDone      chan struct{}
+	senderManifest map[string]string
 }
 
 func NewServer(cfg ServerConfig) (*Server, error) {
@@ -52,8 +56,13 @@ func NewServer(cfg ServerConfig) (*Server, error) {
 
 func (s *Server) Run() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/manifest", s.handleManifest)
-	mux.HandleFunc("/files", s.handleFiles)
+	if s.cfg.Mode == "send" {
+		mux.HandleFunc("/manifest", s.handleManifest)
+		mux.HandleFunc("/files", s.handleFiles)
+	} else {
+		mux.HandleFunc("/push-manifest", s.handlePushManifest)
+		mux.HandleFunc("/upload", s.handleUpload)
+	}
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", s.cfg.Port),
 		Handler: mux,
@@ -130,6 +139,166 @@ func (s *Server) handleFiles(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(FilesResponse{Files: files})
+	select {
+	case <-s.serveDone:
+	default:
+		close(s.serveDone)
+	}
+}
+
+func (s *Server) handlePushManifest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var manifest ManifestResponse
+	if err := json.NewDecoder(r.Body).Decode(&manifest); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Filter sender manifest with ignore patterns
+	filteredSender := make(map[string]string, len(manifest.Files))
+	for path, hash := range manifest.Files {
+		if !s.ignorer.IsIgnored(path) {
+			filteredSender[path] = hash
+		}
+	}
+	s.senderManifest = filteredSender
+
+	localManifest, err := BuildManifest(s.cfg.SyncDir, s.ignorer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var needed []string
+	for path, senderHash := range filteredSender {
+		if localHash, exists := localManifest[path]; !exists || localHash != senderHash {
+			needed = append(needed, path)
+		}
+	}
+
+	var toDelete []string
+	if s.cfg.DeleteExtra {
+		for path := range localManifest {
+			if _, exists := filteredSender[path]; !exists {
+				toDelete = append(toDelete, path)
+			}
+		}
+	}
+
+	if s.cfg.DryRun {
+		for _, path := range needed {
+			u.PrintGeneric(fmt.Sprintf("Dry Run: %s", u.FDebug(path)))
+		}
+		for _, path := range toDelete {
+			u.PrintGeneric(fmt.Sprintf("Dry Run (delete): %s", u.FDebug(path)))
+		}
+		u.LineBreak()
+		totalCount := len(needed) + len(toDelete)
+		if totalCount == 0 {
+			u.PrintWarning("no files would be synced", nil)
+		} else {
+			u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d file(s) would be synced", totalCount))))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(FileRequest{Paths: []string{}})
+		select {
+		case <-s.serveDone:
+		default:
+			close(s.serveDone)
+		}
+		return
+	}
+
+	if len(needed) == 0 {
+		deletedCount := 0
+		for _, path := range toDelete {
+			fullPath := filepath.Join(s.cfg.SyncDir, path)
+			if err := os.RemoveAll(fullPath); err != nil {
+				u.PrintError(fmt.Sprintf("Failed to delete %s", path), err)
+			} else {
+				u.PrintGeneric(fmt.Sprintf("Deleted: %s", u.FSuccess(path)))
+				deletedCount++
+			}
+		}
+		u.LineBreak()
+		if deletedCount == 0 {
+			u.PrintWarning("no files were synced", nil)
+		} else {
+			u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d file(s) synced", deletedCount))))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(FileRequest{Paths: []string{}})
+		select {
+		case <-s.serveDone:
+		default:
+			close(s.serveDone)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(FileRequest{Paths: needed})
+}
+
+func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var filesResp FilesResponse
+	if err := json.NewDecoder(r.Body).Decode(&filesResp); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	count := 0
+	for _, file := range filesResp.Files {
+		relPath := filepath.Clean(file.Path)
+		if strings.HasPrefix(relPath, "..") || filepath.IsAbs(relPath) {
+			u.PrintWarning(fmt.Sprintf("Invalid path: %s", file.Path), nil)
+			continue
+		}
+		fullPath := filepath.Join(s.cfg.SyncDir, relPath)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			u.PrintError(fmt.Sprintf("Failed to create directory for %s", file.Path), err)
+			continue
+		}
+		if err := os.WriteFile(fullPath, file.Content, 0644); err != nil {
+			u.PrintError(fmt.Sprintf("Failed to write %s", file.Path), err)
+			continue
+		}
+		u.PrintGeneric(fmt.Sprintf("Received: %s", u.FSuccess(file.Path)))
+		count++
+	}
+
+	deletedCount := 0
+	if s.cfg.DeleteExtra && s.senderManifest != nil {
+		localManifest, _ := BuildManifest(s.cfg.SyncDir, s.ignorer)
+		for path := range localManifest {
+			if _, exists := s.senderManifest[path]; !exists {
+				fullPath := filepath.Join(s.cfg.SyncDir, path)
+				if err := os.RemoveAll(fullPath); err != nil {
+					u.PrintError(fmt.Sprintf("Failed to delete %s", path), err)
+				} else {
+					u.PrintGeneric(fmt.Sprintf("Deleted: %s", u.FSuccess(path)))
+					deletedCount++
+				}
+			}
+		}
+	}
+
+	u.LineBreak()
+	totalCount := count + deletedCount
+	if totalCount == 0 {
+		u.PrintWarning("no files were synced", nil)
+	} else {
+		u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d file(s) synced", totalCount))))
+	}
+
+	w.WriteHeader(http.StatusOK)
 	select {
 	case <-s.serveDone:
 	default:

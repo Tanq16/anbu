@@ -75,9 +75,6 @@ func init() {
 	rootCmd.AddCommand(networkCmd.IPInfoCmd)
 
 	rootCmd.AddCommand(interactionsCmd.Neo4jCmd)
-	rootCmd.AddCommand(interactionsCmd.GDriveCmd)
-	rootCmd.AddCommand(interactionsCmd.BoxCmd)
-	rootCmd.AddCommand(interactionsCmd.GitHubCmd)
 	rootCmd.AddCommand(interactionsCmd.FSSyncCmd)
 
 	rootCmd.AddCommand(cloudCmd.AwsCmd)

@@ -30,10 +30,7 @@ A summary of everything that **Anbu** can perform:
 | **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 | **Stash** | Persistent clipboard for files, folders, and text snippets with apply, pop, and clear operations, almost similar to `git` stash |
-| **Google Drive Interaction** | Interact with Google Drive to list, upload, download, sync, index, and search files and folders |
-| **Box.com Interaction** | Interact with Box.com to list, upload, download, sync, index, and search files and folders |
-| **GitHub Interaction** | Interact with GitHub to list issues, PRs, workflow runs, add comments, create issues/PRs, and download files/folders |
-| **File System Synchronization** | One-shot file synchronization between two machines over HTTP/HTTPS |
+| **File System Synchronization** | One-shot bidirectional file synchronization between two machines over HTTP/HTTPS with decoupled send/receive and listen/connect roles |
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
 | **Markdown Viewer** | Start a web server to view rendered markdown files with syntax highlighting, navigation, and Mermaid support |
 | **AWS Helper Utilities** | Configure AWS SSO with IAM Identity Center for multi-role access and generate console URLs from CLI profiles |
@@ -253,127 +250,27 @@ The specific details of each are:
   anbu stash clear 1
   ```
 
-- ***Google Drive Interaction*** (alias: `gd`)
-
-  ```bash
-  # Set up credentials by placing credentials.json at ~/.anbu/gdrive-credentials.json or pass with --credentials flag
-  anbu gdrive -c path/to/credentials.json list
-
-  # List files and folders (defaults to root 'My Drive')
-  anbu gdrive list
-  anbu gd ls "My Folder"
-  anbu gd ls "My Folder/file.txt"  # Shows info for a specific file
-
-  # Upload a file or folder (defaults uploading to root 'My Drive' when not specified)
-  anbu gdrive upload local-file.txt "My Folder"
-  anbu gd up local-folder  # uploads folder recursively to root
-
-  # Download a file or folder to the current working directory
-  anbu gdrive download "My Drive Folder/remote-file.txt"
-  anbu gd dl "My Drive Folder/remote-folder"  # downloads folder recursively
-
-  # Sync local directory with remote directory (uploads missing, deletes remote-only, updates changed)
-  anbu gdrive sync ./local-dir "My Drive Folder"
-  anbu gd sync ./local-dir "Backup"  # syncs using MD5 hashes (yes, Google uses this) for comparison
-
-  # Index file metadata for fast searching (defaults to root 'My Drive' when not specified)
-  anbu gdrive index                    # Index entire Google Drive
-  anbu gd index "My Folder"            # Index a specific folder and its contents
-
-  # Search indexed files using regex (requires running 'anbu gdrive index' first)
-  anbu gdrive search '\.pdf$'             # Search for all PDF files
-  anbu gd search '(?i)invoice'            # Case-insensitive search for files containing "invoice"
-  anbu gd search 'report' "My Folder"     # Search within a specific folder
-  anbu gd search '\.txt$' --exclude-dirs  # Search only files, exclude directories
-  anbu gd search 'folder' --exclude-files # Search only directories, exclude files
-  ```
-
-- ***Box Interaction***
-
-  ```bash
-  # Set up credentials by placing credentials.json at ~/.anbu/box-credentials.json or pass with --credentials flag
-  anbu box -c path/to/credentials.json list
-
-  # List files and folders (defaults to root folder)
-  anbu box list
-  anbu box ls "My Folder"
-  anbu box ls "My Folder/file.txt"  # Shows info for a specific file
-
-  # Upload a file or folder (defaults uploading to root when not specified)
-  anbu box upload local-file.txt "My Folder"
-  anbu box up local-folder  # uploads folder recursively to root
-
-  # Download a file or folder to the current working directory
-  anbu box download "My Folder/remote-file.txt"
-  anbu box dl "My Folder/remote-folder"  # downloads folder recursively
-
-  # Sync local directory with remote directory (uploads missing, deletes remote-only, updates changed)
-  anbu box sync ./local-dir "Test Folder"
-  anbu box sync ./local-dir ""  # syncs to root folder using SHA1 hashes (yes, Box uses this) for comparison
-
-  # Index file metadata for fast searching (defaults to root folder when not specified)
-  anbu box index                     # Index entire Box account
-  anbu box index "My Folder"         # Index a specific folder and its contents
-
-  # Search indexed files using regex (requires running 'anbu box index' first)
-  anbu box search '\.pdf$'                 # Search for all PDF files
-  anbu box search '(?i)invoice'            # Case-insensitive search for files containing "invoice"
-  anbu box search 'report' "My Folder"     # Search within a specific folder
-  anbu box search '\.txt$' --exclude-dirs  # Search only files, exclude directories
-  anbu box search 'folder' --exclude-files # Search only directories, exclude files
-  ```
-
-- ***GitHub Interaction*** (alias: `gh`)
-
-  ```bash
-  # Authentication: Use OAuth (default) or PAT with --pat flag
-  # OAuth: Put OAuth app client ID at ~/.anbu/github-credentials.json or pass another file with --credentials flag
-  anbu github -c path/to/credentials.json list owner/repo/i
-  
-  # PAT: Use Personal Access Token (classic or fine-grained) with --pat flag
-  anbu gh --pat YOUR_TOKEN ls owner/repo/i
-
-  anbu gh ls owner/repo/i # List issues
-  anbu gh ls owner/repo/i/23 # List comments for an issue
-  anbu gh ls owner/repo/pr # List pull requests
-  anbu gh ls owner/repo/pr/24 # List comments for a PR
-  anbu gh ls owner/repo/a # List workflows
-  anbu gh ls owner/repo/a/3 # List jobs in a workflow run (3rd run)
-  
-  # Get info about a job (4th job in 3rd workflow run)
-  anbu gh ls owner/repo/a/3/4
-
-  # Download logs for a job to anbu-github.log
-  anbu gh ls owner/repo/a/3/4/logs
-
-  # Add comment to an issue or pr (use Ctrl+D to submit multiline input)
-  anbu gh add owner/repo/i/23
-  anbu gh add owner/repo/pr/24
-
-  anbu gh make owner/repo/i # Create a new issue
-  anbu gh make owner/repo/pr/newfeat # Create a PR from branch to main
-  anbu gh make owner/repo/pr/newfeat/develop # Create a PR from branch to base branch
-
-  # Download files or folders from a repository
-  anbu gh download owner/repo/tree/main/src/file.go      # Download a single file
-  anbu gh dl owner/repo/tree/feature/src                 # Download folder from feature branch
-  anbu gh download owner/repo/tree/abc123def/path/to/dir # Download from specific commit
-  ```
-
 - ***File System Synchronization***
 
-  ```bash
-  # Run the fs-sync server (serves files and waits for one client connection)
-  anbu fs-sync serve -p 8080 -d /path/to/sync/dir
-  anbu fs-sync serve --port 8080 --dir ./sync-dir --ignore ".git,node_modules"
-  anbu fs-sync serve -p 8443 -d ./sync-dir -t  # Serve over HTTPS with self-signed certificate
+  Send and receive roles are decoupled from listen and connect roles, so either side can be the sender or receiver regardless of which side listens.
 
-  # Run the fs-sync client (connects to server and syncs files)
-  anbu fs-sync sync -s http://server.example.com:8080 -d /path/to/local/dir
-  anbu fs-sync sync --server https://file.sync.com:8443 --dir ./local-dir
-  anbu fs-sync sync -s https://server.com:8443 -d ./local-dir -k  # Skip TLS certificate verification
-  anbu fs-sync sync -s http://server.com:8080 -d ./local-dir -r  # Dry run to see what would be synced
-  anbu fs-sync sync -s http://server.com:8080 -d ./local-dir --delete  # Delete local files not on server
+  ```bash
+  # Sender listens, receiver connects (sender has open port)
+  anbu fs-sync send --listen -p 8080 -d /path/to/sync/dir --ignore ".git,node_modules"
+  anbu fs-sync receive --connect http://sender.example.com:8080 -d /path/to/local/dir
+
+  # Receiver listens, sender connects (receiver has open port)
+  anbu fs-sync receive --listen -p 8080 -d /path/to/local/dir
+  anbu fs-sync send --connect http://receiver.example.com:8080 -d /path/to/sync/dir --ignore ".git,node_modules"
+
+  # With TLS (listener enables TLS, connector skips verification for self-signed certs)
+  anbu fs-sync send --listen -p 8443 -d ./sync-dir -t
+  anbu fs-sync receive --connect https://sender.com:8443 -d ./local-dir -k
+
+  # Dry run and delete options (receiver-side flags)
+  anbu fs-sync receive --connect http://sender.com:8080 -d ./local-dir -r       # Dry run
+  anbu fs-sync receive --connect http://sender.com:8080 -d ./local-dir --delete  # Delete extra local files
+  anbu fs-sync receive --listen -p 8080 -d ./local-dir --delete --dry-run        # Dry run with delete preview
   ```
 
 - ***Neo4j Database Interaction***
@@ -481,132 +378,3 @@ hypothetical_command --uuid $(a s uuid)
 
 </details>
 
-<details>
-<summary><b>Creating Google Drive API Credentials</b></summary>
-
-To use the `gdrive` command, you need to create OAuth 2.0 credentials. Here’s how to do it:
-
-1. **Go to the Google Cloud Console:** Navigate to [https://console.cloud.google.com/](https://console.cloud.google.com/) and create a new project (or select an existing one).
-2. **Enable the Google Drive API:** In the project dashboard, search for "Google Drive API" and enable it.
-3. **Create OAuth Credentials:**
-    - Go to **APIs & Services > Credentials**.
-    - Click **Create Credentials > OAuth client ID**.
-    - Select **Desktop app** as the application type.
-    - Give it a name and click **Create**.
-4. **Download Credentials:**
-    - After creation, a dialog will show your client ID and secret. Click **Download JSON** to save the `credentials.json` file.
-    - Place this file at `~/.anbu/gdrive-credentials.json` or provide its path using the `--credentials` flag.
-5. **Publish the App:**
-    - In the **OAuth consent screen** tab, you need to configure the consent screen. For personal use, you can keep it in "Testing" mode and add your Google account as a test user.
-    - If you want to allow other users, you must publish the app, which may require verification by Google.
-
-**Authentication Flow:**
-
-When you run a `gdrive` command for the first time, `anbu` will:
-1. Print a URL to your console.
-2. Open this URL in your web browser. You will be prompted to sign in with your Google account.
-3. Since the app is not verified by Google, you will see a warning screen. Click **Advanced** and then **Go to (unsafe)** to proceed.
-4. After you grant permission, the browser will redirect to a `localhost` address, which will likely fail to load. This is expected.
-5. Copy the *entire* redirect URL from your browser's address bar (it looks like `http://localhost:8080/?code=...&state=...`).
-6. Paste the URL back into the terminal where `anbu` is waiting.
-
-`anbu` will then use this URL to extract the authorization code and exchange it for an access token and refresh token, which it will store for future use.
-
-</details>
-
-<details>
-<summary><b>Creating Box API Credentials</b></summary>
-
-To use the `box` command, you need to create OAuth 2.0 credentials. Here's how to do it:
-
-1. **Go to the Box Developer Console:** Navigate to [Developer Console](https://app.box.com/developers/console) and sign in with your Box account.
-2. **Create a New App:**
-    - Click **Create Platform App** and then **Custom App**,
-    - Name it and choose **User Authentication (OAuth 2.0)**.
-3. **Configure OAuth Settings:**
-    - Go to the **Configuration** tab of the new app.
-    - Under **OAuth 2.0 Credentials**, copy and store your **Client ID** and **Client Secret**.
-    - Add `http://localhost:8080` as a **Redirect URI**.
-    - Enable the option for **Write all files and folders stored in Box**.
-4. **Create Credentials File:**
-    - Create a JSON file with the following structure:
-      ```json
-      {
-        "client_id": "your_client_id",
-        "client_secret": "your_client_secret"
-      }
-      ```
-    - Save this file as `~/.anbu/box-credentials.json` or provide its path using the `--credentials` flag.
-
-**Authentication Flow:**
-
-When you run a `box` command for the first time, `anbu` will:
-1. Print a URL to your console. Open this in your web browser. You will be prompted to sign in with Box.
-2. After granting permission, the browser will redirect to a `localhost` address, which will fail to load. This is expected.
-3. Copy the full redirect URL from the address bar (it looks like `http://localhost:8080/?code=...&state=...`).
-4. Paste the URL back into the terminal where `anbu` is waiting.
-
-`anbu` will then use this URL to extract the authorization code and exchange it for an access token and refresh token, which will be stored for future use. Future commands will not require the credentials flag.
-
-</details>
-
-<details>
-<summary><b>Creating GitHub API Credentials</b></summary>
-
-To use the `github` command, you can authenticate using either:
-- **OAuth App** (default method - requires credentials file)
-- **Personal Access Token** (PAT - classic or fine-grained, passed via `--pat` flag)
-
-**Option 1: OAuth App Authentication**
-
-To use OAuth authentication, you need to create a GitHub OAuth App. Here's how to do it:
-
-1. Navigate to [GitHub Developer Settings](https://github.com/settings/developers).
-2. **Create a New OAuth App:**
-   - Click **OAuth Apps** in the left sidebar, then click **New OAuth App**.
-   - Fill in the application details:
-     - **Application name:** Anbu
-     - **Homepage URL:** `http://localhost`
-     - **Authorization callback URL:** `http://localhost:8080` (not used for device flow, but required)
-   - Click **Register application**.
-3. Get Client ID for the app and copy the value. Client Secret is not required for device code login.
-4. **Create Credentials File:**
-   - Put the client ID in as follows:
-     ```json
-     {
-       "client_id": "your_client_id"
-     }
-     ```
-   - Save this file as `~/.anbu/github-credentials.json` or provide its path using the `--credentials` flag.
-
-**Option 2: PAT**
-
-This is straightforward, but remember to use the `--pat` flag for every operation.
-
-**Authentication Flow:**
-
-When you run a `github` command for the first time, `anbu` will:
-1. Print a verification URL and a user code to your console.
-2. Open the URL in your web browser and enter the user code when prompted.
-3. Authorize the application in your browser, then return to the terminal and press Enter.
-4. `anbu` will then check authorization and retrieve an access token.
-
-The access token is saved at `~/.anbu/github-token.json` and will be reused for subsequent commands.
-
-</details>
-
-<details>
-<summary><b>Path Shortcuts for Box and Google Drive</b></summary>
-
-You can define path shortcuts to simplify remote paths. For Box, create `~/.anbu/box-shortcuts.json`, and for Google Drive, create `~/.anbu/gdrive-shortcuts.json`. Use `%shortcut%` syntax in remote paths (not local paths for Google Drive) to automatically expand shortcuts. Use `%%` for a literal percent sign.
-
-```json
-{
-  "project": "MyProject/2024/Documents",
-  "reports": "Shared/Reports"
-}
-```
-
-Example: `anbu box download %project%/file.pdf` or `anbu gdrive upload local.txt %reports%` will expand to the full paths.
-
-</details>

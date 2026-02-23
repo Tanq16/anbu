@@ -19,6 +19,8 @@ type ClientConfig struct {
 	DeleteExtra bool
 	Insecure    bool
 	DryRun      bool
+	Mode        string // "send" or "receive"
+	IgnorePaths string
 }
 
 type Client struct {
@@ -49,19 +51,37 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 }
 
 func (c *Client) Run() error {
+	if c.cfg.Mode == "send" {
+		return c.runSend()
+	}
+	return c.runReceive()
+}
+
+func (c *Client) runReceive() error {
 	serverManifest, err := c.fetchManifest()
 	if err != nil {
 		return fmt.Errorf("failed to fetch manifest: %w", err)
 	}
-	localManifest, _ := BuildManifest(c.cfg.SyncDir, nil)
-	toRequest, toDelete := c.compareManifests(serverManifest, localManifest)
+
+	ignorer := NewPathIgnorer(c.cfg.IgnorePaths)
+	localManifest, _ := BuildManifest(c.cfg.SyncDir, ignorer)
+
+	// Filter server manifest with ignore patterns
+	filteredServer := make(map[string]string, len(serverManifest))
+	for path, hash := range serverManifest {
+		if !ignorer.IsIgnored(path) {
+			filteredServer[path] = hash
+		}
+	}
+
+	toRequest, toDelete := c.compareManifests(filteredServer, localManifest)
 	if c.cfg.DryRun {
 		for _, path := range toRequest {
 			u.PrintGeneric(fmt.Sprintf("Dry Run: %s", u.FDebug(path)))
 		}
 		if c.cfg.DeleteExtra {
 			for _, path := range toDelete {
-				u.PrintGeneric(fmt.Sprintf("Dry Run: %s", u.FDebug(path)))
+				u.PrintGeneric(fmt.Sprintf("Dry Run (delete): %s", u.FDebug(path)))
 			}
 		}
 		u.LineBreak()
@@ -97,6 +117,33 @@ func (c *Client) Run() error {
 	} else {
 		u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d file(s) synced", totalCount))))
 	}
+	return nil
+}
+
+func (c *Client) runSend() error {
+	ignorer := NewPathIgnorer(c.cfg.IgnorePaths)
+	localManifest, err := BuildManifest(c.cfg.SyncDir, ignorer)
+	if err != nil {
+		return fmt.Errorf("failed to build local manifest: %w", err)
+	}
+
+	needed, err := c.pushManifest(localManifest)
+	if err != nil {
+		return fmt.Errorf("failed to push manifest: %w", err)
+	}
+
+	if len(needed) == 0 {
+		u.PrintWarning("no files to send", nil)
+		return nil
+	}
+
+	count, err := c.uploadFiles(needed)
+	if err != nil {
+		return fmt.Errorf("failed to upload files: %w", err)
+	}
+
+	u.LineBreak()
+	u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d file(s) sent", count))))
 	return nil
 }
 
@@ -146,6 +193,61 @@ func (c *Client) fetchFiles(paths []string) (int, error) {
 			return count, fmt.Errorf("failed to write file %s: %w", file.Path, err)
 		}
 		u.PrintGeneric(fmt.Sprintf("Synced: %s", u.FSuccess(file.Path)))
+		count++
+	}
+	return count, nil
+}
+
+func (c *Client) pushManifest(manifest map[string]string) ([]string, error) {
+	reqBody, _ := json.Marshal(ManifestResponse{Files: manifest})
+	resp, err := c.httpClient.Post(
+		c.cfg.ServerAddr+"/push-manifest",
+		"application/json",
+		bytes.NewReader(reqBody),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to push manifest: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("server returned %d", resp.StatusCode)
+	}
+	var fileReq FileRequest
+	if err := json.NewDecoder(resp.Body).Decode(&fileReq); err != nil {
+		return nil, err
+	}
+	return fileReq.Paths, nil
+}
+
+func (c *Client) uploadFiles(paths []string) (int, error) {
+	var files []FileContent
+	for _, path := range paths {
+		fullPath := filepath.Join(c.cfg.SyncDir, path)
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			u.PrintWarning(fmt.Sprintf("Failed to read %s", path), err)
+			continue
+		}
+		files = append(files, FileContent{Path: path, Content: content})
+	}
+
+	reqBody, _ := json.Marshal(FilesResponse{Files: files})
+	resp, err := c.httpClient.Post(
+		c.cfg.ServerAddr+"/upload",
+		"application/json",
+		bytes.NewReader(reqBody),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to upload files: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("server returned %d", resp.StatusCode)
+	}
+
+	count := 0
+	for _, file := range files {
+		u.PrintGeneric(fmt.Sprintf("Sent: %s", u.FSuccess(file.Path)))
 		count++
 	}
 	return count, nil
