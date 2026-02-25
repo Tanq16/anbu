@@ -1,21 +1,19 @@
 package anbuGenerics
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 const sizeThreshold = 100 * 1024 * 1024
 
-func FindDuplicates(recursive bool, delete bool) {
+func FindDuplicates(recursive bool, delete bool) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
-		u.PrintFatal("failed to get current directory", err)
+		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 	var files []string
 	if recursive {
@@ -29,12 +27,12 @@ func FindDuplicates(recursive bool, delete bool) {
 			return nil
 		})
 		if err != nil {
-			u.PrintFatal("failed to walk directory", err)
+			return fmt.Errorf("failed to walk directory: %w", err)
 		}
 	} else {
 		entries, err := os.ReadDir(currentDir)
 		if err != nil {
-			u.PrintFatal("failed to read directory", err)
+			return fmt.Errorf("failed to read directory: %w", err)
 		}
 		for _, entry := range entries {
 			if !entry.IsDir() {
@@ -65,7 +63,7 @@ func FindDuplicates(recursive bool, delete bool) {
 		}
 		hashMap := make(map[string][]string)
 		for _, file := range fileList {
-			hash, err := computeFileHash(file)
+			hash, err := u.ComputeFileHash(file)
 			if err != nil {
 				continue
 			}
@@ -80,7 +78,7 @@ func FindDuplicates(recursive bool, delete bool) {
 
 	if len(hashedDuplicates) == 0 && len(unhashedDuplicates) == 0 {
 		u.PrintInfo("No duplicate files found")
-		return
+		return nil
 	}
 	if len(hashedDuplicates) > 0 {
 		table := u.NewTable([]string{"Set ID", "Files"})
@@ -116,7 +114,7 @@ func FindDuplicates(recursive bool, delete bool) {
 
 	if len(unhashedDuplicates) > 0 {
 		u.LineBreak()
-		u.PrintWarning("Unhashed duplicates due to huge size:", nil)
+		u.PrintWarn("Unhashed duplicates due to huge size:", nil)
 		table := u.NewTable([]string{"Set ID", "Files"})
 		startID := len(hashedDuplicates) + 1
 		for i, fileList := range unhashedDuplicates {
@@ -148,13 +146,5 @@ func FindDuplicates(recursive bool, delete bool) {
 			}
 		}
 	}
-}
-
-func computeFileHash(filePath string) (string, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", err
-	}
-	hash := sha256.Sum256(data)
-	return hex.EncodeToString(hash[:]), nil
+	return nil
 }

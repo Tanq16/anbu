@@ -9,16 +9,22 @@ import (
 
 	"github.com/google/uuid"
 
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
-func BulkRename(pattern string, replacement string, renameDirectories bool, dryRun bool) {
+func BulkRename(pattern string, replacement string, renameDirectories bool, dryRun bool) error {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		u.PrintFatal("Invalid regex pattern", err)
+		return fmt.Errorf("invalid regex pattern: %w", err)
 	}
-	currentDir, _ := os.Getwd()
-	entries, _ := os.ReadDir(currentDir)
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+	entries, err := os.ReadDir(currentDir)
+	if err != nil {
+		return fmt.Errorf("failed to read directory: %w", err)
+	}
 
 	renameCount := 0
 	for _, entry := range entries {
@@ -66,10 +72,11 @@ func BulkRename(pattern string, replacement string, renameDirectories bool, dryR
 	}
 	u.LineBreak()
 	if renameCount == 0 {
-		u.PrintWarning("no items were renamed", nil)
+		u.PrintWarn("no items were renamed", nil)
 	} else {
 		u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories]))))
 	}
+	return nil
 }
 
 // same logic as GenerateUUIDString but returns instead of printing
@@ -81,7 +88,7 @@ func generateUUIDString() string {
 // same logic as GenerateRUIDString but returns instead of printing
 func generateRUIDString(length int) string {
 	if length <= 0 || length > 30 {
-		u.PrintWarning("length must be between 1 and 30; using 18", nil)
+		u.PrintWarn("length must be between 1 and 30; using 18", nil)
 		length = 18
 	}
 	uuid, _ := uuid.NewRandom()

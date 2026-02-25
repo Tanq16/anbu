@@ -13,7 +13,7 @@ import (
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
 	interactionsCmd "github.com/tanq16/anbu/cmd/interactions-cmd"
 	networkCmd "github.com/tanq16/anbu/cmd/network-cmd"
-	"github.com/tanq16/anbu/utils"
+	"github.com/tanq16/anbu/internal/utils"
 )
 
 var AnbuVersion = "dev-build"

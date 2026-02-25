@@ -3,7 +3,7 @@ package cloudCmd
 import (
 	"github.com/spf13/cobra"
 	anbuCloud "github.com/tanq16/anbu/internal/cloud/azure"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 var AzureCmd = &cobra.Command{

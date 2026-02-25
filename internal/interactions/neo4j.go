@@ -8,7 +8,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/rs/zerolog/log"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 type QueryResult struct {
@@ -24,7 +24,7 @@ func newDriver(ctx context.Context, uri, user, password string) (neo4j.DriverWit
 	if err := driver.VerifyConnectivity(ctx); err != nil {
 		return nil, fmt.Errorf("failed to verify neo4j connectivity: %w", err)
 	}
-	log.Debug().Msg("neo4j driver created and connected successfully")
+	log.Debug().Str("package", "neo4j").Msg("neo4j driver created and connected successfully")
 	return driver, nil
 }
 
@@ -54,7 +54,7 @@ func ExecuteNeo4jQueries(ctx context.Context, uri, user, password, database stri
 	if writeMode {
 		mode = neo4j.AccessModeWrite
 	}
-	log.Debug().Str("database", database).Bool("writeMode", writeMode).Msg("creating neo4j session")
+	log.Debug().Str("package", "neo4j").Str("database", database).Bool("writeMode", writeMode).Msg("creating neo4j session")
 	session := driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: database,
 		AccessMode:   mode,
@@ -63,7 +63,7 @@ func ExecuteNeo4jQueries(ctx context.Context, uri, user, password, database stri
 	var allResults []QueryResult
 	for _, query := range queries {
 		u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("executing query:"), u.FStream(query)))
-		log.Debug().Msgf("executing query: %s", query)
+		log.Debug().Str("package", "neo4j").Msgf("executing query: %s", query)
 		records, err := executeQuery(ctx, session, query)
 		if err != nil {
 			u.PrintError("error executing query, but continuing", err)

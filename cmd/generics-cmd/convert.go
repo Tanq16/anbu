@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 var ConvertCmd = &cobra.Command{
@@ -26,6 +27,8 @@ Examples:
 	Run: func(cmd *cobra.Command, args []string) {
 		converterType := args[0]
 		input := args[1]
-		anbuGenerics.ConvertData(converterType, input)
+		if err := anbuGenerics.ConvertData(converterType, input); err != nil {
+			u.PrintFatal("conversion failed", err)
+		}
 	},
 }

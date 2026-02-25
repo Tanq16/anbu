@@ -3,7 +3,7 @@ package networkCmd
 import (
 	"github.com/spf13/cobra"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 	"golang.org/x/crypto/ssh"
 )
 

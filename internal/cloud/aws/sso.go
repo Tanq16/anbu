@@ -18,10 +18,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sso"
-	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/rs/zerolog/log"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
+	"golang.org/x/sync/errgroup"
 )
 
 type SSOConfig struct {
@@ -105,12 +105,12 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 	if err := createCacheFile(home, ssoConfig.SessionName, ssoConfig.StartURL, ssoConfig.SSORegion, regResp, tokenResp); err != nil {
 		return fmt.Errorf("failed to create cache file: %w", err)
 	}
-	log.Debug().Msg("SSO login successful")
+	log.Debug().Str("package", "aws").Msg("SSO login successful")
 	accounts, err := listAccounts(sso.NewFromConfig(cfg), tokenResp.AccessToken)
 	if err != nil {
 		return err
 	}
-	log.Debug().Int("accounts", len(accounts.AccountList)).Msg("found accounts")
+	log.Debug().Str("package", "aws").Int("accounts", len(accounts.AccountList)).Msg("found accounts")
 
 	configData, err := processAccounts(sso.NewFromConfig(cfg), tokenResp.AccessToken, accounts, ssoConfig)
 	if err != nil {
@@ -122,7 +122,7 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 	if err := writeConfigFile(configFilePath, configData); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
-	log.Debug().Str("path", configFilePath).Msg("AWS config updated successfully")
+	log.Debug().Str("package", "aws").Str("path", configFilePath).Msg("AWS config updated successfully")
 	return nil
 }
 
@@ -147,19 +147,17 @@ func processAccounts(client *sso.Client, accessToken *string, accounts sso.ListA
 	configData.Config = config
 	re := regexp.MustCompile(`[^a-zA-Z0-9]`)
 	profileList := []string{}
-	wg := sync.WaitGroup{}
+	g, _ := errgroup.WithContext(context.Background())
 	mu := sync.Mutex{}
 	for _, account := range accounts.AccountList {
-		wg.Add(1)
-		go func(account types.AccountInfo) {
-			defer wg.Done()
+		g.Go(func() error {
 			accountID := aws.ToString(account.AccountId)
 			accountName := strings.ToLower(re.ReplaceAllString(aws.ToString(account.AccountName), "-"))
-			log.Debug().Str("id", accountID).Str("name", accountName).Msg("processing account")
+			log.Debug().Str("package", "aws").Str("id", accountID).Str("name", accountName).Msg("processing account")
 			roles, err := listAccountRoles(client, accessToken, accountID)
 			if err != nil {
-				u.PrintWarning("failed to list roles", err)
-				return
+				u.PrintWarn("failed to list roles", err)
+				return nil
 			}
 			for _, role := range roles.RoleList {
 				roleName := aws.ToString(role.RoleName)
@@ -169,7 +167,7 @@ func processAccounts(client *sso.Client, accessToken *string, accounts sso.ListA
 				for _, profile := range configData.Profiles {
 					if profile.Name == profileName {
 						profileName = fmt.Sprintf("%s-%s-%s", profileName, accountID, roleName)
-						log.Debug().Str("originalName", originalProfileName).Str("resolvedName", profileName).Msg("profile name conflict resolved")
+						log.Debug().Str("package", "aws").Str("originalName", originalProfileName).Str("resolvedName", profileName).Msg("profile name conflict resolved")
 						break
 					}
 				}
@@ -183,13 +181,16 @@ func processAccounts(client *sso.Client, accessToken *string, accounts sso.ListA
 					Output:      "json",
 				})
 				mu.Unlock()
-				log.Debug().Str("profile", profileName).Msg("added profile")
+				log.Debug().Str("package", "aws").Str("profile", profileName).Msg("added profile")
 			}
-		}(account)
+			return nil
+		})
 	}
-	wg.Wait()
+	if err := g.Wait(); err != nil {
+		return ConfigData{}, err
+	}
 	if err := createProfileList(profileList); err != nil {
-		u.PrintWarning("failed to create profile string list", err)
+		u.PrintWarn("failed to create profile string list", err)
 	}
 	return configData, nil
 }
@@ -237,6 +238,19 @@ func createCacheFile(home string, sessionName string, startURL string, region st
 	if err := os.MkdirAll(cacheDir, 0700); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
+	if tokenResp.AccessToken == nil {
+		return fmt.Errorf("missing access token in SSO response")
+	}
+	if regResp.ClientId == nil {
+		return fmt.Errorf("missing client ID in SSO registration response")
+	}
+	if regResp.ClientSecret == nil {
+		return fmt.Errorf("missing client secret in SSO registration response")
+	}
+	refreshToken := ""
+	if tokenResp.RefreshToken != nil {
+		refreshToken = *tokenResp.RefreshToken
+	}
 	h := sha1.New()
 	h.Write([]byte(sessionName))
 	filename := hex.EncodeToString(h.Sum(nil)) + ".json"
@@ -246,7 +260,7 @@ func createCacheFile(home string, sessionName string, startURL string, region st
 		ClientID:              *regResp.ClientId,
 		ClientSecret:          *regResp.ClientSecret,
 		ExpiresAt:             now.Add(time.Hour).Format(time.RFC3339),
-		RefreshToken:          *tokenResp.RefreshToken,
+		RefreshToken:          refreshToken,
 		Region:                region,
 		RegistrationExpiresAt: now.Add(24 * time.Hour).Format(time.RFC3339),
 		StartUrl:              startURL,
@@ -258,7 +272,7 @@ func createCacheFile(home string, sessionName string, startURL string, region st
 	if err := os.WriteFile(filepath.Join(cacheDir, filename), cacheData, 0600); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
-	log.Debug().Str("file", filename).Msg("cache file created")
+	log.Debug().Str("package", "aws").Str("file", filename).Msg("cache file created")
 	return nil
 }
 

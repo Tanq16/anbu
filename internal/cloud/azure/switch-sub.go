@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strconv"
 
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 type Subscription struct {

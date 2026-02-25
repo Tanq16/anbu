@@ -3,6 +3,7 @@ package genericsCmd
 import (
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 var duplicatesFlags struct {
@@ -16,7 +17,9 @@ var DuplicatesCmd = &cobra.Command{
 	Short:   "Find duplicate files by content with optional recursive search",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		anbuGenerics.FindDuplicates(duplicatesFlags.recursive, duplicatesFlags.delete)
+		if err := anbuGenerics.FindDuplicates(duplicatesFlags.recursive, duplicatesFlags.delete); err != nil {
+			u.PrintFatal("find duplicates failed", err)
+		}
 	},
 }
 

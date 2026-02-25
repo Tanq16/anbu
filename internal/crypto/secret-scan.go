@@ -2,6 +2,7 @@ package anbuCrypto
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,7 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
+	"golang.org/x/sync/errgroup"
 )
 
 type SecretMatch struct {
@@ -86,7 +88,8 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 	progressManager := u.NewManager()
 	progressManager.StartDisplay()
 	// Create scanner pool
-	var wg sync.WaitGroup
+	g, _ := errgroup.WithContext(context.Background())
+	g.SetLimit(30)
 	var progWg sync.WaitGroup
 	progressChan := make(chan int64)
 	progWg.Add(1)
@@ -98,7 +101,6 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 			progressManager.AddProgressBarToStream(completed, int64(len(filesToScan)), fmt.Sprintf("Scanned %d files", completed))
 		}
 	}(progressChan)
-	workers := make(chan struct{}, 30) // Limit to 30
 	errChan := make(chan error, len(filesToScan))
 	for _, file := range filesToScan {
 		skipped := false
@@ -112,18 +114,15 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 			progressChan <- 1
 			continue
 		}
-		wg.Add(1)
-		workers <- struct{}{}
-		go func(filepath string, progCh chan<- int64) {
-			defer wg.Done()
-			defer func() { <-workers }()
-			if err := scanFile(filepath, rules, matches); err != nil {
-				errChan <- fmt.Errorf("error scanning file %s: %v", filepath, err)
+		g.Go(func() error {
+			if err := scanFile(file, rules, matches); err != nil {
+				errChan <- fmt.Errorf("error scanning file %s: %v", file, err)
 			}
 			progressChan <- 1
-		}(file, progressChan)
+			return nil
+		})
 	}
-	wg.Wait()
+	g.Wait()
 	close(progressChan)
 	close(errChan)
 	progWg.Wait()

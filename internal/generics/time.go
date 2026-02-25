@@ -7,7 +7,7 @@ import (
 	"time"
 
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 type timeFormat struct {
@@ -52,7 +52,7 @@ func printTimeTablePurple(concern time.Time) {
 	}
 	ipAddr, err := anbuNetwork.GetPublicIP()
 	if err != nil {
-		u.PrintWarning("could not get public IP address", err)
+		u.PrintWarn("could not get public IP address", err)
 	} else {
 		ipAddress := ipAddr.UnwindString("ip")
 		table.Rows = append(table.Rows, []string{"Public IP", ipAddress})

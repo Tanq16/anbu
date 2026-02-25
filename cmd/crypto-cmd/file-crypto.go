@@ -1,9 +1,11 @@
 package cryptoCmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	anbuCrypto "github.com/tanq16/anbu/internal/crypto"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 var fileCryptoFlags struct {
@@ -22,9 +24,17 @@ var FileCryptoCmd = &cobra.Command{
 			u.PrintFatal("No password specified", nil)
 		}
 		if fileCryptoFlags.decrypt {
-			anbuCrypto.DecryptFileSymmetric(args[0], fileCryptoFlags.password)
+			outputPath, err := anbuCrypto.DecryptFileSymmetric(args[0], fileCryptoFlags.password)
+			if err != nil {
+				u.PrintFatal("decryption failed", err)
+			}
+			u.PrintGeneric(fmt.Sprintf("\nFile decrypted: %s", u.FSuccess(outputPath)))
 		} else {
-			anbuCrypto.EncryptFileSymmetric(args[0], fileCryptoFlags.password)
+			outputPath, err := anbuCrypto.EncryptFileSymmetric(args[0], fileCryptoFlags.password)
+			if err != nil {
+				u.PrintFatal("encryption failed", err)
+			}
+			u.PrintGeneric(fmt.Sprintf("\nFile encrypted: %s", u.FSuccess(outputPath)))
 		}
 	},
 }

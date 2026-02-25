@@ -3,6 +3,7 @@ package genericsCmd
 import (
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 var bulkRenameFlags struct {
@@ -21,7 +22,9 @@ Examples:
   anbu rename '(.*)\.(.*)' '\1_backup.\2'         # Add _backup before extension`,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		anbuGenerics.BulkRename(args[0], args[1], bulkRenameFlags.renameDirectories, bulkRenameFlags.dryRun)
+		if err := anbuGenerics.BulkRename(args[0], args[1], bulkRenameFlags.renameDirectories, bulkRenameFlags.dryRun); err != nil {
+			u.PrintFatal("bulk rename failed", err)
+		}
 	},
 }
 

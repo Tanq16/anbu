@@ -5,7 +5,9 @@ import (
 	anbuCrypto "github.com/tanq16/anbu/internal/crypto"
 )
 
-var printFalsePositives bool
+var secretScanFlags struct {
+	printFalsePositives bool
+}
 
 var SecretsScanCmd = &cobra.Command{
 	Use:     "secret-scan [path]",
@@ -17,10 +19,10 @@ var SecretsScanCmd = &cobra.Command{
 		if len(args) > 0 {
 			scanPath = args[0]
 		}
-		anbuCrypto.ScanSecretsInPath(scanPath, printFalsePositives)
+		anbuCrypto.ScanSecretsInPath(scanPath, secretScanFlags.printFalsePositives)
 	},
 }
 
 func init() {
-	SecretsScanCmd.Flags().BoolVarP(&printFalsePositives, "print-false", "p", false, "Include generic matches that may be false positives")
+	SecretsScanCmd.Flags().BoolVarP(&secretScanFlags.printFalsePositives, "print-false", "p", false, "Include generic matches that may be false positives")
 }
