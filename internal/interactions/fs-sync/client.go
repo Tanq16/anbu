@@ -92,7 +92,6 @@ func (c *Client) pullFromServer() error {
 
 	localManifest, _ := BuildManifest(c.cfg.SyncDir, c.ignorer)
 
-	// Filter server manifest with client ignore patterns
 	filteredServer := make(map[string]string, len(serverManifest))
 	for path, hash := range serverManifest {
 		if !c.ignorer.IsIgnored(path) {
@@ -159,7 +158,6 @@ func (c *Client) pushToServer() error {
 		return fmt.Errorf("failed to build local manifest: %w", err)
 	}
 
-	// Determine what the server needs
 	var needed []string
 	for path, localHash := range localManifest {
 		if serverHash, exists := serverManifest[path]; !exists || serverHash != localHash {
@@ -167,7 +165,6 @@ func (c *Client) pushToServer() error {
 		}
 	}
 
-	// Determine what the server should delete
 	var toDelete []string
 	for path := range serverManifest {
 		if _, exists := localManifest[path]; !exists {
@@ -180,7 +177,6 @@ func (c *Client) pushToServer() error {
 		return nil
 	}
 
-	// Read file contents for needed files
 	var files []FileContent
 	for _, path := range needed {
 		fullPath := filepath.Join(c.cfg.SyncDir, path)
@@ -192,7 +188,6 @@ func (c *Client) pushToServer() error {
 		files = append(files, FileContent{Path: path, Content: content})
 	}
 
-	// Upload to server
 	uploadReq := UploadRequest{
 		Files:    files,
 		ToDelete: toDelete,

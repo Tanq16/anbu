@@ -65,7 +65,6 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 		rules[i].Name = rule.Name
 		rules[i].Pattern = pattern
 	}
-	// Collect files to scan
 	var filesToScan []string
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -86,7 +85,6 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 
 	progressManager := u.NewManager()
 	progressManager.StartDisplay()
-	// Create scanner pool
 	g := new(errgroup.Group)
 	g.SetLimit(30)
 	var progWg sync.WaitGroup

@@ -20,12 +20,33 @@ var secretsFlags struct {
 	secretsFile string
 	multiline   bool
 	password    string
+	initialized bool
+}
+
+func initSecretsStore() {
+	if secretsFlags.initialized {
+		return
+	}
+	secretsFlags.initialized = true
+	homeDir, err := os.UserHomeDir()
+	secretsFlags.secretsFile = "secrets.json"
+	if err == nil {
+		anbuDir := filepath.Join(homeDir, ".config", "anbu")
+		if err := os.MkdirAll(anbuDir, 0755); err != nil {
+			u.PrintFatal("failed to create anbu directory", err)
+		}
+		secretsFlags.secretsFile = filepath.Join(anbuDir, "secrets.json")
+	}
+	if err := anbuCrypto.InitializeSecretsStore(secretsFlags.secretsFile); err != nil {
+		u.PrintFatal("failed to initialize secrets store", err)
+	}
 }
 
 var secretsListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all secrets with their IDs",
 	Run: func(cmd *cobra.Command, args []string) {
+		initSecretsStore()
 		secrets, err := anbuCrypto.ListSecrets(secretsFlags.secretsFile)
 		if err != nil {
 			u.PrintFatal("failed to list secrets", err)
@@ -42,6 +63,7 @@ var secretsGetCmd = &cobra.Command{
 	Short: "Print the decrypted value of a specific secret",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		initSecretsStore()
 		password := secretsFlags.password
 		value, err := anbuCrypto.GetSecret(secretsFlags.secretsFile, args[0], password)
 		if err != nil {
@@ -55,6 +77,7 @@ var secretsSetCmd = &cobra.Command{
 	Short: "Set the value for a secret with optional multiline input",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		initSecretsStore()
 		secretID := args[0]
 		var value string
 		var err error
@@ -78,6 +101,7 @@ var secretsDeleteCmd = &cobra.Command{
 	Short: "Delete a secret from the store",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		initSecretsStore()
 		if err := anbuCrypto.DeleteSecret(secretsFlags.secretsFile, args[0]); err != nil {
 			u.PrintFatal("failed to delete secret", err)
 		}
@@ -89,6 +113,7 @@ var secretsImportCmd = &cobra.Command{
 	Short: "Import secrets from a JSON file and encrypt them in the store",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		initSecretsStore()
 		importFile := args[0]
 		password := secretsFlags.password
 		if err := anbuCrypto.ImportSecrets(secretsFlags.secretsFile, importFile, password); err != nil {
@@ -102,6 +127,7 @@ var secretsExportCmd = &cobra.Command{
 	Short: "Export all secrets to a JSON file in decrypted form",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		initSecretsStore()
 		exportFile := args[0]
 		password := secretsFlags.password
 		if err := anbuCrypto.ExportSecrets(secretsFlags.secretsFile, exportFile, password); err != nil {
@@ -112,25 +138,7 @@ var secretsExportCmd = &cobra.Command{
 }
 
 func init() {
-	homeDir, err := os.UserHomeDir()
-	secretsFlags.secretsFile = "secrets.json"
-	if err == nil {
-		anbuDir := filepath.Join(homeDir, ".config", "anbu")
-		if err := os.MkdirAll(anbuDir, 0755); err != nil {
-			u.PrintFatal("failed to create anbu directory", err)
-		}
-		secretsFlags.secretsFile = filepath.Join(anbuDir, "secrets.json")
-	}
-	err = anbuCrypto.InitializeSecretsStore(secretsFlags.secretsFile)
-	if err != nil {
-		u.PrintFatal("failed to initialize secrets store", err)
-	}
-
-	// default known password is fine here - we would anyway use a password inline or in env. var. direct workstation access is anyway a risk, intention is secrets are not in plain text in history or logs. not a huge risk with default password, but option for custom password is nice.
-	secretsGetCmd.Flags().StringVar(&secretsFlags.password, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
-	secretsSetCmd.Flags().StringVar(&secretsFlags.password, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
-	secretsExportCmd.Flags().StringVar(&secretsFlags.password, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
-	secretsImportCmd.Flags().StringVar(&secretsFlags.password, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
+	SecretsCmd.PersistentFlags().StringVar(&secretsFlags.password, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
 	secretsSetCmd.Flags().BoolVarP(&secretsFlags.multiline, "multiline", "m", false, "Enable multiline input (end with 'EOF' on a new line)")
 
 	SecretsCmd.AddCommand(secretsListCmd)
