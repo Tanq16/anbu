@@ -1,7 +1,5 @@
 name: Custom Notifications
 on:
-  schedule:
-    - cron: '30 17 * * 6' # 5:30 pm UTC every saturday
   issues:
     types: [opened, edited, deleted, closed]
   issue_comment:
@@ -29,8 +27,13 @@ jobs:
     steps:
       - name: Notify on Build Status
         run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+            EMOJI="✅"
+          else
+            EMOJI="❌"
+          fi
           curl -H "Content-Type: application/json" -X POST \
-          -d "{\"content\": \"*Workflow run for **${{ github.repository }}***\n${{ github.event.workflow_run.name }} - ${{ github.event.workflow_run.conclusion }}\"}" ${{ secrets.DISCORD_WEBHOOK }}
+          -d "{\"content\": \"${EMOJI} *Workflow run for **${{ github.repository }}***\n${{ github.event.workflow_run.name }} - ${{ github.event.workflow_run.conclusion }}\"}" ${{ secrets.DISCORD_WEBHOOK }}
 
   pull-request-notification:
     if: github.event_name == 'pull_request_target'
@@ -39,5 +42,22 @@ jobs:
       - name: Notify on PR related activities
         if: github.actor != 'Tanq16'
         run: |
+          ACTION="${{ github.event.action }}"
+          if [ "$ACTION" = "opened" ]; then
+            EMOJI="🆕"
+            MSG="opened"
+          elif [ "$ACTION" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+            EMOJI="🎉"
+            MSG="merged"
+          elif [ "$ACTION" = "closed" ]; then
+            EMOJI="🚫"
+            MSG="closed"
+          elif [ "$ACTION" = "review_requested" ]; then
+            EMOJI="👀"
+            MSG="review requested"
+          else
+            EMOJI="📝"
+            MSG="$ACTION"
+          fi
           curl -H "Content-Type: application/json" -X POST \
-          -d "{\"content\": \"*New PR activity from **${{ github.actor }}***\n${{ github.event.pull_request.html_url }}\"}" ${{ secrets.DISCORD_WEBHOOK }}
+          -d "{\"content\": \"${EMOJI} *PR ${MSG} by **${{ github.actor }}***\n${{ github.event.pull_request.html_url }}\"}" ${{ secrets.DISCORD_WEBHOOK }}
