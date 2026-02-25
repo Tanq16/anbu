@@ -11,7 +11,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"golang.org/x/crypto/pbkdf2"
 )
+
+var secretsSalt = []byte("anbu-secrets-v1")
 
 type SecretsStore struct {
 	Secrets map[string]string `json:"secrets"`
@@ -177,8 +181,7 @@ func decryptString(encryptedValue, password string) (string, error) {
 }
 
 func generateKeyFromPassword(password string) []byte {
-	hash := sha256.Sum256([]byte(password))
-	return hash[:]
+	return pbkdf2.Key([]byte(password), secretsSalt, 100000, 32, sha256.New)
 }
 
 func encryptData(data []byte, key []byte) ([]byte, error) {

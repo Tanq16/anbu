@@ -3,6 +3,7 @@ package genericsCmd
 import (
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 var sedFlags struct {
@@ -21,7 +22,9 @@ Examples:
   anbu sed 'old_(.*)' 'new_\1' path/to/dir -r    # Perform a dry-run without applying changes`,
 	Args: cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
-		anbuGenerics.Sed(args[0], args[1], args[2], sedFlags.dryRun)
+		if err := anbuGenerics.Sed(args[0], args[1], args[2], sedFlags.dryRun); err != nil {
+			u.PrintFatal("sed operation failed", err)
+		}
 	},
 }
 

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 func GeneratePassword(lengthS string, simple bool) {
@@ -15,7 +15,7 @@ func GeneratePassword(lengthS string, simple bool) {
 		u.PrintFatal("invalid length", err)
 	}
 	if length <= 0 {
-		u.PrintWarning("length must be greater than 0; using 15", nil)
+		u.PrintWarn("length must be greater than 0; using 15", nil)
 		length = 15
 	}
 	alphabet := "abcdefghijklmnopqrstuvwxyz"
@@ -39,14 +39,14 @@ func GeneratePassPhrase(lengthS string, separator string, simple bool) {
 		u.PrintFatal("invalid length", err)
 	}
 	if length < 2 || length > 50 {
-		u.PrintWarning("length must be between 2 to 50; using 3", nil)
+		u.PrintWarn("length must be between 2 to 50; using 3", nil)
 		length = 3
 	}
 	if separator == "" {
 		separator = "-"
 	}
 	if len(separator) > 1 {
-		u.PrintWarning("separator must be a single character; using -", nil)
+		u.PrintWarn("separator must be a single character; using -", nil)
 	}
 	numberList := "0123456789"
 	var result strings.Builder

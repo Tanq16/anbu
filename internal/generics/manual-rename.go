@@ -9,17 +9,17 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
-func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
+func ManualRename(includeDir bool, hidden bool, includeExtension bool) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
-		u.PrintFatal("failed to get current directory", err)
+		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 	entries, err := os.ReadDir(currentDir)
 	if err != nil {
-		u.PrintFatal("failed to read directory", err)
+		return fmt.Errorf("failed to read directory: %w", err)
 	}
 	var items []os.DirEntry
 	for _, entry := range entries {
@@ -34,10 +34,10 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 		}
 	}
 	if len(items) == 0 {
-		u.PrintWarning("no items found to rename", nil)
-		return
+		u.PrintWarn("no items found to rename", nil)
+		return nil
 	}
-	log.Debug().Int("count", len(items)).Msg("items to process")
+	log.Debug().Str("package", "generics").Int("count", len(items)).Msg("items to process")
 
 	reader := bufio.NewReader(os.Stdin)
 	renameCount := 0
@@ -73,7 +73,7 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 		}
 		oldPath := filepath.Join(currentDir, oldName)
 		newPath := filepath.Join(currentDir, newName)
-		log.Debug().Str("old", oldName).Str("new", newName).Msg("renaming")
+		log.Debug().Str("package", "generics").Str("old", oldName).Str("new", newName).Msg("renaming")
 
 		err = os.Rename(oldPath, newPath)
 		if err != nil {
@@ -86,7 +86,8 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) {
 	}
 	u.LineBreak()
 	if renameCount == 0 {
-		u.PrintWarning("no items were renamed", nil)
+		u.PrintWarn("no items were renamed", nil)
 	}
 	u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d items renamed", renameCount))))
+	return nil
 }

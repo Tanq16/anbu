@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 //go:embed markdown-viewer.html

@@ -8,20 +8,22 @@ import (
 	"strings"
 	"sync"
 
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
+	"golang.org/x/sync/errgroup"
 )
 
-func Sed(pattern string, replacement string, path string, dryRun bool) {
+func Sed(pattern string, replacement string, path string, dryRun bool) error {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		u.PrintFatal("Invalid regex pattern", err)
+		return fmt.Errorf("invalid regex pattern: %w", err)
 	}
 	info, err := os.Stat(path)
 	if err != nil {
-		u.PrintFatal(fmt.Sprintf("Path does not exist: %s", path), err)
+		return fmt.Errorf("path does not exist: %s: %w", path, err)
 	}
 
-	var wg sync.WaitGroup
+	g := new(errgroup.Group)
+	g.SetLimit(30)
 	var mu sync.Mutex
 	processedCount := 0
 	if info.IsDir() {
@@ -32,38 +34,37 @@ func Sed(pattern string, replacement string, path string, dryRun bool) {
 			if fileInfo.IsDir() {
 				return nil
 			}
-			wg.Add(1)
-			go func(fp string) {
-				defer wg.Done()
-				if processFile(fp, re, replacement, dryRun) {
+			g.Go(func() error {
+				if processFile(filePath, re, replacement, dryRun) {
 					mu.Lock()
 					processedCount++
 					mu.Unlock()
 				}
-			}(filePath)
+				return nil
+			})
 			return nil
 		})
 		if err != nil {
-			u.PrintFatal("Failed to walk directory", err)
+			return fmt.Errorf("failed to walk directory: %w", err)
 		}
 	} else {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		g.Go(func() error {
 			if processFile(path, re, replacement, dryRun) {
 				mu.Lock()
 				processedCount++
 				mu.Unlock()
 			}
-		}()
+			return nil
+		})
 	}
 
-	wg.Wait()
+	g.Wait()
 	if processedCount == 0 {
-		u.PrintWarning("no files were processed", nil)
+		u.PrintWarn("no files were processed", nil)
 	} else {
 		u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d file(s) processed", processedCount))))
 	}
+	return nil
 }
 
 func processFile(filePath string, re *regexp.Regexp, replacement string, dryRun bool) bool {

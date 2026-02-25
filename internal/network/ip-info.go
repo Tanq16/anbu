@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 type NetworkInterface struct {
@@ -96,23 +96,33 @@ func GetLocalIPInfo(includeIPv6 bool) {
 				continue
 			}
 			if key == "country" {
-				geography.Country = value.(string)
+				if s, ok := value.(string); ok {
+					geography.Country = s
+				}
 				continue
 			}
 			if key == "region" {
-				geography.Region = value.(string)
+				if s, ok := value.(string); ok {
+					geography.Region = s
+				}
 				continue
 			}
 			if key == "city" {
-				geography.City = value.(string)
+				if s, ok := value.(string); ok {
+					geography.City = s
+				}
 				continue
 			}
 			if key == "postal" {
-				geography.Postal = value.(string)
+				if s, ok := value.(string); ok {
+					geography.Postal = s
+				}
 				continue
 			}
 			if key == "timezone" {
-				geography.Timezone = value.(string)
+				if s, ok := value.(string); ok {
+					geography.Timezone = s
+				}
 				continue
 			}
 			pubIPTable.Rows = append(pubIPTable.Rows, []string{key, fmt.Sprintf("%v", value)})
@@ -120,7 +130,7 @@ func GetLocalIPInfo(includeIPv6 bool) {
 		pubIPTable.Rows = append(pubIPTable.Rows, []string{"geography", fmt.Sprintf("%s, %s, %s, %s (TZ: %s)", geography.Postal, geography.City, geography.Region, geography.Country, geography.Timezone)})
 		pubIPTable.PrintTable(false)
 	} else {
-		u.PrintWarning("Could not retrieve public IP", err)
+		u.PrintWarn("Could not retrieve public IP", err)
 	}
 }
 
@@ -129,7 +139,7 @@ func GetPublicIP() (u.Dictionary, error) {
 		Timeout: 5 * time.Second,
 	}
 	resp, err := client.Get("https://ipinfo.io")
-	log.Debug().Msg("requested IP info from IP-Info.io")
+	log.Debug().Str("package", "network").Msg("requested IP info from IP-Info.io")
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to ipinfo.io: %w", err)
 	}

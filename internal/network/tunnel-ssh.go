@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -68,7 +68,7 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 				if opErr, ok := err.(*net.OpError); ok && !opErr.Temporary() {
 					return
 				}
-				u.PrintWarning("Failed to accept connection", err)
+				u.PrintWarn("Failed to accept connection", err)
 				continue
 			}
 
@@ -173,7 +173,7 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 						return
 					}
 				}
-				u.PrintWarning("Failed to accept connection", err)
+				u.PrintWarn("Failed to accept connection", err)
 				continue
 			}
 

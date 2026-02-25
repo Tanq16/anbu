@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
-func convertDockerToCompose(input string) {
+func convertDockerToCompose(input string) error {
 	input = strings.TrimSpace(input)
 	if !strings.HasPrefix(input, "docker run") {
-		u.PrintFatal("Invalid docker run command. Must start with 'docker run'", nil)
+		return fmt.Errorf("invalid docker run command: must start with 'docker run'")
 	}
 	composeConfig := map[string]any{
 		"services": map[string]any{
@@ -50,24 +50,30 @@ func convertDockerToCompose(input string) {
 					skipNext = true
 				}
 			case strings.HasPrefix(part, "-p=") || strings.HasPrefix(part, "--publish="):
-				value := strings.Split(part, "=")[1]
-				ports = append(ports, value)
+				pParts := strings.SplitN(part, "=", 2)
+				if len(pParts) == 2 {
+					ports = append(ports, pParts[1])
+				}
 			case part == "-v" || part == "--volume":
 				if i+1 < len(parts) {
 					volumes = append(volumes, parts[i+1])
 					skipNext = true
 				}
 			case strings.HasPrefix(part, "-v=") || strings.HasPrefix(part, "--volume="):
-				value := strings.Split(part, "=")[1]
-				volumes = append(volumes, value)
+				vParts := strings.SplitN(part, "=", 2)
+				if len(vParts) == 2 {
+					volumes = append(volumes, vParts[1])
+				}
 			case part == "-e" || part == "--env":
 				if i+1 < len(parts) {
 					environment = append(environment, parts[i+1])
 					skipNext = true
 				}
 			case strings.HasPrefix(part, "-e=") || strings.HasPrefix(part, "--env="):
-				value := strings.Split(part, "=")[1]
-				environment = append(environment, value)
+				eParts := strings.SplitN(part, "=", 2)
+				if len(eParts) == 2 {
+					environment = append(environment, eParts[1])
+				}
 			case part == "--name":
 				if i+1 < len(parts) {
 					// Use container name as service name
@@ -112,27 +118,28 @@ func convertDockerToCompose(input string) {
 	// Convert to YAML
 	yamlData, err := yaml.Marshal(composeConfig)
 	if err != nil {
-		u.PrintFatal("failed to generate YAML", err)
+		return fmt.Errorf("failed to generate YAML: %w", err)
 	}
 	outputFile := "docker-compose.yml"
 	if err := os.WriteFile(outputFile, yamlData, 0644); err != nil {
-		u.PrintFatal("Failed to write output file", err)
+		return fmt.Errorf("failed to write output file: %w", err)
 	}
 	u.PrintSuccess(fmt.Sprintf("Docker run command converted to Docker Compose: %s", outputFile))
+	return nil
 }
 
-func convertComposeToDocker(inputFile string) {
+func convertComposeToDocker(inputFile string) error {
 	data, err := os.ReadFile(inputFile)
 	if err != nil {
-		u.PrintFatal("Failed to read input file", err)
+		return fmt.Errorf("failed to read input file: %w", err)
 	}
 	var composeConfig map[string]any
 	if err := yaml.Unmarshal(data, &composeConfig); err != nil {
-		u.PrintFatal("Failed to parse YAML", err)
+		return fmt.Errorf("failed to parse YAML: %w", err)
 	}
 	services, ok := composeConfig["services"].(map[string]any)
 	if !ok {
-		u.PrintFatal("No services found in the Docker Compose file", nil)
+		return fmt.Errorf("no services found in the Docker Compose file")
 	}
 
 	var dockerCommands []string
@@ -175,6 +182,7 @@ func convertComposeToDocker(inputFile string) {
 	for _, cmd := range dockerCommands {
 		u.PrintGeneric("\n" + u.FSuccess(cmd))
 	}
+	return nil
 }
 
 func splitCommand(command string) []string {

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 func GenerateRandomString(length int) {
@@ -36,7 +36,7 @@ func GenerateRandomString(length int) {
 
 func GenerateSequenceString(length int) {
 	if length <= 0 {
-		u.PrintWarning("length must be greater than 0; using 100", nil)
+		u.PrintWarn("length must be greater than 0; using 100", nil)
 		length = 100
 	}
 	alphabet := "abcdefghijklmnopqrstuvxyz"
@@ -49,7 +49,7 @@ func GenerateSequenceString(length int) {
 
 func GenerateRepetitionString(count int, str string) {
 	if count <= 0 {
-		u.PrintWarning("count must be greater than 0; using 10", nil)
+		u.PrintWarn("count must be greater than 0; using 10", nil)
 		count = 10
 	}
 	var result strings.Builder
@@ -71,7 +71,7 @@ func GenerateRUIDString(len string) {
 		u.PrintFatal("not a valid length", err)
 	}
 	if length <= 0 || length > 30 {
-		u.PrintWarning("length must be between 1 and 30; using 18", nil)
+		u.PrintWarn("length must be between 1 and 30; using 18", nil)
 		length = 18
 	}
 	uuid, _ := uuid.NewRandom()

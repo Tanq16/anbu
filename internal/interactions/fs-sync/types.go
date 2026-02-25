@@ -1,11 +1,11 @@
 package fssync
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
+
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 type ManifestResponse struct {
@@ -23,6 +23,15 @@ type FilesResponse struct {
 type FileContent struct {
 	Path    string `json:"path"`
 	Content []byte `json:"content"`
+}
+
+type ModeResponse struct {
+	Mode string `json:"mode"`
+}
+
+type UploadRequest struct {
+	Files    []FileContent `json:"files"`
+	ToDelete []string      `json:"to_delete,omitempty"`
 }
 
 type PathIgnorer struct {
@@ -56,15 +65,6 @@ func (pi *PathIgnorer) IsIgnored(path string) bool {
 	return false
 }
 
-func ComputeFileHash(filePath string) (string, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", err
-	}
-	hash := sha256.Sum256(data)
-	return hex.EncodeToString(hash[:]), nil
-}
-
 func BuildManifest(rootDir string, ignorer *PathIgnorer) (map[string]string, error) {
 	manifest := make(map[string]string)
 	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
@@ -85,7 +85,7 @@ func BuildManifest(rootDir string, ignorer *PathIgnorer) (map[string]string, err
 		if ignorer != nil && ignorer.IsIgnored(relPath) {
 			return nil
 		}
-		hash, err := ComputeFileHash(path)
+		hash, err := u.ComputeFileHash(path)
 		if err != nil {
 			return err
 		}

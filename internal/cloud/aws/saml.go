@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/rs/zerolog/log"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 	"gopkg.in/ini.v1"
 )
 
@@ -41,7 +41,7 @@ func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlResponseFile string
 		return fmt.Errorf("SAML assertion cannot be empty")
 	}
 
-	log.Debug().Msg("authenticating with SAML assertion")
+	log.Debug().Str("package", "aws").Msg("authenticating with SAML assertion")
 	region := config.CLIRegion
 	if region == "" {
 		region = "us-east-1"
@@ -66,7 +66,7 @@ func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlResponseFile string
 	if err != nil {
 		return fmt.Errorf("failed to assume role with SAML: %w", err)
 	}
-	log.Debug().Msg("successfully assumed role")
+	log.Debug().Str("package", "aws").Msg("successfully assumed role")
 
 	if err := writeCredentialsToProfile(config.Profile, result.Credentials); err != nil {
 		return fmt.Errorf("failed to write credentials: %w", err)
@@ -97,6 +97,15 @@ func writeCredentialsToProfile(profile string, credentials *types.Credentials) e
 			return fmt.Errorf("failed to create profile section: %w", err)
 		}
 	}
+	if credentials.AccessKeyId == nil {
+		return fmt.Errorf("missing access key ID in SAML credentials")
+	}
+	if credentials.SecretAccessKey == nil {
+		return fmt.Errorf("missing secret access key in SAML credentials")
+	}
+	if credentials.SessionToken == nil {
+		return fmt.Errorf("missing session token in SAML credentials")
+	}
 	section.Key("aws_access_key_id").SetValue(*credentials.AccessKeyId)
 	section.Key("aws_secret_access_key").SetValue(*credentials.SecretAccessKey)
 	section.Key("aws_session_token").SetValue(*credentials.SessionToken)
@@ -106,6 +115,6 @@ func writeCredentialsToProfile(profile string, credentials *types.Credentials) e
 	if err := os.Chmod(credentialsPath, 0600); err != nil {
 		return fmt.Errorf("failed to set credentials file permissions: %w", err)
 	}
-	log.Debug().Str("profile", profile).Msg("credentials written to profile")
+	log.Debug().Str("package", "aws").Str("profile", profile).Msg("credentials written to profile")
 	return nil
 }

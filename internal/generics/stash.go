@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	u "github.com/tanq16/anbu/utils"
+	u "github.com/tanq16/anbu/internal/utils"
 )
 
 type StashType string
@@ -41,7 +41,7 @@ func getStashDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	anbuDir := filepath.Join(homeDir, ".anbu")
+	anbuDir := filepath.Join(homeDir, ".config", "anbu")
 	if err := os.MkdirAll(anbuDir, 0755); err != nil {
 		return "", err
 	}
@@ -131,12 +131,7 @@ func StashFS(path string) error {
 		return err
 	}
 	blobUUID := uuid.New().String()
-	blobName := blobUUID
-	if info.IsDir() {
-		blobName += ".zip"
-	} else {
-		blobName += ".zip"
-	}
+	blobName := blobUUID + ".zip"
 	blobPath := filepath.Join(stashDir, "blobs", blobName)
 	if info.IsDir() {
 		if err := zipDir(absPath, blobPath); err != nil {
@@ -327,7 +322,7 @@ func StashPop(id int) error {
 	}
 	blobPath := filepath.Join(stashDir, "blobs", entry.BlobName)
 	if err := os.Remove(blobPath); err != nil {
-		u.PrintWarning("failed to remove blob file", err)
+		u.PrintWarn("failed to remove blob file", err)
 	}
 	if !removeEntryByID(index, id) {
 		return fmt.Errorf("failed to remove entry from index")
@@ -357,7 +352,7 @@ func StashClear(id int) error {
 	}
 	blobPath := filepath.Join(stashDir, "blobs", entry.BlobName)
 	if err := os.Remove(blobPath); err != nil {
-		u.PrintWarning("failed to remove blob file", err)
+		u.PrintWarn("failed to remove blob file", err)
 	}
 	if !removeEntryByID(index, id) {
 		return fmt.Errorf("failed to remove entry from index")
@@ -388,14 +383,20 @@ func zipDir(source, destZip string) error {
 		if err != nil {
 			return err
 		}
-		relPath, _ := filepath.Rel(source, path)
+		relPath, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
 		header.Name = filepath.ToSlash(relPath)
 		if info.IsDir() {
 			header.Name += "/"
 		} else {
 			header.Method = zip.Deflate
 		}
-		writer, _ := archive.CreateHeader(header)
+		writer, err := archive.CreateHeader(header)
+		if err != nil {
+			return err
+		}
 		if info.IsDir() {
 			return nil
 		}
@@ -434,7 +435,11 @@ func unzipDir(srcZip, destDir string) error {
 			outFile.Close()
 			return err
 		}
-		io.Copy(outFile, rc)
+		if _, err := io.Copy(outFile, rc); err != nil {
+			outFile.Close()
+			rc.Close()
+			return err
+		}
 		outFile.Close()
 		rc.Close()
 	}
