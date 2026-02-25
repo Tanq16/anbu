@@ -32,17 +32,16 @@ jobs:
           PATCH=${VERSION_PARTS[2]:-0}
           
           # Check commit message for version increments
-          if git log -1 --pretty=%B | grep -i "version bump"; then
-            NEW_VERSION="v$((MAJOR + 1)).0"
-          elif git log -1 --pretty=%B | grep -i "minor bump"; then
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if echo "$COMMIT_MSG" | grep -q "\[major-release\]"; then
+            NEW_VERSION="v$((MAJOR + 1)).0.0"
+          elif echo "$COMMIT_MSG" | grep -q "\[minor-release\]"; then
             NEW_VERSION="v$MAJOR.$((MINOR + 1)).0"
-          elif git log -1 --pretty=%B | grep -i "patch bump"; then
-            NEW_VERSION="v$MAJOR.$MINOR.$((PATCH + 1))"
           else
             NEW_VERSION="v$MAJOR.$MINOR.$((PATCH + 1))"
           fi
-          
-          echo "Previous version: $LATEST_TAG\n New version: $NEW_VERSION"
+
+          echo "Previous version: $LATEST_TAG | New version: $NEW_VERSION"
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
