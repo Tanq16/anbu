@@ -2,7 +2,6 @@ package anbuCrypto
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -88,7 +87,7 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 	progressManager := u.NewManager()
 	progressManager.StartDisplay()
 	// Create scanner pool
-	g, _ := errgroup.WithContext(context.Background())
+	g := new(errgroup.Group)
 	g.SetLimit(30)
 	var progWg sync.WaitGroup
 	progressChan := make(chan int64)

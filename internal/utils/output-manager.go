@@ -12,6 +12,8 @@ type Manager struct {
 	done    chan struct{}
 }
 
+type doneMsg struct{}
+
 type progressMsg struct {
 	current int64
 	total   int64
@@ -28,7 +30,7 @@ type progressModel struct {
 
 func initialModel() progressModel {
 	bar := progress.New(progress.WithFillCharacters('━', ' '))
-	bar.FullColor = "250" // debug style color
+	bar.FullColor = "7" // debug style color
 	return progressModel{
 		current: 0,
 		total:   100,
@@ -46,6 +48,9 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.bar.Width = min(msg.Width-10, 80)
 		return m, nil
+	case doneMsg:
+		m.quitting = true
+		return m, tea.Quit
 	case progressMsg:
 		m.current = msg.current
 		m.total = msg.total
@@ -99,7 +104,7 @@ func (m *Manager) StartDisplay() {
 
 func (m *Manager) StopDisplay() {
 	if m.program != nil {
-		m.program.Quit()
+		m.program.Send(doneMsg{})
 		if m.done != nil {
 			<-m.done
 		}

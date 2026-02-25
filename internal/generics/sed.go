@@ -1,7 +1,6 @@
 package anbuGenerics
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,7 +22,7 @@ func Sed(pattern string, replacement string, path string, dryRun bool) error {
 		return fmt.Errorf("path does not exist: %s: %w", path, err)
 	}
 
-	g, _ := errgroup.WithContext(context.Background())
+	g := new(errgroup.Group)
 	g.SetLimit(30)
 	var mu sync.Mutex
 	processedCount := 0
