@@ -64,7 +64,6 @@ func GenerateUUIDString() {
 	u.PrintGeneric(uuid.String())
 }
 
-// generates shorter UUID string
 func GenerateRUIDString(len string) {
 	length, err := strconv.Atoi(len)
 	if err != nil {
@@ -75,7 +74,6 @@ func GenerateRUIDString(len string) {
 		length = 18
 	}
 	uuid, _ := uuid.NewRandom()
-	// remove version and variant bits from UUID
 	shortUUID := uuid.String()[0:8] + uuid.String()[9:13] + uuid.String()[15:18] + uuid.String()[20:23] + uuid.String()[24:]
 	u.PrintGeneric(shortUUID[:length])
 }

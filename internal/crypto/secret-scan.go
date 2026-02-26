@@ -189,7 +189,6 @@ func scanFile(filepath string, rules []struct {
 		line := scanner.Text()
 		for _, rule := range rules {
 			if foundMatches := rule.Pattern.FindStringSubmatch(line); len(foundMatches) > 0 {
-				// Get the actual match (first group if exists, otherwise full match)
 				matchStr := foundMatches[0]
 				if len(foundMatches) > 1 && foundMatches[1] != "" {
 					matchStr = foundMatches[1]
@@ -211,7 +210,6 @@ func scanFile(filepath string, rules []struct {
 }
 
 func isLikelyBinary(path string) bool {
-	// Check extension first
 	ext := strings.ToLower(filepath.Ext(path))
 	binaryExts := map[string]bool{
 		".jpg": true, ".jpeg": true, ".png": true, ".gif": true,
@@ -223,18 +221,16 @@ func isLikelyBinary(path string) bool {
 	if binaryExts[ext] {
 		return true
 	}
-	// Check file content
 	file, err := os.Open(path)
 	if err != nil {
 		return false
 	}
 	defer file.Close()
-	buf := make([]byte, 512) // Read first 512 bytes
+	buf := make([]byte, 512)
 	n, err := file.Read(buf)
 	if err != nil {
 		return false
 	}
-	// Check for null bytes and non-printable chars as heuristic
 	nullCount := 0
 	nonPrintable := 0
 	for i := range n {

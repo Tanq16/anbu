@@ -4,12 +4,10 @@ const (
 	maxSize = 50 * 1024 * 1024 // 50MB
 )
 
-// SecretRules defines the patterns to scan for
 var secretRules = []struct {
 	Name    string
 	Pattern string
 }{
-	// Direct Matches
 	{
 		Name:    "Slack Token", // Slack Bot|User|Workspace Access|Workspace Refresh Token
 		Pattern: `xox[pebar]-[\d]{10,12}-[\d]{10,12}-[\w]{23,32}`,
@@ -90,7 +88,6 @@ var secretRules = []struct {
 		Name:    "Vault Token",
 		Pattern: `(?:hvs\.[\w-]{90,120}|s\.(?:[a-z0-9]{24}))`,
 	},
-	// Inferred Matches
 	{
 		Name:    "Cloudflare Global API Key",
 		Pattern: `(?i)(?:(?:cloudflare)|(?:cf)).?(?:api)?(?-i).{0,25}\b(?:[a-z0-9]{37})\b`,

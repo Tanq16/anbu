@@ -16,13 +16,13 @@ import (
 	"github.com/tanq16/anbu/internal/utils"
 )
 
-var AnbuVersion = "dev-build"
+var AppVersion = "dev-build"
 var debugFlag bool
 
 var rootCmd = &cobra.Command{
 	Use:     "anbu",
 	Short:   "anbu is a tool for performing various everyday tasks with ease",
-	Version: AnbuVersion,
+	Version: AppVersion,
 	CompletionOptions: cobra.CompletionOptions{
 		HiddenDefaultCmd: true,
 	},
@@ -40,7 +40,7 @@ func setupLogs() {
 	output := zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: time.DateTime,
-		NoColor:    false, // Enable color output
+		NoColor:    false,
 	}
 	log.Logger = zerolog.New(output).With().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)

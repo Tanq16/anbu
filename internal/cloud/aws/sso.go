@@ -148,6 +148,7 @@ func processAccounts(client *sso.Client, accessToken *string, accounts sso.ListA
 	re := regexp.MustCompile(`[^a-zA-Z0-9]`)
 	profileList := []string{}
 	g := new(errgroup.Group)
+	g.SetLimit(10)
 	mu := sync.Mutex{}
 	for _, account := range accounts.AccountList {
 		g.Go(func() error {

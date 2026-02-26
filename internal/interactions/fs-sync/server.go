@@ -20,9 +20,9 @@ type ServerConfig struct {
 	SyncDir     string
 	IgnorePaths string
 	EnableTLS   bool
-	Mode        string // "send" or "receive"
-	DeleteExtra bool   // receive mode only
-	DryRun      bool   // receive mode only
+	Mode        string
+	DeleteExtra bool
+	DryRun      bool
 }
 
 type Server struct {

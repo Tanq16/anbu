@@ -30,7 +30,7 @@ type progressModel struct {
 
 func initialModel() progressModel {
 	bar := progress.New(progress.WithFillCharacters('━', ' '))
-	bar.FullColor = "7" // debug style color
+	bar.FullColor = "7"
 	return progressModel{
 		current: 0,
 		total:   100,

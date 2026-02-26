@@ -9,59 +9,59 @@ import (
 
 func PrintSuccess(text string) {
 	if !GlobalDebugFlag {
-		fmt.Println(successStyle.Render(text))
+		fmt.Println(successStyle.Render(StyleSymbols["pass"] + " " + text))
 	} else {
-		log.Info().Msg(text)
+		log.Info().Str("package", "utils").Msg(text)
 	}
 }
 func PrintError(text string, err error) {
 	if !GlobalDebugFlag {
-		fmt.Println(errorStyle.Render(text))
+		fmt.Println(errorStyle.Render(StyleSymbols["fail"] + " " + text))
 	} else {
-		log.Error().Err(err).Msg(text)
+		log.Error().Str("package", "utils").Err(err).Msg(text)
 	}
 }
 func PrintFatal(text string, err error) {
 	if !GlobalDebugFlag {
-		fmt.Println(errorStyle.Render(text))
+		fmt.Println(errorStyle.Render(StyleSymbols["fail"] + " " + text))
 		os.Exit(1)
 	} else {
-		log.Fatal().Err(err).Msg(text)
+		log.Fatal().Str("package", "utils").Err(err).Msg(text)
 	}
 }
 func PrintWarn(text string, err error) {
 	if !GlobalDebugFlag {
-		fmt.Println(warningStyle.Render(text))
+		fmt.Println(warningStyle.Render(StyleSymbols["warning"] + " " + text))
 	} else {
-		log.Warn().Err(err).Msg(text)
+		log.Warn().Str("package", "utils").Err(err).Msg(text)
 	}
 }
 func PrintInfo(text string) {
 	if !GlobalDebugFlag {
-		fmt.Println(infoStyle.Render(text))
+		fmt.Println(infoStyle.Render(StyleSymbols["arrow"] + " " + text))
 	} else {
-		log.Info().Msg(text)
+		log.Info().Str("package", "utils").Msg(text)
 	}
 }
 func PrintDebug(text string) {
 	if !GlobalDebugFlag {
 		fmt.Println(debugStyle.Render(text))
 	} else {
-		log.Debug().Msg(text)
+		log.Debug().Str("package", "utils").Msg(text)
 	}
 }
 func PrintStream(text string) {
 	if !GlobalDebugFlag {
 		fmt.Println(streamStyle.Render(text))
 	} else {
-		log.Debug().Msg(text)
+		log.Debug().Str("package", "utils").Msg(text)
 	}
 }
 func PrintGeneric(text string) {
 	if !GlobalDebugFlag {
 		fmt.Println(text)
 	} else {
-		log.Debug().Msg(text)
+		log.Debug().Str("package", "utils").Msg(text)
 	}
 }
 func FSuccess(text string) string {

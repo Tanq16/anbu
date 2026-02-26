@@ -135,7 +135,6 @@ func (s *MarkdownServer) serveFileContent(w http.ResponseWriter, r *http.Request
 func getLanguageFromExtension(ext string) string {
 	ext = strings.TrimPrefix(ext, ".")
 
-	// Thanks AI
 	langMap := map[string]string{
 		"go": "go",
 		"py": "python", "pyw": "python", "pyi": "python",

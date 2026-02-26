@@ -32,9 +32,7 @@ func GetLocalIPInfo(includeIPv6 bool) {
 	ipv4Table := u.NewTable([]string{"Interface", "IP Address", "Subnet Mask", "MAC Address", "Status"})
 	ipv6Table := u.NewTable([]string{"Interface", "IPv6 Address", "MAC Address", "Status"})
 
-	// Process each interface
 	for _, iface := range interfaces {
-		// Skip interfaces that are down or don't have addresses
 		if iface.Flags&net.FlagUp == 0 {
 			continue
 		}
@@ -77,7 +75,6 @@ func GetLocalIPInfo(includeIPv6 bool) {
 	}
 	u.LineBreak()
 
-	// Public IP Table
 	publicIP, err := GetPublicIP()
 	pubIPTable := u.NewTable([]string{"Field", "Value"})
 	if err == nil && publicIP != nil {

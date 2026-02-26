@@ -83,7 +83,6 @@ func (c *Client) fetchMode() (string, error) {
 	return modeResp.Mode, nil
 }
 
-// pullFromServer handles the case where the server is sending files to us
 func (c *Client) pullFromServer() error {
 	serverManifest, err := c.fetchManifest()
 	if err != nil {
@@ -146,7 +145,6 @@ func (c *Client) pullFromServer() error {
 	return nil
 }
 
-// pushToServer handles the case where the server is receiving files from us
 func (c *Client) pushToServer() error {
 	serverManifest, err := c.fetchManifest()
 	if err != nil {

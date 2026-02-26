@@ -2,7 +2,6 @@ package utils
 
 type Dictionary map[string]any
 
-// UnwindValue safely navigates and retrieves values from nested maps
 func (d Dictionary) UnwindValue(keys ...string) any {
 	current := d
 	for _, key := range keys {
@@ -16,7 +15,7 @@ func (d Dictionary) UnwindValue(keys ...string) any {
 			case Dictionary:
 				current = v
 			default:
-				return val // Gracefully return the value if it's not a map
+				return val
 			}
 		} else {
 			return nil

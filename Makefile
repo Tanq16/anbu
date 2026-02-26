@@ -1,17 +1,16 @@
 APP_NAME := anbu
+VERSION ?= dev-build
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
-LDFLAGS := -s -w -X 'github.com/tanq16/anbu/cmd.AnbuVersion=$(VERSION)'
-
 .PHONY: build build-for build-all clean version help
+.DEFAULT_GOAL := help
 
 build: ## Build for current platform
-	$(eval VERSION := $(shell $(MAKE) -s version))
-	go build -ldflags="-s -w -X 'github.com/tanq16/anbu/cmd.AnbuVersion=$(VERSION)'" -o $(APP_NAME) .
+	go build -ldflags="-s -w -X 'github.com/tanq16/anbu/cmd.AppVersion=$(VERSION)'" -o $(APP_NAME) .
 
 build-for: ## Build for specific platform (GOOS=linux GOARCH=amd64)
-	$(eval VERSION := $(shell $(MAKE) -s version))
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags="-s -w -X 'github.com/tanq16/anbu/cmd.AnbuVersion=$(VERSION)'" -o dist/$(APP_NAME)-$(GOOS)-$(GOARCH)$(if $(filter windows,$(GOOS)),.exe,) .
+	@mkdir -p dist
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags="-s -w -X 'github.com/tanq16/anbu/cmd.AppVersion=$(VERSION)'" -o dist/$(APP_NAME)-$(GOOS)-$(GOARCH)$(if $(filter windows,$(GOOS)),.exe,) .
 
 build-all: ## Build for all platforms
 	@mkdir -p dist

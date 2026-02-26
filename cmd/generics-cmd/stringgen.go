@@ -28,17 +28,14 @@ Examples:
   anbu string passphrase 4 '@'         # generate a 4-word passphrase with a custom separator`,
 	Args: cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		// No args
 		if len(args) == 0 {
 			anbuGenerics.GenerateRandomString(0)
 			return
 		}
-		// Length arg
 		if len, err := strconv.Atoi(args[0]); err == nil {
 			anbuGenerics.GenerateRandomString(len)
 			return
 		}
-		// Sequence command arg
 		if args[0] == "seq" {
 			if len(args) < 2 {
 				u.PrintFatal("Missing length for sequence command", nil)
@@ -50,7 +47,6 @@ Examples:
 			anbuGenerics.GenerateSequenceString(length)
 			return
 		}
-		// Repeat string command
 		if args[0] == "rep" {
 			if len(args) < 3 {
 				u.PrintFatal("Missing count or string for repetition", nil)
@@ -101,7 +97,6 @@ Examples:
 			}
 			return
 		}
-		// Invalid command
 		cmd.Help()
 	},
 }

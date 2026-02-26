@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tanq16/anbu/internal/interactions"
 	u "github.com/tanq16/anbu/internal/utils"
@@ -38,10 +37,10 @@ var Neo4jCmd = &cobra.Command{
 		var results []interactions.QueryResult
 		var err error
 		if neo4jCmdFlags.query != "" {
-			log.Debug().Msgf("executing single query: %s", neo4jCmdFlags.query)
+			u.PrintDebug(fmt.Sprintf("executing single query: %s", neo4jCmdFlags.query))
 			results, err = interactions.ExecuteNeo4jQueries(ctx, neo4jCmdFlags.uri, neo4jCmdFlags.user, neo4jCmdFlags.password, neo4jCmdFlags.database, []string{neo4jCmdFlags.query}, neo4jCmdFlags.writeMode)
 		} else {
-			log.Debug().Msgf("executing queries from file: %s", neo4jCmdFlags.queryFile)
+			u.PrintDebug(fmt.Sprintf("executing queries from file: %s", neo4jCmdFlags.queryFile))
 			results, err = interactions.ExecuteNeo4jQueriesFromFile(ctx, neo4jCmdFlags.uri, neo4jCmdFlags.user, neo4jCmdFlags.password, neo4jCmdFlags.database, neo4jCmdFlags.queryFile, neo4jCmdFlags.writeMode)
 		}
 		if err != nil {

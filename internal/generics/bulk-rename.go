@@ -79,20 +79,17 @@ func BulkRename(pattern string, replacement string, renameDirectories bool, dryR
 	return nil
 }
 
-// same logic as GenerateUUIDString but returns instead of printing
 func generateUUIDString() string {
 	uuid, _ := uuid.NewRandom()
 	return uuid.String()
 }
 
-// same logic as GenerateRUIDString but returns instead of printing
 func generateRUIDString(length int) string {
 	if length <= 0 || length > 30 {
 		u.PrintWarn("length must be between 1 and 30; using 18", nil)
 		length = 18
 	}
 	uuid, _ := uuid.NewRandom()
-	// remove version and variant bits from UUID
 	shortUUID := uuid.String()[0:8] + uuid.String()[9:13] + uuid.String()[15:18] + uuid.String()[20:23] + uuid.String()[24:]
 	return shortUUID[:length]
 }

@@ -38,7 +38,6 @@ var supportedConverters = map[string]converterInfo{
 		OutputType: "string",
 		Handler:    convertComposeToDocker,
 	},
-	// Text to Text Conversion Handlers (present in convert-more.go)
 	"b64": {
 		InputType:  "string",
 		OutputType: "string",
@@ -86,7 +85,6 @@ var supportedConverters = map[string]converterInfo{
 	},
 }
 
-// Primary Handler
 func ConvertData(converterType string, input string) error {
 	converter, exists := supportedConverters[converterType]
 	if !exists {
@@ -105,8 +103,6 @@ func ConvertData(converterType string, input string) error {
 	}
 	return converter.Handler(input)
 }
-
-// Converter functions for YAML <-> JSON
 
 func convertYAMLToJSON(inputFile string) error {
 	data, err := converterReadInputFile(inputFile)
@@ -149,8 +145,6 @@ func convertJSONToYAML(inputFile string) error {
 	u.PrintSuccess(fmt.Sprintf("Converted JSON to YAML: %s", outputFile))
 	return nil
 }
-
-// Helper functions
 
 func converterReadInputFile(filePath string) ([]byte, error) {
 	data, err := os.ReadFile(filePath)

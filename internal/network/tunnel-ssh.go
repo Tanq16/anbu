@@ -23,7 +23,6 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 		Timeout:         30 * time.Second,
 	}
 
-	// Connect to SSH server
 	u.PrintInfo(fmt.Sprintf("Connecting to SSH server at %s...", sshAddr))
 	sshClient, err := ssh.Dial("tcp", sshAddr, config)
 	if err != nil {
@@ -32,7 +31,6 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 	defer sshClient.Close()
 	u.PrintInfo(fmt.Sprintf("Connected to SSH server as %s", user))
 
-	// Listen on local address
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
 		u.PrintFatal(fmt.Sprintf("failed to listen on %s", localAddr), err)
@@ -40,7 +38,6 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 	defer listener.Close()
 	u.PrintInfo(fmt.Sprintf("Listening on %s", localAddr))
 
-	// For graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	done := make(chan struct{})
@@ -72,13 +69,11 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 				continue
 			}
 
-			// Handle the connection in a goroutine
 			activeConns.Add(1)
 			go func() {
 				defer activeConns.Done()
 				defer localConn.Close()
 				u.PrintInfo(fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
-				// Connect to remote through SSH
 				remoteConn, err := sshClient.Dial("tcp", remoteAddr)
 				if err != nil {
 					u.PrintError("Failed to connect to remote via SSH", err)
@@ -87,12 +82,10 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 				defer remoteConn.Close()
 				u.PrintInfo(fmt.Sprintf("Connected to remote %s via SSH", remoteAddr))
 
-				// Copy data bidirectionally
 				var wg sync.WaitGroup
 				wg.Add(2)
 				go func() {
 					defer wg.Done()
-					// Local to Remote (through SSH)
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data to remote", err)
@@ -101,7 +94,6 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 				}()
 				go func() {
 					defer wg.Done()
-					// Remote to Local (through SSH)
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data from remote", err)
@@ -124,7 +116,6 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 		Timeout:         30 * time.Second,
 	}
 
-	// Connect to SSH server
 	u.PrintInfo(fmt.Sprintf("Connecting to SSH server at %s...", sshAddr))
 	sshClient, err := ssh.Dial("tcp", sshAddr, config)
 	if err != nil {
@@ -133,7 +124,6 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 	defer sshClient.Close()
 	u.PrintInfo(fmt.Sprintf("Connected to SSH server as %s", user))
 
-	// Start listening on remote
 	u.PrintInfo(fmt.Sprintf("Setting up listener on remote address %s", remoteAddr))
 	listener, err := sshClient.Listen("tcp", remoteAddr)
 	if err != nil {
@@ -142,7 +132,6 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 	defer listener.Close()
 	u.PrintInfo(fmt.Sprintf("Listening on remote address %s", remoteAddr))
 
-	// For graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	done := make(chan struct{})
@@ -177,14 +166,12 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 				continue
 			}
 
-			// Handle connection in a goroutine
 			activeConns.Add(1)
 			go func() {
 				defer activeConns.Done()
 				defer remoteConn.Close()
 				u.PrintInfo(fmt.Sprintf("New connection from remote %s", remoteConn.RemoteAddr()))
 
-				// Connect to the local service
 				localConn, err := net.Dial("tcp", localAddr)
 				if err != nil {
 					u.PrintError(fmt.Sprintf("Failed to connect to local service at %s", localAddr), err)
@@ -193,12 +180,10 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 				defer localConn.Close()
 				u.PrintInfo(fmt.Sprintf("Connected to local service %s", localAddr))
 
-				// Copy data bidirectionally
 				var wg sync.WaitGroup
 				wg.Add(2)
 				go func() {
 					defer wg.Done()
-					// Local to Remote (through SSH)
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data to remote", err)
@@ -207,7 +192,6 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 				}()
 				go func() {
 					defer wg.Done()
-					// Remote to Local (through SSH)
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data from remote", err)
@@ -220,8 +204,6 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 		}
 	}
 }
-
-// Authentication helper functions
 
 func TunnelSSHPassword(password string) ssh.AuthMethod {
 	return ssh.Password(password)

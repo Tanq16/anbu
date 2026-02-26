@@ -169,14 +169,12 @@ func StashText(name string) error {
 	stat, statErr := os.Stdin.Stat()
 	isTerminal := statErr == nil && (stat.Mode()&os.ModeCharDevice) != 0
 	if isTerminal {
-		// Interactive input
 		text := u.GetMultilineInput(fmt.Sprintf("Enter text to stash (name: %s):", name), "")
 		if text == "" {
 			return fmt.Errorf("no input provided")
 		}
 		input = []byte(text)
 	} else {
-		// Piped input
 		input, err = io.ReadAll(os.Stdin)
 		if err != nil && err != io.EOF {
 			return fmt.Errorf("failed to read stdin: %w", err)

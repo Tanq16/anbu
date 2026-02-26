@@ -18,7 +18,6 @@ type timeFormat struct {
 func printTimeTable(concern time.Time) {
 	utcTime := concern.UTC()
 	localTime := concern.Local()
-	// Create table for parsed time formats
 	table := u.NewTable([]string{"Format", "Value"})
 	timeFormats := []timeFormat{
 		{"ISO8601 UTC", utcTime.Format(time.RFC3339)},
@@ -75,7 +74,6 @@ func printTimeDifferenceFromNow(targetTime time.Time) {
 	u.PrintGeneric(fmt.Sprintf("Target time: %s", u.FDebug(targetTime.Format("Mon Jan 2 15:04:05 MST 2006"))))
 	u.PrintGeneric(fmt.Sprintf("Current time: %s", u.FDebug(now.Format("Mon Jan 2 15:04:05 MST 2006"))))
 	u.LineBreak()
-	// Print direction-aware message
 	if direction == "until" {
 		u.PrintGeneric(fmt.Sprintf("Target time is %s from now", u.FInfo(timeFormatDuration(diff))))
 	} else {
@@ -136,7 +134,6 @@ func TimeParse(timeStr string, printType string) {
 		"2006-01-02T15:04:05Z07:00", // Additional ISO8601 variant
 	}
 	var parsedTime time.Time
-	// Try to parse with each common format
 	for _, format := range formats {
 		if t, err := time.Parse(format, timeStr); err == nil {
 			parsedTime = t
@@ -144,7 +141,6 @@ func TimeParse(timeStr string, printType string) {
 		}
 	}
 	if parsedTime.IsZero() {
-		// check for epoch format
 		checkEpock, err := strconv.ParseInt(timeStr, 10, 64)
 		if err == nil {
 			parsedTime = time.Unix(checkEpock, 0)
@@ -190,17 +186,14 @@ func TimeEpochDiff(epochs []int64) {
 	} else {
 		epoch1, epoch2 = epochs[0], epochs[1]
 	}
-	// Convert to time.Time for better manipulation
 	t1 := time.Unix(epoch1, 0)
 	t2 := time.Unix(epoch2, 0)
 	diff := t2.Sub(t1)
-	// Show difference in multiple units
 	u.PrintGeneric("Time difference:")
 	u.PrintGeneric(fmt.Sprintf("  %s  %d", u.FSuccess("Seconds:"), int64(diff.Seconds())))
 	u.PrintGeneric(fmt.Sprintf("  %s  %.1f", u.FSuccess("Minutes:"), diff.Minutes()))
 	u.PrintGeneric(fmt.Sprintf("  %s  %.1f", u.FSuccess("Hours:"), diff.Hours()))
 	u.PrintGeneric(fmt.Sprintf("  %s  %.1f", u.FSuccess("Days:"), diff.Hours()/24))
-	// Add human readable description
 	if diff > 0 {
 		u.PrintGeneric(fmt.Sprintf("\n%s is %s after %s", u.FInfo("Time 2"), u.FSuccess(timeFormatDuration(diff)), u.FInfo("Time 1")))
 	} else {

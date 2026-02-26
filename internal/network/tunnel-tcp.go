@@ -17,7 +17,6 @@ import (
 func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 	u.PrintInfo(fmt.Sprintf("TCP tunnel %s %s %s", localAddr, u.StyleSymbols["arrow"], remoteAddr))
 
-	// Listen on the local address
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
 		u.PrintFatal(fmt.Sprintf("failed to listen on %s", localAddr), err)
@@ -28,7 +27,6 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 		u.PrintStream("Using TLS for remote connections")
 	}
 
-	// For graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	done := make(chan struct{})
@@ -40,7 +38,6 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 		listener.Close()
 	}()
 
-	// Continue accepting new connections until explicitly stopped
 	for {
 		select {
 		case <-done:
@@ -60,14 +57,12 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 				continue
 			}
 
-			// Handle the connection in a goroutine
 			activeConns.Add(1)
 			go func() {
 				defer activeConns.Done()
 				defer localConn.Close()
 				u.PrintInfo(fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
 
-				// Connect to remote
 				var remoteConn net.Conn
 				if useTLS {
 					tlsConfig := &tls.Config{
@@ -84,12 +79,10 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 				defer remoteConn.Close()
 				u.PrintInfo(fmt.Sprintf("Connected to remote %s", remoteAddr))
 
-				// Copy data bidirectionally
 				var wg sync.WaitGroup
 				wg.Add(2)
 				go func() {
 					defer wg.Done()
-					// Local to Remote
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data to remote", err)
@@ -98,7 +91,6 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 				}()
 				go func() {
 					defer wg.Done()
-					// Remote to Local
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data from remote", err)

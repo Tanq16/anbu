@@ -22,8 +22,6 @@ func convertDockerToCompose(input string) error {
 	service := composeConfig["services"].(map[string]any)["app"].(map[string]any)
 	parts := splitCommand(input[len("docker run"):])
 
-	// Default command mode
-	detached := false
 	var ports []string
 	var volumes []string
 	var environment []string
@@ -43,7 +41,6 @@ func convertDockerToCompose(input string) error {
 		if strings.HasPrefix(part, "-") {
 			switch {
 			case part == "-d" || part == "--detach":
-				detached = true
 			case part == "-p" || part == "--publish":
 				if i+1 < len(parts) {
 					ports = append(ports, parts[i+1])
@@ -76,31 +73,24 @@ func convertDockerToCompose(input string) error {
 				}
 			case part == "--name":
 				if i+1 < len(parts) {
-					// Use container name as service name
 					serviceName := parts[i+1]
 					composeConfig["services"].(map[string]any)["app"] = nil
 					composeConfig["services"].(map[string]any)[serviceName] = service
 					skipNext = true
 				}
 			default:
-				// Skip unknown options
 				if i+1 < len(parts) && !strings.HasPrefix(parts[i+1], "-") {
 					skipNext = true
 				}
 			}
 		} else if imageName == "" {
-			// First non-flag argument is the image name
 			imageName = part
 		} else {
-			// Remaining arguments form the command
 			command = append(command, part)
 		}
 	}
 	if imageName != "" {
 		service["image"] = imageName
-	}
-	if detached {
-		// No need to set this in compose as it's the default
 	}
 	if len(ports) > 0 {
 		service["ports"] = ports
@@ -115,7 +105,6 @@ func convertDockerToCompose(input string) error {
 		service["command"] = strings.Join(command, " ")
 	}
 
-	// Convert to YAML
 	yamlData, err := yaml.Marshal(composeConfig)
 	if err != nil {
 		return fmt.Errorf("failed to generate YAML: %w", err)
@@ -194,12 +183,10 @@ func splitCommand(command string) []string {
 		c := command[i]
 		if (c == '"' || c == '\'') && (i == 0 || command[i-1] != '\\') {
 			if inQuote && quoteChar == c {
-				// End quote
 				inQuote = false
 				parts = append(parts, current.String())
 				current.Reset()
 			} else if !inQuote {
-				// Start quote
 				inQuote = true
 				quoteChar = c
 				if current.Len() > 0 {
@@ -207,17 +194,14 @@ func splitCommand(command string) []string {
 					current.Reset()
 				}
 			} else {
-				// Quote char inside another quote, treat as normal char
 				current.WriteByte(c)
 			}
 		} else if c == ' ' && !inQuote {
-			// Space outside of quotes separates parts
 			if current.Len() > 0 {
 				parts = append(parts, current.String())
 				current.Reset()
 			}
 		} else {
-			// Normal character
 			current.WriteByte(c)
 		}
 	}

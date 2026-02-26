@@ -144,7 +144,6 @@ func ExportSecrets(filePath, exportFilePath string, password string) error {
 	return os.WriteFile(exportFilePath, exportData, 0600)
 }
 
-// Private helper methods for encryption/decryption
 func loadSecretsStore(filePath string) (*SecretsStore, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
