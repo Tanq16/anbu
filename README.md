@@ -7,7 +7,7 @@
 
 <p><b>Anbu</b> is a CLI tool that helps perform everyday tasks in an expert way. Just like the Anbu Black Ops division in Naruto, this tool helps carry out all the shadow-operations in your daily workflow.</p><br>
 
-<a href="\#installation">Installation</a> • <a href="\#usage">Usage</a> • <a href="\#tips--tricks">Tips & Tricks</a><br>
+<a href="#installation">Installation</a> • <a href="#usage">Usage</a> • <a href="#tips--tricks">Tips & Tricks</a><br>
 
 </div>
 
@@ -30,6 +30,7 @@ A summary of everything that **Anbu** can perform:
 | **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 | **Stash** | Persistent clipboard for files, folders, and text snippets with apply, pop, and clear operations, almost similar to `git` stash |
+| **Tasks** | Simple task tracker with add, list, done, and delete operations stored locally in `~/.config/anbu/tasks.json` |
 | **File System Synchronization** | One-shot bidirectional file synchronization between two machines over HTTP/HTTPS with decoupled send/receive and listen/connect roles |
 | **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
 | **Markdown Viewer** | Start a web server to view rendered markdown files with syntax highlighting, navigation, and Mermaid support |
@@ -248,6 +249,28 @@ The specific details of each are:
 
   # Remove a stash without applying it
   anbu stash clear 1
+  ```
+
+- ***Tasks***
+
+  ```bash
+  # Add a new task interactively (prompts for input)
+  anbu tasks add
+
+  # List pending tasks (shows ID, Task, Added columns)
+  anbu tasks list
+
+  # List all tasks including completed (adds Status column)
+  anbu tasks list --done
+
+  # Filter tasks by regex
+  anbu tasks list --filter "deploy.*prod"
+
+  # Mark a task as done
+  anbu tasks done 1
+
+  # Delete a task regardless of status
+  anbu tasks delete 1
   ```
 
 - ***File System Synchronization***

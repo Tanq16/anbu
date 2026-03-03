@@ -47,7 +47,6 @@ var Neo4jCmd = &cobra.Command{
 			u.PrintFatal("failed to execute neo4j queries", err)
 		}
 
-		// Marshal the results to JSON
 		jsonData, err := json.MarshalIndent(results, "", "  ")
 		if err != nil {
 			u.PrintFatal("failed to marshal results to JSON", err)

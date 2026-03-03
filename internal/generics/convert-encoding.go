@@ -90,7 +90,6 @@ func jwtDecode(tokenString string) error {
 		return fmt.Errorf("failed to decode payload: %w", err)
 	}
 
-	// Print the header and payload in a table format
 	headerTable := u.NewTable([]string{"Header", "Value"})
 	for k, v := range header {
 		switch v := v.(type) {

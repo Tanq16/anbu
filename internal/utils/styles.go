@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/charmbracelet/lipgloss"
+import "charm.land/lipgloss/v2"
 
 var (
 	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))

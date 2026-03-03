@@ -112,7 +112,7 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 	}
 	log.Debug().Str("package", "aws").Int("accounts", len(accounts.AccountList)).Msg("found accounts")
 
-	configData, err := processAccounts(sso.NewFromConfig(cfg), tokenResp.AccessToken, accounts, ssoConfig)
+	configData, err := processAccounts(context.Background(), sso.NewFromConfig(cfg), tokenResp.AccessToken, accounts, ssoConfig)
 	if err != nil {
 		return err
 	}
@@ -142,16 +142,21 @@ func writeConfigFile(path string, data ConfigData) error {
 	return nil
 }
 
-func processAccounts(client *sso.Client, accessToken *string, accounts sso.ListAccountsOutput, config SSOConfig) (ConfigData, error) {
+func processAccounts(ctx context.Context, client *sso.Client, accessToken *string, accounts sso.ListAccountsOutput, config SSOConfig) (ConfigData, error) {
 	var configData ConfigData
 	configData.Config = config
 	re := regexp.MustCompile(`[^a-zA-Z0-9]`)
 	profileList := []string{}
-	g := new(errgroup.Group)
+	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(10)
 	mu := sync.Mutex{}
 	for _, account := range accounts.AccountList {
 		g.Go(func() error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
 			accountID := aws.ToString(account.AccountId)
 			accountName := strings.ToLower(re.ReplaceAllString(aws.ToString(account.AccountName), "-"))
 			log.Debug().Str("package", "aws").Str("id", accountID).Str("name", accountName).Msg("processing account")

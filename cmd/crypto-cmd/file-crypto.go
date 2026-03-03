@@ -21,7 +21,7 @@ var FileCryptoCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if fileCryptoFlags.password == "" {
-			u.PrintFatal("No password specified", nil)
+			u.PrintFatal("no password specified", nil)
 		}
 		if fileCryptoFlags.decrypt {
 			outputPath, err := anbuCrypto.DecryptFileSymmetric(args[0], fileCryptoFlags.password)

@@ -2,6 +2,7 @@ package anbuCrypto
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -46,7 +47,7 @@ func (sm *SecretMatches) Add(match SecretMatch) {
 	}
 }
 
-func ScanSecretsInPath(path string, printFalsePositives bool) {
+func ScanSecretsInPath(ctx context.Context, path string, printFalsePositives bool) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		u.PrintError("Path doesn't exist", err)
 		return
@@ -85,7 +86,7 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 
 	progressManager := u.NewManager()
 	progressManager.StartDisplay()
-	g := new(errgroup.Group)
+	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(30)
 	var progWg sync.WaitGroup
 	progressChan := make(chan int64)
@@ -112,6 +113,11 @@ func ScanSecretsInPath(path string, printFalsePositives bool) {
 			continue
 		}
 		g.Go(func() error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
 			if err := scanFile(file, rules, matches); err != nil {
 				errChan <- fmt.Errorf("error scanning file %s: %v", file, err)
 			}

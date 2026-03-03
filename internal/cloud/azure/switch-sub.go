@@ -37,7 +37,7 @@ func SwitchSubscription() error {
 	}
 	table.PrintTable(false)
 	u.LineBreak()
-	input := u.GetInput("Select subscription number to activate: ", "")
+	input := u.GetInput("Select subscription number to activate:", "")
 	subNumber, err := strconv.Atoi(input)
 	if err != nil {
 		return fmt.Errorf("invalid subscription number: %w", err)
@@ -50,6 +50,6 @@ func SwitchSubscription() error {
 	if err := setCmd.Run(); err != nil {
 		return fmt.Errorf("failed to set subscription: %w", err)
 	}
-	u.PrintSuccess(fmt.Sprintf("Subscription switched successfully: %s (%s)", u.FInfo(selectedSub.Name), u.FDebug(selectedSub.ID)))
+	u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(selectedSub.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Subscription switched (%s)", selectedSub.ID))))
 	return nil
 }

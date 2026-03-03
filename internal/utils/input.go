@@ -3,9 +3,9 @@ package utils
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textarea"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textarea"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 type inputModel struct {
@@ -23,8 +23,10 @@ func newInputModel(header string, placeholder string, multiline bool) inputModel
 	ta.Placeholder = placeholder
 	ta.MaxHeight = 0
 	ta.Focus()
-	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
-	ta.BlurredStyle.CursorLine = lipgloss.NewStyle()
+	styles := ta.Styles()
+	styles.Focused.CursorLine = lipgloss.NewStyle()
+	styles.Blurred.CursorLine = lipgloss.NewStyle()
+	ta.SetStyles(styles)
 	if multiline {
 		ta.SetHeight(12)
 		ta.ShowLineNumbers = true
@@ -51,37 +53,36 @@ func (m inputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.textInput.SetWidth(msg.Width - 4)
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc:
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "ctrl+c", "esc":
 			m.quitting = true
 			return m, tea.Quit
-		case tea.KeyCtrlD:
+		case "ctrl+d":
 			if m.multiline {
 				m.output = strings.TrimSpace(m.textInput.Value())
 				m.quitting = true
 				return m, tea.Quit
 			}
-		case tea.KeyEnter:
-			if msg.Alt {
-				m.output = strings.TrimSpace(m.textInput.Value())
-				m.quitting = true
-				return m, tea.Quit
-			}
+		case "enter":
 			if !m.multiline {
 				m.output = strings.TrimSpace(m.textInput.Value())
 				m.quitting = true
 				return m, tea.Quit
 			}
+		case "alt+enter":
+			m.output = strings.TrimSpace(m.textInput.Value())
+			m.quitting = true
+			return m, tea.Quit
 		}
 	}
 	m.textInput, cmd = m.textInput.Update(msg)
 	return m, cmd
 }
 
-func (m inputModel) View() string {
+func (m inputModel) View() tea.View {
 	if m.quitting {
-		return ""
+		return tea.NewView("")
 	}
 	wrapper := lipgloss.NewStyle().Width(m.width - 2)
 	var view strings.Builder
@@ -94,7 +95,7 @@ func (m inputModel) View() string {
 		view.WriteString("\n")
 	}
 	view.WriteString(m.textInput.View())
-	return view.String()
+	return tea.NewView(view.String())
 }
 
 func GetInput(prompt string, placeholder string) string {

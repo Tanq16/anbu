@@ -43,20 +43,16 @@ func ManualRename(includeDir bool, hidden bool, includeExtension bool) error {
 	renameCount := 0
 	for _, entry := range items {
 		oldName := entry.Name()
-		u.PrintGeneric(fmt.Sprintf("%s %s ", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"])))
+		fmt.Print(fmt.Sprintf("%s %s ", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"])))
 		input, err := reader.ReadString('\n')
+		if !u.GlobalDebugFlag {
+			fmt.Print("\r\033[K")
+		}
 		if err != nil {
-			u.PrintError("failed to read input", err)
-			if !u.GlobalDebugFlag {
-				u.ClearTerminal(1)
-			}
 			u.PrintGeneric(fmt.Sprintf("%s %s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FDebug(oldName), u.FWarning("(skipped)")))
 			continue
 		}
 		newName := strings.TrimSpace(input)
-		if !u.GlobalDebugFlag {
-			fmt.Print("\033[A\r\033[K")
-		}
 		if newName == "" || newName == oldName {
 			u.PrintGeneric(fmt.Sprintf("%s %s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FDebug(oldName), u.FWarning("(skipped)")))
 			continue

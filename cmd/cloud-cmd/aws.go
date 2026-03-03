@@ -37,7 +37,7 @@ var awsIidcLoginCmd = &cobra.Command{
 	Short: "Configure AWS SSO with IAM Identity Center for multi-role access",
 	Run: func(cmd *cobra.Command, args []string) {
 		if awsIidcLoginFlags.startURL == "" || awsIidcLoginFlags.ssoRegion == "" {
-			u.PrintFatal("Both --start-url and --sso-region flags are required", nil)
+			u.PrintFatal("both --start-url and --sso-region flags are required", nil)
 		}
 		config := anbuCloud.SSOConfig{
 			StartURL:    awsIidcLoginFlags.startURL,
@@ -46,9 +46,9 @@ var awsIidcLoginCmd = &cobra.Command{
 			SessionName: awsIidcLoginFlags.sessionName,
 		}
 		if err := anbuCloud.ConfigureSSO(config); err != nil {
-			u.PrintFatal("Failed to configure SSO", err)
+			u.PrintFatal("failed to configure SSO", err)
 		}
-		u.PrintSuccess("Successfully configured AWS SSO")
+		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug("iidc-login"), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("AWS SSO configured")))
 	},
 }
 
@@ -57,7 +57,7 @@ var awsSamlDirectLoginCmd = &cobra.Command{
 	Short: "Login to AWS CLI with SAML response grabbed from a browser session directly",
 	Run: func(cmd *cobra.Command, args []string) {
 		if awsSamlDirectLoginFlags.roleArn == "" || awsSamlDirectLoginFlags.principalArn == "" {
-			u.PrintFatal("Both --role-arn and --principal-arn flags are required", nil)
+			u.PrintFatal("both --role-arn and --principal-arn flags are required", nil)
 		}
 		if awsSamlDirectLoginFlags.profile == "" {
 			awsSamlDirectLoginFlags.profile = "default"
@@ -69,9 +69,9 @@ var awsSamlDirectLoginCmd = &cobra.Command{
 			CLIRegion:    awsSamlDirectLoginFlags.cliRegion,
 		}
 		if err := anbuCloud.LoginWithSAMLResponse(config, awsSamlDirectLoginFlags.samlResponseFile); err != nil {
-			u.PrintFatal("Failed to login via SAML", err)
+			u.PrintFatal("failed to login via SAML", err)
 		}
-		u.PrintSuccess(fmt.Sprintf("Successfully logged in via SAML (profile: %s)", awsSamlDirectLoginFlags.profile))
+		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(awsSamlDirectLoginFlags.profile), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("SAML login successful")))
 	},
 }
 
@@ -81,7 +81,7 @@ var awsCliUiCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		consoleURL, err := anbuCloud.GenerateConsoleURLFromProfile(awsCliUiFlags.profile)
 		if err != nil {
-			u.PrintFatal("Failed to generate console URL", err)
+			u.PrintFatal("failed to generate console URL", err)
 		}
 		u.PrintInfo("Console URL:")
 		u.PrintGeneric(consoleURL)

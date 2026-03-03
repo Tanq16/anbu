@@ -3,8 +3,9 @@ package utils
 import (
 	"fmt"
 
-	"github.com/charmbracelet/bubbles/progress"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/progress"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 type Manager struct {
@@ -30,7 +31,7 @@ type progressModel struct {
 
 func initialModel() progressModel {
 	bar := progress.New(progress.WithFillCharacters('━', ' '))
-	bar.FullColor = "7"
+	bar.FullColor = lipgloss.Color("7")
 	return progressModel{
 		current: 0,
 		total:   100,
@@ -46,7 +47,7 @@ func (m progressModel) Init() tea.Cmd {
 func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.bar.Width = min(msg.Width-10, 80)
+		m.bar.SetWidth(min(msg.Width-10, 80))
 		return m, nil
 	case doneMsg:
 		m.quitting = true
@@ -56,8 +57,8 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.total = msg.total
 		m.message = msg.message
 		return m, nil
-	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlC {
+	case tea.KeyPressMsg:
+		if msg.String() == "ctrl+c" {
 			m.quitting = true
 			return m, tea.Quit
 		}
@@ -65,18 +66,18 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m progressModel) View() string {
+func (m progressModel) View() tea.View {
 	if m.quitting {
-		return ""
+		return tea.NewView("")
 	}
 	if m.total == 0 {
 		m.total = 1
 	}
 	percent := float64(m.current) / float64(m.total)
-	return fmt.Sprintf("\n%s\n%s\n",
+	return tea.NewView(fmt.Sprintf("\n%s\n%s\n",
 		debugStyle.Render(m.message),
 		m.bar.ViewAs(percent),
-	)
+	))
 }
 
 func NewManager() *Manager {

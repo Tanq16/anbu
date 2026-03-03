@@ -51,11 +51,18 @@ var secretsListCmd = &cobra.Command{
 		if err != nil {
 			u.PrintFatal("failed to list secrets", err)
 		}
-		u.PrintSuccess("Stored secrets:")
-		for i, id := range secrets {
-			u.PrintGeneric(fmt.Sprintf("  %d. %s", i+1, u.FInfo(id)))
+		if len(secrets) == 0 {
+			u.PrintInfo("No secrets found")
+			return
 		}
-		u.PrintGeneric(fmt.Sprintf("Total: %d secrets", len(secrets)))
+		table := u.NewTable([]string{"#", "Name"})
+		for i, id := range secrets {
+			table.Rows = append(table.Rows, []string{
+				fmt.Sprintf("%d", i+1),
+				id,
+			})
+		}
+		table.PrintTable(false)
 	},
 }
 var secretsGetCmd = &cobra.Command{
@@ -80,20 +87,19 @@ var secretsSetCmd = &cobra.Command{
 		initSecretsStore()
 		secretID := args[0]
 		var value string
-		var err error
 		if secretsFlags.multiline {
-			value = u.GetMultilineInput(fmt.Sprintf("Enter value for secret '%s': ", secretID), "")
+			value = u.GetMultilineInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
 		} else {
-			value = u.GetInput(fmt.Sprintf("Enter value for secret '%s': ", secretID), "")
+			value = u.GetInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
 		}
-		if err != nil {
-			u.PrintFatal("failed to read secret value", err)
+		if value == "" {
+			u.PrintFatal("no value provided for secret", nil)
 		}
 		password := secretsFlags.password
 		if err := anbuCrypto.SetSecret(secretsFlags.secretsFile, secretID, value, password); err != nil {
 			u.PrintFatal("failed to set secret", err)
 		}
-		u.PrintInfo(fmt.Sprintf("Secret '%s' set successfully", secretID))
+		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(secretID), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("Secret set")))
 	},
 }
 var secretsDeleteCmd = &cobra.Command{
@@ -105,7 +111,7 @@ var secretsDeleteCmd = &cobra.Command{
 		if err := anbuCrypto.DeleteSecret(secretsFlags.secretsFile, args[0]); err != nil {
 			u.PrintFatal("failed to delete secret", err)
 		}
-		u.PrintInfo(fmt.Sprintf("Secret '%s' deleted successfully", args[0]))
+		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(args[0]), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("Secret deleted")))
 	},
 }
 var secretsImportCmd = &cobra.Command{
@@ -119,7 +125,7 @@ var secretsImportCmd = &cobra.Command{
 		if err := anbuCrypto.ImportSecrets(secretsFlags.secretsFile, importFile, password); err != nil {
 			u.PrintFatal("failed to import secrets", err)
 		}
-		u.PrintSuccess(fmt.Sprintf("Imported secrets from %s successfully", importFile))
+		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(importFile), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("Secrets imported")))
 	},
 }
 var secretsExportCmd = &cobra.Command{
@@ -133,7 +139,7 @@ var secretsExportCmd = &cobra.Command{
 		if err := anbuCrypto.ExportSecrets(secretsFlags.secretsFile, exportFile, password); err != nil {
 			u.PrintFatal("failed to export secrets", err)
 		}
-		u.PrintInfo(fmt.Sprintf("Exported secrets to %s successfully", exportFile))
+		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(exportFile), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("Secrets exported")))
 	},
 }
 

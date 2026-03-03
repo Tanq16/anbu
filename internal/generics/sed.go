@@ -1,6 +1,7 @@
 package anbuGenerics
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,7 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func Sed(pattern string, replacement string, path string, dryRun bool) error {
+func Sed(ctx context.Context, pattern string, replacement string, path string, dryRun bool) error {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return fmt.Errorf("invalid regex pattern: %w", err)
@@ -22,7 +23,7 @@ func Sed(pattern string, replacement string, path string, dryRun bool) error {
 		return fmt.Errorf("path does not exist: %s: %w", path, err)
 	}
 
-	g := new(errgroup.Group)
+	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(30)
 	var mu sync.Mutex
 	processedCount := 0
@@ -35,6 +36,11 @@ func Sed(pattern string, replacement string, path string, dryRun bool) error {
 				return nil
 			}
 			g.Go(func() error {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+				}
 				if processFile(filePath, re, replacement, dryRun) {
 					mu.Lock()
 					processedCount++
@@ -49,6 +55,11 @@ func Sed(pattern string, replacement string, path string, dryRun bool) error {
 		}
 	} else {
 		g.Go(func() error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
 			if processFile(path, re, replacement, dryRun) {
 				mu.Lock()
 				processedCount++

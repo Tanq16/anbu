@@ -1,6 +1,8 @@
 package cryptoCmd
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 	anbuCrypto "github.com/tanq16/anbu/internal/crypto"
 )
@@ -19,7 +21,7 @@ var SecretsScanCmd = &cobra.Command{
 		if len(args) > 0 {
 			scanPath = args[0]
 		}
-		anbuCrypto.ScanSecretsInPath(scanPath, secretScanFlags.printFalsePositives)
+		anbuCrypto.ScanSecretsInPath(context.Background(), scanPath, secretScanFlags.printFalsePositives)
 	},
 }
 
