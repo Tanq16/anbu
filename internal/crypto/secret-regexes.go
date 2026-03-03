@@ -90,23 +90,23 @@ var secretRules = []struct {
 	},
 	{
 		Name:    "Cloudflare Global API Key",
-		Pattern: `(?i)(?:(?:cloudflare)|(?:cf)).?(?:api)?(?-i).{0,25}\b(?:[a-z0-9]{37})\b`,
+		Pattern: `(?i)(?:cloudflare|cf)[_\s-]+(?:global[_\s-]+)?api[_\s-]+key(?-i)\W{1,10}([a-f0-9]{37})\b`,
 	},
 	{
 		Name:    "Cloudflare API Key",
-		Pattern: `(?i)(?:(?:cloudflare)|(?:cf_)).?(?:api)?(?-i).{0,25}\b(?:[\w-]{40})\b`,
+		Pattern: `(?i)(?:cloudflare|cf)[_\s-]+api[_\s-]+(?:key|token)(?-i)\W{1,10}([A-Za-z0-9_-]{40})\b`,
 	},
 	{
 		Name:    "AWS Secret Access Key",
-		Pattern: `(?:)(?i)(?:aws).?(?:secret)?.?(?:access)?.?(?:key)?(?-i).{0,25}\b?(?:[\w/+=]{40})\b`,
+		Pattern: `(?i)aws[_\s-]+secret[_\s-]+access[_\s-]+key(?-i)\W{1,10}([A-Za-z0-9/+=]{40})\b`,
 	},
 	{
 		Name:    "AWS Session Token",
-		Pattern: `(?i)(?:aws).?(?:session).?(?:token)?(?-i).{0,25}\b(?:[\w/_\.=+-]{100,})\b`,
+		Pattern: `(?i)aws[_\s-]+session[_\s-]+token(?-i)\W{1,10}([A-Za-z0-9/+=_.-]{100,})`,
 	},
 	{
 		Name:    "Generic Secrets & Keys",
-		Pattern: `(?:(?i)password|pass|pw|secret|key|api|access(?-i)).?(?:(?i)key(?-i))?.{0,25}\b(?:[\w]{20,100})\b`,
+		Pattern: `(?i)(?:password|passwd|secret[_\s-]?key|api[_\s-]?key|access[_\s-]?key|private[_\s-]?key|auth[_\s-]?token)(?-i)\W{1,10}([^\s"']{20,100})`,
 	},
 }
 
