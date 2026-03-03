@@ -53,5 +53,8 @@ func (t *Table) FormatTable(useMarkdown bool) string {
 }
 
 func (t *Table) PrintTable(useMarkdown bool) {
+	if GlobalForAIFlag {
+		useMarkdown = true
+	}
 	PrintGeneric(t.FormatTable(useMarkdown))
 }

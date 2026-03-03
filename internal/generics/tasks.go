@@ -27,8 +27,7 @@ type TaskEntry struct {
 }
 
 type TaskStore struct {
-	NextID int         `json:"next_id"`
-	Tasks  []TaskEntry `json:"tasks"`
+	Tasks []TaskEntry `json:"tasks"`
 }
 
 func getTasksFilePath() (string, error) {
@@ -49,8 +48,7 @@ func loadTaskStore() (*TaskStore, error) {
 		return nil, err
 	}
 	store := &TaskStore{
-		NextID: 1,
-		Tasks:  []TaskEntry{},
+		Tasks: []TaskEntry{},
 	}
 	data, err := os.ReadFile(tasksPath)
 	if err != nil {
@@ -94,6 +92,16 @@ func removeTaskByID(store *TaskStore, id int) bool {
 		}
 	}
 	return false
+}
+
+func nextTaskID(store *TaskStore) int {
+	maxID := 0
+	for _, task := range store.Tasks {
+		if task.ID > maxID {
+			maxID = task.ID
+		}
+	}
+	return maxID + 1
 }
 
 func TasksList(showDone bool, filter string) error {
@@ -153,17 +161,8 @@ func TasksList(showDone bool, filter string) error {
 	return nil
 }
 
-func TasksAdd(pipe bool) error {
-	var task string
-	if pipe {
-		var err error
-		task, err = u.ReadPipedInput()
-		if err != nil {
-			return err
-		}
-	} else {
-		task = u.GetInput("Enter task:", "What needs to be done?")
-	}
+func TasksAdd() error {
+	task := u.GetInput("Enter task:", "What needs to be done?")
 	if task == "" {
 		return fmt.Errorf("no task provided")
 	}
@@ -172,13 +171,12 @@ func TasksAdd(pipe bool) error {
 		return err
 	}
 	entry := TaskEntry{
-		ID:        store.NextID,
+		ID:        nextTaskID(store),
 		Task:      task,
 		Status:    TaskPending,
 		CreatedAt: time.Now(),
 	}
 	store.Tasks = append(store.Tasks, entry)
-	store.NextID++
 	if err := saveTaskStore(store); err != nil {
 		return err
 	}
@@ -213,9 +211,6 @@ func TasksDelete(id int) error {
 	}
 	if !removeTaskByID(store, id) {
 		return fmt.Errorf("failed to remove task")
-	}
-	if len(store.Tasks) == 0 {
-		store.NextID = 1
 	}
 	if err := saveTaskStore(store); err != nil {
 		return err

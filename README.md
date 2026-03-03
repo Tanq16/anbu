@@ -78,7 +78,7 @@ The specific details of each are:
   # Managing Secrets (Default password used or provide yours with --password)
   anbu pass add API_KEY     # Create a new secret (encrypted with AES GCM at rest)
   anbu pass add API_KEY -m  # Create a new multi-line secret
-  echo "sk-1234" | anbu pass add API_KEY --pipe  # Add from piped stdin
+  echo "sk-1234" | anbu pass add API_KEY --for-ai  # Add from piped stdin (AI-friendly mode)
   anbu pass get API_KEY     # Retrieve a secret (decrypted value)
   anbu pass delete API_KEY  # Delete a secret
 
@@ -235,9 +235,9 @@ The specific details of each are:
   # Stash text interactively (multiline TUI editor)
   anbu stash text my-snippet
 
-  # Stash text from piped stdin (use --pipe flag)
-  echo "my text" | anbu stash text my-snippet --pipe
-  cat notes.txt | anbu stash text my-notes --pipe
+  # Stash text from piped stdin (AI-friendly mode)
+  echo "my text" | anbu stash text my-snippet --for-ai
+  cat notes.txt | anbu stash text my-notes --for-ai
 
   # List all stashed entries
   anbu stash list
@@ -257,7 +257,7 @@ The specific details of each are:
   ```bash
   # Add a new task interactively (prompts for input)
   anbu tasks add
-  echo "deploy to prod" | anbu tasks add --pipe  # Add from piped stdin
+  echo "deploy to prod" | anbu tasks add --for-ai  # Add from piped stdin (AI-friendly mode)
 
   # List pending tasks (shows ID, Task, Added columns)
   anbu tasks list

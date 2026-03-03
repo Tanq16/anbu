@@ -32,7 +32,6 @@ type StashEntry struct {
 }
 
 type StashIndex struct {
-	NextID  int          `json:"next_id"`
 	Entries []StashEntry `json:"entries"`
 }
 
@@ -70,7 +69,6 @@ func loadIndex() (*StashIndex, error) {
 		return nil, err
 	}
 	index := &StashIndex{
-		NextID:  1,
 		Entries: []StashEntry{},
 	}
 	data, err := os.ReadFile(indexPath)
@@ -117,6 +115,16 @@ func removeEntryByID(index *StashIndex, id int) bool {
 	return false
 }
 
+func nextStashID(index *StashIndex) int {
+	maxID := 0
+	for _, entry := range index.Entries {
+		if entry.ID > maxID {
+			maxID = entry.ID
+		}
+	}
+	return maxID + 1
+}
+
 func StashFS(path string) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -147,7 +155,7 @@ func StashFS(path string) error {
 		return err
 	}
 	entry := StashEntry{
-		ID:           index.NextID,
+		ID:           nextStashID(index),
 		Type:         TypeFS,
 		Name:         filepath.Base(absPath),
 		OriginalPath: absPath,
@@ -155,7 +163,6 @@ func StashFS(path string) error {
 		CreatedAt:    time.Now(),
 	}
 	index.Entries = append(index.Entries, entry)
-	index.NextID++
 	if err := saveIndex(index); err != nil {
 		return err
 	}
@@ -163,21 +170,12 @@ func StashFS(path string) error {
 	return nil
 }
 
-func StashText(name string, pipe bool) error {
-	var input []byte
-	if pipe {
-		text, err := u.ReadPipedInput()
-		if err != nil {
-			return err
-		}
-		input = []byte(text)
-	} else {
-		text := u.GetMultilineInput(fmt.Sprintf("Enter text to stash (name: %s):", name), "")
-		if text == "" {
-			return fmt.Errorf("no input provided")
-		}
-		input = []byte(text)
+func StashText(name string) error {
+	text := u.GetMultilineInput(fmt.Sprintf("Enter text to stash (name: %s):", name), "")
+	if text == "" {
+		return fmt.Errorf("no input provided")
 	}
+	input := []byte(text)
 	stashDir, err := getStashDir()
 	if err != nil {
 		return err
@@ -193,14 +191,13 @@ func StashText(name string, pipe bool) error {
 		return err
 	}
 	entry := StashEntry{
-		ID:        index.NextID,
+		ID:        nextStashID(index),
 		Type:      TypeText,
 		Name:      name,
 		BlobName:  blobName,
 		CreatedAt: time.Now(),
 	}
 	index.Entries = append(index.Entries, entry)
-	index.NextID++
 	if err := saveIndex(index); err != nil {
 		return err
 	}
@@ -298,9 +295,6 @@ func StashPop(id int) error {
 	if !removeEntryByID(index, id) {
 		return fmt.Errorf("failed to remove entry from index")
 	}
-	if len(index.Entries) == 0 {
-		index.NextID = 1
-	}
 	if err := saveIndex(index); err != nil {
 		return err
 	}
@@ -327,9 +321,6 @@ func StashClear(id int) error {
 	}
 	if !removeEntryByID(index, id) {
 		return fmt.Errorf("failed to remove entry from index")
-	}
-	if len(index.Entries) == 0 {
-		index.NextID = 1
 	}
 	if err := saveIndex(index); err != nil {
 		return err

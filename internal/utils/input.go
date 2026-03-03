@@ -102,6 +102,14 @@ func (m inputModel) View() tea.View {
 }
 
 func GetInput(prompt string, placeholder string) string {
+	if GlobalForAIFlag {
+		result, err := ReadPipedInput()
+		if err != nil {
+			PrintError("Piped input error", err)
+			return ""
+		}
+		return result
+	}
 	LineBreak()
 	p := tea.NewProgram(newInputModel(prompt, placeholder, false))
 	m, err := p.Run()
@@ -116,6 +124,14 @@ func GetInput(prompt string, placeholder string) string {
 }
 
 func GetMultilineInput(prompt string, placeholder string) string {
+	if GlobalForAIFlag {
+		result, err := ReadPipedInput()
+		if err != nil {
+			PrintError("Piped input error", err)
+			return ""
+		}
+		return result
+	}
 	LineBreak()
 	p := tea.NewProgram(newInputModel(prompt, placeholder, true))
 	m, err := p.Run()
