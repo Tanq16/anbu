@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"charm.land/bubbles/v2/textarea"
@@ -124,6 +127,18 @@ func GetMultilineInput(prompt string, placeholder string) string {
 		return model.output
 	}
 	return ""
+}
+
+func ReadPipedInput() (string, error) {
+	input, err := io.ReadAll(os.Stdin)
+	if err != nil && err != io.EOF {
+		return "", fmt.Errorf("failed to read piped input: %w", err)
+	}
+	result := strings.TrimSpace(string(input))
+	if result == "" {
+		return "", fmt.Errorf("no input provided via pipe")
+	}
+	return result, nil
 }
 
 func DeviceCodeFlow(url string, userCode string) string {

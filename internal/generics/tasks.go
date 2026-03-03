@@ -153,8 +153,17 @@ func TasksList(showDone bool, filter string) error {
 	return nil
 }
 
-func TasksAdd() error {
-	task := u.GetInput("Enter task:", "What needs to be done?")
+func TasksAdd(pipe bool) error {
+	var task string
+	if pipe {
+		var err error
+		task, err = u.ReadPipedInput()
+		if err != nil {
+			return err
+		}
+	} else {
+		task = u.GetInput("Enter task:", "What needs to be done?")
+	}
 	if task == "" {
 		return fmt.Errorf("no task provided")
 	}

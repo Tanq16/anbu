@@ -20,6 +20,7 @@ var secretsFlags struct {
 	secretsFile string
 	multiline   bool
 	password    string
+	pipe        bool
 	initialized bool
 }
 
@@ -87,7 +88,13 @@ var secretsSetCmd = &cobra.Command{
 		initSecretsStore()
 		secretID := args[0]
 		var value string
-		if secretsFlags.multiline {
+		if secretsFlags.pipe {
+			var err error
+			value, err = u.ReadPipedInput()
+			if err != nil {
+				u.PrintFatal("failed to read piped input", err)
+			}
+		} else if secretsFlags.multiline {
 			value = u.GetMultilineInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
 		} else {
 			value = u.GetInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
@@ -146,6 +153,7 @@ var secretsExportCmd = &cobra.Command{
 func init() {
 	SecretsCmd.PersistentFlags().StringVar(&secretsFlags.password, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
 	secretsSetCmd.Flags().BoolVarP(&secretsFlags.multiline, "multiline", "m", false, "Enable multiline input (end with 'EOF' on a new line)")
+	secretsSetCmd.Flags().BoolVar(&secretsFlags.pipe, "pipe", false, "Read secret value from piped stdin instead of interactive input")
 
 	SecretsCmd.AddCommand(secretsListCmd)
 	SecretsCmd.AddCommand(secretsGetCmd)

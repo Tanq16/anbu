@@ -8,6 +8,10 @@ import (
 	u "github.com/tanq16/anbu/internal/utils"
 )
 
+var stashFlags struct {
+	pipe bool
+}
+
 var StashCmd = &cobra.Command{
 	Use:   "stash",
 	Short: "Manage a persistent clipboard for files, folders, and text",
@@ -29,7 +33,7 @@ var stashTextCmd = &cobra.Command{
 	Short: "Stash text from stdin and stash it with a given name",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuGenerics.StashText(args[0]); err != nil {
+		if err := anbuGenerics.StashText(args[0], stashFlags.pipe); err != nil {
 			u.PrintFatal("failed to stash text", err)
 		}
 	},
@@ -92,6 +96,7 @@ var stashClearCmd = &cobra.Command{
 }
 
 func init() {
+	stashTextCmd.Flags().BoolVar(&stashFlags.pipe, "pipe", false, "Read text from piped stdin instead of interactive input")
 	StashCmd.AddCommand(stashFSCmd)
 	StashCmd.AddCommand(stashTextCmd)
 	StashCmd.AddCommand(stashListCmd)

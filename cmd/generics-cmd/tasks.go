@@ -11,6 +11,7 @@ import (
 var tasksFlags struct {
 	done   bool
 	filter string
+	pipe   bool
 }
 
 var TasksCmd = &cobra.Command{
@@ -34,7 +35,7 @@ var tasksAddCmd = &cobra.Command{
 	Short: "Add a new task interactively",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuGenerics.TasksAdd(); err != nil {
+		if err := anbuGenerics.TasksAdd(tasksFlags.pipe); err != nil {
 			u.PrintFatal("failed to add task", err)
 		}
 	},
@@ -73,6 +74,7 @@ var tasksDeleteCmd = &cobra.Command{
 func init() {
 	tasksListCmd.Flags().BoolVar(&tasksFlags.done, "done", false, "Show completed tasks alongside pending")
 	tasksListCmd.Flags().StringVar(&tasksFlags.filter, "filter", "", "Filter tasks by regex pattern")
+	tasksAddCmd.Flags().BoolVar(&tasksFlags.pipe, "pipe", false, "Read task from piped stdin instead of interactive input")
 	TasksCmd.AddCommand(tasksListCmd)
 	TasksCmd.AddCommand(tasksAddCmd)
 	TasksCmd.AddCommand(tasksDoneCmd)
