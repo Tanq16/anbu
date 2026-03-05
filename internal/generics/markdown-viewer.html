@@ -310,7 +310,7 @@
                     container.appendChild(folderDiv);
                     const childContainer = document.createElement('div');
                     childContainer.className = 'indent';
-                    renderSidebar(node.children, childContainer, fullPath);
+                    if (node.children) renderSidebar(node.children, childContainer, fullPath);
                     container.appendChild(childContainer);
                 } else {
                     const fileLink = document.createElement('div');
