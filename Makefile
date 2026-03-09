@@ -14,6 +14,7 @@ help: ## Show this help
 clean: ## Remove build artifacts
 	rm -f $(APP_NAME)
 	rm -rf dist/
+	rm -rf $(STATIC_DIR)/js $(STATIC_DIR)/css $(STATIC_DIR)/fonts
 
 build: ## Build for current platform
 	@go build -ldflags="-s -w -X 'github.com/tanq16/anbu/cmd.AppVersion=$(VERSION)'" -o $(APP_NAME) .
