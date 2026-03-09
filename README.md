@@ -1,15 +1,17 @@
 <div align="center">
   <img src=".github/assets/logo.svg" alt="ANBU Logo" width="250"/>
 
-  <h1 align="center">Anbu</h1>
+  <h1>Anbu</h1>
 
-  <a href="https://github.com/tanq16/anbu/actions/workflows/release.yml"><img src="https://github.com/tanq16/anbu/actions/workflows/release.yml/badge.svg" alt="Release Build"></a>&nbsp;<a href="https://github.com/tanq16/anbu/releases/latest"><img src="https://img.shields.io/github/v/release/tanq16/anbu" alt="Latest Release"></a><br>
+  <a href="https://github.com/tanq16/anbu/actions/workflows/release.yaml"><img src="https://github.com/tanq16/anbu/actions/workflows/release.yaml/badge.svg" alt="Release Build"></a>&nbsp;<a href="https://github.com/tanq16/anbu/releases/latest"><img src="https://img.shields.io/github/v/release/tanq16/anbu" alt="Latest Release"></a><br>
 
 <p><b>Anbu</b> is a CLI tool that helps perform everyday tasks in an expert way. Just like the Anbu Black Ops division in Naruto, this tool helps carry out all the shadow-operations in your daily workflow.</p><br>
 
-<a href="#installation">Installation</a> • <a href="#usage">Usage</a> • <a href="#tips--tricks">Tips & Tricks</a><br>
+<a href="#capabilities">Capabilities</a> &bull; <a href="#installation">Installation</a> &bull; <a href="#usage">Usage</a> &bull; <a href="#tips-and-notes">Tips & Notes</a><br>
 
 </div>
+
+## Capabilities
 
 A summary of everything that **Anbu** can perform:
 
@@ -342,7 +344,7 @@ The specific details of each are:
   anbu az switch
   ```
 
-## Tips & Tricks
+## Tips and Notes
 
 <details>
 <summary><b>Connecting Two NAT-hidden Machines via Public VPS</b></summary>

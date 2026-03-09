@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tanq16/anbu/internal/interactions"
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var neo4jCmdFlags struct {

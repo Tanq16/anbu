@@ -13,7 +13,7 @@ import (
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
 	interactionsCmd "github.com/tanq16/anbu/cmd/interactions-cmd"
 	networkCmd "github.com/tanq16/anbu/cmd/network-cmd"
-	"github.com/tanq16/anbu/internal/utils"
+	"github.com/tanq16/anbu/utils"
 )
 
 var AppVersion = "dev-build"
@@ -51,6 +51,7 @@ func setupLogs() {
 	}
 	if forAIFlag {
 		utils.GlobalForAIFlag = true
+		zerolog.SetGlobalLevel(zerolog.Disabled)
 	}
 }
 
@@ -58,6 +59,7 @@ func init() {
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Enable debug logging")
 	rootCmd.PersistentFlags().BoolVar(&forAIFlag, "for-ai", false, "AI-friendly output (plain text, markdown tables, stdin input)")
+	rootCmd.MarkFlagsMutuallyExclusive("debug", "for-ai")
 	cobra.OnInitialize(setupLogs)
 
 	rootCmd.AddCommand(genericsCmd.StringCmd)

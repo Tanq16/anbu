@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	fssync "github.com/tanq16/anbu/internal/interactions/fs-sync"
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var fsSyncServeFlags struct {

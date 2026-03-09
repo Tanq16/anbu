@@ -5,240 +5,257 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anbu Markdown Viewer</title>
 
+    <link rel="stylesheet" href="/static/css/inter.css">
+    <link rel="stylesheet" href="/static/css/jetbrains-mono.css">
+    <link rel="stylesheet" href="/static/css/github-dark.min.css">
+
+    <script src="/static/js/tailwindcss.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        rosewater: '#f5e0dc',
+                        flamingo: '#f2cdcd',
+                        pink: '#f5c2e7',
+                        mauve: '#cba6f7',
+                        red: '#f38ba8',
+                        maroon: '#eba0ac',
+                        peach: '#fab387',
+                        yellow: '#f9e2af',
+                        green: '#a6e3a1',
+                        teal: '#94e2d5',
+                        sky: '#89dceb',
+                        sapphire: '#74c7ec',
+                        blue: '#89b4fa',
+                        lavender: '#b4befe',
+                        text: '#cdd6f4',
+                        subtext1: '#bac2de',
+                        subtext0: '#a6adc8',
+                        overlay2: '#9399b2',
+                        overlay1: '#7f849c',
+                        overlay0: '#6c7086',
+                        surface2: '#585b70',
+                        surface1: '#45475a',
+                        surface0: '#313244',
+                        base: '#1e1e2e',
+                        mantle: '#181825',
+                        crust: '#11111b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+                    },
+                },
+            },
+        };
+    </script>
+
     <script src="/static/js/marked.min.js"></script>
     <script src="/static/js/mermaid.min.js"></script>
-    <link rel="stylesheet" href="/static/css/github-dark.min.css">
     <script src="/static/js/highlight.min.js"></script>
+    <script src="/static/js/lucide.min.js"></script>
 
     <style>
-        :root {
-            --rosewater: #f5e0dc;
-            --flamingo: #f2cdcd;
-            --pink: #f5c2e7;
-            --mauve: #cba6f7;
-            --red: #f38ba8;
-            --maroon: #eba0ac;
-            --peach: #fab387;
-            --yellow: #f9e2af;
-            --green: #a6e3a1;
-            --teal: #94e2d5;
-            --sky: #89dceb;
-            --sapphire: #74c7ec;
-            --blue: #89b4fa;
-            --lavender: #b4befe;
-            --text: #cdd6f4;
-            --subtext1: #bac2de;
-            --subtext0: #a6adc8;
-            --overlay2: #9399b2;
-            --overlay1: #7f849c;
-            --overlay0: #6c7086;
-            --surface2: #585b70;
-            --surface1: #45475a;
-            --surface0: #313244;
-            --base: #1e1e2e;
-            --mantle: #181825;
-            --crust: #11111b;
-        }
-
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            background: var(--crust);
-            color: var(--text);
-            overflow: hidden;
-        }
-
-        #sidebar {
-            width: 280px;
-            background: var(--mantle);
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease;
-            z-index: 100;
-            flex-shrink: 0;
-        }
-
-        .file-tree {
-            padding: 10px;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        .tree-item {
-            cursor: pointer;
-            padding: 6px 10px;
-            border-radius: 6px;
-            margin-bottom: 2px;
-            font-size: 14px;
-            color: var(--subtext0);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.15s ease;
-            text-decoration: none;
-        }
-
-        .tree-item:hover {
-            background: rgba(180, 190, 254, 0.08);
-            color: var(--text);
-        }
-
-        .tree-item.active {
-            background: rgba(137, 180, 250, 0.15);
-            color: var(--blue);
-            font-weight: 500;
-        }
-
-        .tree-folder {
-            font-weight: 600;
-            color: var(--text);
-            margin-top: 12px;
-            margin-bottom: 4px;
-            padding-left: 10px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .indent {
-            margin-left: 12px;
-            padding-left: 12px;
-            border-left: 1px solid var(--surface1);
-        }
-
-        #main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            position: relative;
-        }
-
-        #content-scroll {
-            flex: 1;
-            overflow-y: auto;
-            padding: 40px 60px;
-            scroll-behavior: smooth;
-        }
-
+        /* Markdown body styles — targets generated HTML, must be CSS */
         .markdown-body {
             max-width: 900px;
             margin: 0 auto;
+            background-color: transparent !important;
+            font-family: 'Inter', sans-serif !important;
+            color: #a6adc8 !important;
             line-height: 1.6;
+            font-size: 16px;
         }
 
         .markdown-body h1, .markdown-body h2, .markdown-body h3 {
-            border-bottom: 1px solid var(--surface1);
-            padding-bottom: 0.3em;
-            color: var(--text);
             margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+            padding-bottom: 0.3em;
         }
+        .markdown-body h1 { border-bottom: 1px solid #313244; }
+        .markdown-body h2 { border-bottom: 1px solid rgba(49, 50, 68, 0.5); }
 
-        .markdown-body a { color: var(--blue); text-decoration: none; }
+        .markdown-body h1 { font-size: 2em; color: #b4befe !important; }
+        .markdown-body h2 { font-size: 1.5em; color: #cba6f7 !important; }
+        .markdown-body h3 { font-size: 1.25em; color: #89b4fa !important; }
+        .markdown-body h4 { font-size: 1em; font-weight: 600; color: #cdd6f4; }
+        .markdown-body h5 { font-size: 0.875em; font-weight: 600; color: #cdd6f4; }
+        .markdown-body h6 { font-size: 0.85em; color: #a6adc8; }
+
+        .markdown-body a { color: #89b4fa; text-decoration: none; }
         .markdown-body a:hover { text-decoration: underline; }
 
+        .markdown-body p { margin-bottom: 16px; }
+
         .markdown-body code {
-            background: var(--surface0);
+            font-family: 'JetBrains Mono', monospace;
+            color: #fab387 !important;
+            background-color: #313244 !important;
+            border-radius: 4px;
             padding: 0.2em 0.4em;
-            border-radius: 6px;
-            font-size: 85%;
-            font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+            font-size: 0.9375em;
         }
 
         .markdown-body pre {
-            background: var(--mantle);
-            padding: 16px;
-            border-radius: 6px;
+            background-color: #181825 !important;
+            border-radius: 0.75rem;
+            padding: 1rem !important;
+            margin-bottom: 16px;
             overflow: auto;
-            font-size: 14px;
         }
-
         .markdown-body pre code {
-            background: transparent;
+            color: inherit !important;
+            background-color: transparent !important;
             padding: 0;
-            font-size: 100%;
-            color: inherit;
+            font-size: 0.9375em;
         }
 
         .markdown-body blockquote {
-            border-left: 4px solid var(--surface1);
+            border-left: 0.25em solid rgba(69, 71, 90, 0.5);
             padding: 0 1em;
-            color: var(--subtext0);
-            margin-left: 0;
+            color: #a6adc8;
+            margin-bottom: 16px;
         }
 
         .markdown-body img {
             max-width: 100%;
-            border-radius: 6px;
-            border: 1px solid var(--surface1);
+            border-radius: 0.5rem;
         }
 
-        .markdown-body table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 20px 0;
-        }
-
-        .markdown-body table th,
-        .markdown-body table td {
-            border: 1px solid var(--surface1);
-            padding: 8px 12px;
-            text-align: left;
-        }
-
-        .markdown-body table th {
-            background: var(--mantle);
-            font-weight: 600;
-        }
-
-        .mermaid {
-            background: rgba(255,255,255, 0.02);
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .mermaid .node rect,
-        .mermaid .node circle,
-        .mermaid .node polygon {
-            fill: var(--surface0) !important;
-            stroke: var(--overlay0) !important;
-        }
-        .mermaid .nodeLabel,
-        .mermaid .edgeLabel {
-            color: var(--text) !important;
-        }
-        .mermaid .edgePath .path {
-            stroke: var(--overlay1) !important;
-        }
-
-        .hljs {
-            background: var(--mantle) !important;
-        }
-
-        #toggle-btn {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            background: var(--blue);
-            color: var(--crust);
+        .markdown-body hr {
             border: none;
-            border-radius: 50%;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 200;
-            align-items: center;
-            justify-content: center;
+            border-top: 1px solid #313244;
+            margin: 1.5em 0;
         }
 
+        .markdown-body ul, .markdown-body ol {
+            padding-left: 2em;
+            margin-bottom: 16px;
+        }
+        .markdown-body ul { list-style-type: disc; }
+        .markdown-body ol { list-style-type: decimal; }
+        .markdown-body li { margin-bottom: 0.25em; }
+
+        /* Tables */
+        .markdown-body table {
+            display: table !important;
+            width: 100% !important;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid rgba(69, 71, 90, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+        .markdown-body table thead { background-color: rgba(203, 166, 247, 0.1); }
+        .markdown-body table tr { background-color: transparent !important; border: none !important; }
+        .markdown-body table tr:nth-child(2n) { background-color: rgba(49, 50, 68, 0.3) !important; }
+        .markdown-body table th {
+            color: #cba6f7 !important; font-weight: 600;
+            border: none !important; border-bottom: 1px solid rgba(69, 71, 90, 0.5) !important;
+            border-right: 1px solid rgba(49, 50, 68, 0.5); padding: 12px 16px !important; text-align: left;
+        }
+        .markdown-body table td {
+            border: none !important; border-bottom: 1px solid rgba(49, 50, 68, 0.3) !important;
+            border-right: 1px solid rgba(49, 50, 68, 0.3); color: #a6adc8 !important;
+            padding: 12px 16px !important; text-align: left;
+        }
+        .markdown-body table th:last-child, .markdown-body table td:last-child { border-right: none; }
+        .markdown-body table tr:last-child td { border-bottom: none !important; }
+
+        /* Highlight.js override */
+        .hljs { background: #181825 !important; }
+
+        /* Mermaid container */
+        .mermaid {
+            background-color: #181825;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+            text-align: center;
+            overflow-x: auto;
+        }
+
+        /* Callout blocks */
+        .callout {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            background-color: rgba(49, 50, 68, 0.2);
+        }
+        .callout-icon {
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+            line-height: 1;
+            padding-top: 0.3em;
+        }
+        .callout-icon svg { width: 1em; height: 1em; }
+        .callout-content { flex: 1; }
+        .callout-content p { margin: 0 !important; }
+
+        .callout.tip     { background-color: rgba(166, 227, 161, 0.1); }
+        .callout.tip     .callout-icon { color: #a6e3a1; }
+        .callout.info    { background-color: rgba(137, 180, 250, 0.1); }
+        .callout.info    .callout-icon { color: #89b4fa; }
+        .callout.danger  { background-color: rgba(243, 139, 168, 0.1); }
+        .callout.danger  .callout-icon { color: #f38ba8; }
+        .callout.warning { background-color: rgba(250, 179, 135, 0.1); }
+        .callout.warning .callout-icon { color: #fab387; }
+        .callout.note    { background-color: rgba(203, 166, 247, 0.1); }
+        .callout.note    .callout-icon { color: #cba6f7; }
+
+        /* Code copy button */
+        .copy-code-btn {
+            position: absolute; top: 0.5rem; right: 0.5rem;
+            padding: 0.5rem;
+            background-color: rgba(49, 50, 68, 0.95);
+            border: none;
+            border-radius: 0.375rem;
+            color: #a6adc8;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10;
+        }
+        .copy-code-btn i { width: 16px; height: 16px; }
+        pre { position: relative; }
+        pre:hover .copy-code-btn { opacity: 1; }
+        .copy-code-btn:hover { background-color: rgba(69, 71, 90, 1); color: #cba6f7; }
+        .copy-code-btn.copied { color: #a6e3a1; }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #11111b; }
+        ::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #45475a; }
+
+        /* Sidebar scrollbar */
+        .file-tree::-webkit-scrollbar { width: 4px; }
+        .file-tree::-webkit-scrollbar-track { background: transparent; }
+        .file-tree::-webkit-scrollbar-thumb { background: #313244; border-radius: 2px; }
+
+        /* Gantt chart overrides */
+        .mermaid .grid .tick line { stroke: #313244 !important; stroke-width: 0.5px !important; opacity: 0.5 !important; }
+        .mermaid .grid .tick text { fill: #a6adc8 !important; }
+        .mermaid .grid path { stroke: #313244 !important; stroke-width: 0.5px !important; }
+        .mermaid .section { stroke: none !important; }
+        .mermaid .section0, .mermaid .section2 { fill: #181825 !important; }
+        .mermaid .section1, .mermaid .section3 { fill: #1e1e2e !important; }
+        .mermaid .today { stroke: #f38ba8 !important; stroke-width: 2px !important; }
+        .mermaid .taskText { fill: #1e1e2e !important; font-size: 0.75em !important; }
+        .mermaid .taskTextOutsideRight, .mermaid .taskTextOutsideLeft { fill: #cdd6f4 !important; }
+        .mermaid .sectionTitle { fill: #cba6f7 !important; }
+        .mermaid .titleText { fill: #cba6f7 !important; }
+
+        /* Mobile responsive toggle */
         @media (max-width: 768px) {
             #sidebar {
                 position: absolute;
@@ -246,28 +263,160 @@
                 transform: translateX(-100%);
             }
             #sidebar.open { transform: translateX(0); }
-            #toggle-btn { display: flex; }
-            #content-scroll { padding: 20px; }
+            #toggle-btn { display: flex !important; }
+            #content-scroll { padding: 20px !important; }
         }
     </style>
 </head>
-<body>
-    <nav id="sidebar">
-        <div class="file-tree" id="file-tree-container">
+<body class="bg-crust text-text font-sans h-screen overflow-hidden flex">
+    <nav id="sidebar" class="w-[280px] bg-mantle flex flex-col flex-shrink-0 transition-transform z-[100]">
+        <div class="file-tree p-2.5 overflow-y-auto flex-1" id="file-tree-container">
         </div>
     </nav>
 
-    <main id="main">
-        <div id="content-scroll">
+    <main id="main" class="flex-1 flex flex-col overflow-hidden relative">
+        <div id="content-scroll" class="flex-1 overflow-y-auto px-[60px] py-[40px]">
             <div id="markdown-target" class="markdown-body">
             </div>
         </div>
     </main>
 
-    <button id="toggle-btn" onclick="toggleSidebar()">&#9776;</button>
+    <button id="toggle-btn" class="hidden fixed bottom-5 right-5 w-[50px] h-[50px] bg-blue text-crust border-none rounded-full shadow-lg text-2xl cursor-pointer z-[200] items-center justify-center" onclick="toggleSidebar()">
+        <i data-lucide="menu" class="w-6 h-6"></i>
+    </button>
 
     <script>
-        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+        // Mermaid init with Catppuccin theme variables
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'base',
+            fontFamily: 'Inter',
+            themeVariables: {
+                darkMode: true,
+                background: '#1e1e2e',
+                mainBkg: '#1e1e2e',
+                primaryColor: '#313244',
+                primaryTextColor: '#cdd6f4',
+                primaryBorderColor: '#89b4fa',
+                secondaryColor: '#45475a',
+                secondaryTextColor: '#cdd6f4',
+                secondaryBorderColor: '#7f849c',
+                tertiaryColor: '#313244',
+                tertiaryTextColor: '#cdd6f4',
+                tertiaryBorderColor: '#585b70',
+                lineColor: '#89b4fa',
+                arrowheadColor: '#89b4fa',
+                textColor: '#cdd6f4',
+                titleColor: '#cba6f7',
+                noteBkgColor: '#45475a',
+                noteTextColor: '#f9e2af',
+                noteBorderColor: '#585b70',
+                nodeBkg: '#313244',
+                nodeBorder: '#89b4fa',
+                clusterBkg: '#181825',
+                clusterBorder: '#585b70',
+                defaultLinkColor: '#89b4fa',
+                edgeLabelBackground: '#313244',
+                nodeTextColor: '#cdd6f4',
+                actorBkg: '#313244',
+                actorBorder: '#89b4fa',
+                actorTextColor: '#cdd6f4',
+                actorLineColor: '#585b70',
+                signalColor: '#f5c2e7',
+                signalTextColor: '#cdd6f4',
+                labelBoxBkgColor: '#45475a',
+                labelBoxBorderColor: '#585b70',
+                labelTextColor: '#cdd6f4',
+                loopTextColor: '#f9e2af',
+                activationBorderColor: '#cba6f7',
+                activationBkgColor: '#45475a',
+                sequenceNumberColor: '#1e1e2e',
+                sectionBkgColor: '#181825',
+                altSectionBkgColor: '#1e1e2e',
+                sectionBkgColor2: '#11111b',
+                taskBkgColor: '#89b4fa',
+                taskBorderColor: '#b4befe',
+                taskTextColor: '#1e1e2e',
+                taskTextLightColor: '#1e1e2e',
+                taskTextDarkColor: '#cdd6f4',
+                taskTextOutsideColor: '#cdd6f4',
+                taskTextClickableColor: '#89dceb',
+                activeTaskBkgColor: '#cba6f7',
+                activeTaskBorderColor: '#f5c2e7',
+                doneTaskBkgColor: '#45475a',
+                doneTaskBorderColor: '#585b70',
+                critBkgColor: '#f38ba8',
+                critBorderColor: '#eba0ac',
+                gridColor: '#313244',
+                todayLineColor: '#f38ba8',
+                pie1: '#cba6f7', pie2: '#89b4fa', pie3: '#a6e3a1', pie4: '#f9e2af',
+                pie5: '#f38ba8', pie6: '#94e2d5', pie7: '#fab387', pie8: '#89dceb',
+                pie9: '#f5c2e7', pie10: '#74c7ec', pie11: '#eba0ac', pie12: '#b4befe',
+                pieTitleTextColor: '#cdd6f4',
+                pieSectionTextColor: '#1e1e2e',
+                pieLegendTextColor: '#cdd6f4',
+                pieStrokeColor: '#1e1e2e',
+                pieOuterStrokeColor: '#313244',
+                git0: '#89b4fa', git1: '#cba6f7', git2: '#a6e3a1', git3: '#f9e2af',
+                git4: '#f38ba8', git5: '#94e2d5', git6: '#fab387', git7: '#74c7ec',
+                gitInv0: '#1e1e2e', gitInv1: '#1e1e2e', gitInv2: '#1e1e2e', gitInv3: '#1e1e2e',
+                gitInv4: '#1e1e2e', gitInv5: '#1e1e2e', gitInv6: '#1e1e2e', gitInv7: '#1e1e2e',
+                commitLabelColor: '#bac2de',
+                commitLabelBackground: '#1e1e2e',
+                tagLabelColor: '#1e1e2e',
+                tagLabelBackground: '#f9e2af',
+                tagLabelBorder: '#fab387',
+                labelBackgroundColor: '#313244',
+                cScale0: '#313244', cScale1: '#89b4fa', cScale2: '#cba6f7', cScale3: '#a6e3a1',
+                cScale4: '#f9e2af', cScale5: '#f38ba8', cScale6: '#94e2d5', cScale7: '#fab387',
+                cScale8: '#89dceb', cScale9: '#f5c2e7', cScale10: '#74c7ec', cScale11: '#b4befe',
+            },
+        });
+
+        // Custom marked renderer
+        function generateId(text) {
+            return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        }
+
+        const renderer = {
+            heading({ tokens, depth }) {
+                const text = this.parser.parseInline(tokens);
+                const slug = generateId(text.replace(/<[^>]*>/g, ''));
+                return `<h${depth} id="${slug}">${text}</h${depth}>`;
+            },
+            code({ text, lang }) {
+                if (lang === 'mermaid') {
+                    return `<div class="overflow-x-auto my-6"><div class="mermaid">${text}</div></div>`;
+                }
+                const validLang = hljs.getLanguage(lang) ? lang : 'plaintext';
+                let highlighted = text;
+                try { highlighted = hljs.highlight(text, { language: validLang }).value; } catch (e) {}
+                return `<pre><code class="hljs language-${validLang}">${highlighted}</code></pre>`;
+            },
+            blockquote({ tokens }) {
+                const body = this.parser.parse(tokens);
+                const rawText = tokens.map(t => t.raw || t.text || '').join('');
+                const match = rawText.match(/^\[!(TIP|NOTE|INFO|WARNING|DANGER)\]/i);
+                if (match) {
+                    const type = match[1].toLowerCase();
+                    const iconMap = {
+                        tip: 'lightbulb',
+                        note: 'sticky-note',
+                        info: 'info',
+                        warning: 'triangle-alert',
+                        danger: 'triangle-alert',
+                    };
+                    const cleanBody = body.replace(/<p>\s*\[!(TIP|NOTE|INFO|WARNING|DANGER)\]\s*/i, '<p>');
+                    return `<div class="callout ${type}"><div class="callout-icon"><i data-lucide="${iconMap[type] || 'info'}"></i></div><div class="callout-content">${cleanBody}</div></div>`;
+                }
+                return `<blockquote>${body}</blockquote>`;
+            },
+            image({ href, text }) {
+                return `<img src="${href}" alt="${text || ''}" style="max-width:100%; border-radius:0.5rem;">`;
+            },
+        };
+        marked.use({ renderer });
+
         let fileTree = {};
         let currentPath = '';
 
@@ -277,6 +426,7 @@
                 if (!response.ok) throw new Error('Failed to fetch file tree');
                 fileTree = await response.json();
                 renderSidebar(fileTree, document.getElementById('file-tree-container'));
+                lucide.createIcons();
                 const firstMdFile = findFirstMarkdownFile(fileTree);
                 if (firstMdFile) {
                     loadFile(firstMdFile.path, firstMdFile.name);
@@ -305,18 +455,18 @@
 
                 if (node.isDir) {
                     const folderDiv = document.createElement('div');
-                    folderDiv.className = 'tree-folder';
-                    folderDiv.textContent = name;
+                    folderDiv.className = 'flex items-center gap-2 px-2.5 mt-3 mb-1 text-xs font-semibold uppercase tracking-wider text-text';
+                    folderDiv.innerHTML = `<i data-lucide="folder" class="w-3.5 h-3.5 text-overlay1"></i> ${name}`;
                     container.appendChild(folderDiv);
                     const childContainer = document.createElement('div');
-                    childContainer.className = 'indent';
+                    childContainer.className = 'ml-3 pl-3 border-l border-surface1';
                     if (node.children) renderSidebar(node.children, childContainer, fullPath);
                     container.appendChild(childContainer);
                 } else {
                     const fileLink = document.createElement('div');
-                    fileLink.className = 'tree-item';
+                    fileLink.className = 'tree-item flex items-center gap-2 cursor-pointer px-2.5 py-1.5 rounded-md mb-0.5 text-sm text-subtext0 transition-all duration-150 hover:bg-[rgba(180,190,254,0.08)] hover:text-text';
                     fileLink.setAttribute('data-path', fullPath);
-                    fileLink.innerHTML = `<span style="opacity:0.5; font-size: 1.2em; line-height: 1;">&bull;</span> ${name}`;
+                    fileLink.innerHTML = `<i data-lucide="file-text" class="w-3.5 h-3.5 flex-shrink-0"></i> ${name}`;
                     fileLink.onclick = () => loadFile(fullPath, name, fileLink);
                     container.appendChild(fileLink);
                 }
@@ -325,13 +475,14 @@
 
         async function loadFile(path, filename, element) {
             try {
-                document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
-                if (element) {
-                    element.classList.add('active');
-                } else {
-                    const elem = document.querySelector(`.tree-item[data-path="${path}"]`);
-                    if (elem) elem.classList.add('active');
+                document.querySelectorAll('.tree-item').forEach(el => {
+                    el.classList.remove('!bg-[rgba(137,180,250,0.15)]', '!text-blue', 'font-medium');
+                });
+                const activeEl = element || document.querySelector(`.tree-item[data-path="${path}"]`);
+                if (activeEl) {
+                    activeEl.classList.add('!bg-[rgba(137,180,250,0.15)]', '!text-blue', 'font-medium');
                 }
+
                 const response = await fetch(`/api/blob?path=${encodeURIComponent(path)}`);
                 if (!response.ok) throw new Error('Failed to fetch file content');
                 const content = await response.text();
@@ -340,36 +491,78 @@
                 try {
                     target.innerHTML = marked.parse(content);
 
-                    const mermaidBlocks = target.querySelectorAll('.language-mermaid');
-                    for (let i = 0; i < mermaidBlocks.length; i++) {
-                        const block = mermaidBlocks[i];
-                        const code = block.textContent;
-                        const id = `mermaid-${i}`;
-                        const div = document.createElement('div');
-                        div.className = 'mermaid';
-                        div.id = id;
-                        div.textContent = code;
-
-                        block.parentElement.replaceWith(div);
-                    }
+                    // Run mermaid on detected blocks
+                    const mermaidBlocks = target.querySelectorAll('.mermaid');
                     if (mermaidBlocks.length > 0) {
-                        await mermaid.run();
+                        await mermaid.run({ nodes: mermaidBlocks });
                     }
-                    hljs.highlightAll();
+
+                    addCopyButtons();
+                    lucide.createIcons();
                 } catch (parseError) {
                     console.warn('Failed to parse as markdown, showing as plain text:', parseError);
                     target.innerHTML = `<pre><code>${escapeHtml(content)}</code></pre>`;
-                    hljs.highlightAll();
                 }
+
+                // Scroll to top
+                document.getElementById('content-scroll').scrollTop = 0;
                 currentPath = path;
             } catch (error) {
                 console.error('Error loading file:', error);
                 const target = document.getElementById('markdown-target');
-                target.innerHTML = `<div style="padding: 20px; text-align: center;">
-                    <p style="color: var(--subtext0); font-size: 16px; margin-bottom: 10px;">Unable to render file: <strong>${escapeHtml(filename)}</strong></p>
-                    <p style="color: var(--subtext0); font-size: 14px;">${escapeHtml(error.message)}</p>
+                target.innerHTML = `<div class="text-center py-10">
+                    <p class="text-subtext0 text-base mb-2">Unable to render file: <strong>${escapeHtml(filename)}</strong></p>
+                    <p class="text-subtext0 text-sm">${escapeHtml(error.message)}</p>
                 </div>`;
             }
+        }
+
+        function addCopyButtons() {
+            const codeBlocks = document.querySelectorAll('.markdown-body pre');
+            codeBlocks.forEach(block => {
+                if (block.querySelector('.copy-code-btn')) return;
+                if (block.querySelector('.mermaid')) return;
+
+                const codeEl = block.querySelector('code');
+                if (!codeEl) return;
+
+                block.style.position = 'relative';
+                const button = document.createElement('button');
+                button.className = 'copy-code-btn';
+                button.type = 'button';
+                button.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>';
+
+                button.onclick = async function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    try {
+                        await navigator.clipboard.writeText(codeEl.textContent);
+                    } catch (err) {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = codeEl.textContent;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                    }
+
+                    button.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+                    button.classList.add('copied');
+                    lucide.createIcons({ nodes: [button] });
+
+                    setTimeout(() => {
+                        button.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>';
+                        button.classList.remove('copied');
+                        lucide.createIcons({ nodes: [button] });
+                    }, 2000);
+                };
+
+                block.appendChild(button);
+            });
+            lucide.createIcons();
         }
 
         function escapeHtml(text) {
@@ -382,6 +575,8 @@
             document.getElementById('sidebar').classList.toggle('open');
         }
 
+        // Init
+        lucide.createIcons();
         fetchFileTree();
     </script>
 </body>

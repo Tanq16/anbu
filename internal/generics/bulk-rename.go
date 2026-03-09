@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 func BulkRename(pattern string, replacement string, renameDirectories bool, dryRun bool) error {

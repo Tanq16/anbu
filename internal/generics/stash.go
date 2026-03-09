@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 type StashType string

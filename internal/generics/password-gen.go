@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 func GeneratePassword(lengthS string, simple bool) {

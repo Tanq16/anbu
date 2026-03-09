@@ -1,20 +1,18 @@
 package anbuNetwork
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
-func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
+func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 	u.PrintInfo(fmt.Sprintf("TCP tunnel %s %s %s", localAddr, u.StyleSymbols["arrow"], remoteAddr))
 
 	listener, err := net.Listen("tcp", localAddr)
@@ -27,20 +25,16 @@ func TCPTunnel(localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
 		u.PrintStream("Using TLS for remote connections")
 	}
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	done := make(chan struct{})
-	var activeConns sync.WaitGroup
 	go func() {
-		<-sigChan
-		close(done)
+		<-ctx.Done()
 		u.PrintInfo("TCP tunnel stopped gracefully")
 		listener.Close()
 	}()
 
+	var activeConns sync.WaitGroup
 	for {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			activeConns.Wait()
 			return
 		default:

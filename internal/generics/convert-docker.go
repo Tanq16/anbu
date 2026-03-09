@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 func convertDockerToCompose(input string) error {

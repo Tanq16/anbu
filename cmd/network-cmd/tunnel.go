@@ -1,9 +1,13 @@
 package networkCmd
 
 import (
+	"context"
+	"os"
+	"os/signal"
+
 	"github.com/spf13/cobra"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -34,7 +38,10 @@ var tcpTunnelCmd = &cobra.Command{
 		if tunnelFlags.remoteAddr == "" {
 			u.PrintFatal("remote address is required", nil)
 		}
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer cancel()
 		anbuNetwork.TCPTunnel(
+			ctx,
 			tunnelFlags.localAddr,
 			tunnelFlags.remoteAddr,
 			tunnelFlags.useTLS,
@@ -70,7 +77,10 @@ var sshTunnelCmd = &cobra.Command{
 			}
 			authMethods = append(authMethods, keyAuth)
 		}
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer cancel()
 		anbuNetwork.SSHTunnel(
+			ctx,
 			tunnelFlags.localAddr,
 			tunnelFlags.remoteAddr,
 			tunnelFlags.sshAddr,
@@ -107,7 +117,10 @@ var reverseSshTunnelCmd = &cobra.Command{
 			}
 			authMethods = append(authMethods, keyAuth)
 		}
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer cancel()
 		anbuNetwork.ReverseSSHTunnel(
+			ctx,
 			tunnelFlags.localAddr,
 			tunnelFlags.remoteAddr,
 			tunnelFlags.sshAddr,

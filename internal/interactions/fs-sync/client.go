@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 type ClientConfig struct {

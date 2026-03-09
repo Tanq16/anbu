@@ -7,7 +7,7 @@ import (
 	"time"
 
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 type timeFormat struct {

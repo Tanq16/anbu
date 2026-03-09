@@ -1,20 +1,19 @@
 package anbuNetwork
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 	"golang.org/x/crypto/ssh"
 )
 
-func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) {
+func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) {
 	u.PrintInfo(fmt.Sprintf("SSH tunnel %s %s %s via %s", localAddr, u.StyleSymbols["arrow"], remoteAddr, sshAddr))
 	config := &ssh.ClientConfig{
 		User:            user,
@@ -38,21 +37,17 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 	defer listener.Close()
 	u.PrintInfo(fmt.Sprintf("Listening on %s", localAddr))
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	done := make(chan struct{})
-	var activeConns sync.WaitGroup
 	go func() {
-		<-sigChan
-		close(done)
+		<-ctx.Done()
 		u.PrintInfo("SSH tunnel stopped gracefully")
 		listener.Close()
 		sshClient.Close()
 	}()
 
+	var activeConns sync.WaitGroup
 	for {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			activeConns.Wait()
 			return
 		default:
@@ -107,7 +102,7 @@ func SSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.Au
 	}
 }
 
-func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) {
+func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) {
 	u.PrintInfo(fmt.Sprintf("Reverse SSH tunnel %s %s %s via %s", remoteAddr, u.StyleSymbols["arrow"], localAddr, sshAddr))
 	config := &ssh.ClientConfig{
 		User:            user,
@@ -132,21 +127,17 @@ func ReverseSSHTunnel(localAddr, remoteAddr, sshAddr, user string, authMethods [
 	defer listener.Close()
 	u.PrintInfo(fmt.Sprintf("Listening on remote address %s", remoteAddr))
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	done := make(chan struct{})
-	var activeConns sync.WaitGroup
 	go func() {
-		<-sigChan
-		close(done)
+		<-ctx.Done()
 		u.PrintInfo("Reverse SSH tunnel stopped gracefully")
 		listener.Close()
 		sshClient.Close()
 	}()
 
+	var activeConns sync.WaitGroup
 	for {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			activeConns.Wait()
 			return
 		default:

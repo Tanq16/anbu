@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
+
+var stdinScanner *bufio.Scanner
 
 type inputModel struct {
 	textInput textarea.Model
@@ -103,7 +106,7 @@ func (m inputModel) View() tea.View {
 
 func GetInput(prompt string, placeholder string) string {
 	if GlobalForAIFlag {
-		result, err := ReadPipedInput()
+		result, err := ReadPipedLine()
 		if err != nil {
 			PrintError("Piped input error", err)
 			return ""
@@ -155,6 +158,23 @@ func ReadPipedInput() (string, error) {
 		return "", fmt.Errorf("no input provided via pipe")
 	}
 	return result, nil
+}
+
+func ReadPipedLine() (string, error) {
+	if stdinScanner == nil {
+		stdinScanner = bufio.NewScanner(os.Stdin)
+	}
+	if stdinScanner.Scan() {
+		line := strings.TrimSpace(stdinScanner.Text())
+		if line == "" {
+			return "", fmt.Errorf("empty line from piped input")
+		}
+		return line, nil
+	}
+	if err := stdinScanner.Err(); err != nil {
+		return "", fmt.Errorf("failed to read piped line: %w", err)
+	}
+	return "", fmt.Errorf("no input provided via pipe")
 }
 
 func DeviceCodeFlow(url string, userCode string) string {

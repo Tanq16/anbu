@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 const sizeThreshold = 100 * 1024 * 1024

@@ -29,7 +29,7 @@ func PrintFatal(text string, err error) {
 	if GlobalDebugFlag {
 		log.Fatal().Str("package", "utils").Err(err).Msg(text)
 	} else if GlobalForAIFlag {
-		fmt.Println("[FATAL] " + text)
+		fmt.Printf("[ERROR] %s: %v\n", text, err)
 		os.Exit(1)
 	} else {
 		fmt.Println(errorStyle.Render(StyleSymbols["fail"] + " " + text))
@@ -73,11 +73,7 @@ func PrintStream(text string) {
 	}
 }
 func PrintGeneric(text string) {
-	if GlobalDebugFlag {
-		log.Debug().Str("package", "utils").Msg(text)
-	} else {
-		fmt.Println(text)
-	}
+	fmt.Println(text)
 }
 func FSuccess(text string) string {
 	if GlobalDebugFlag || GlobalForAIFlag {

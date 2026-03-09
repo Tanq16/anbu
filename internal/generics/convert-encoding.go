@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	u "github.com/tanq16/anbu/internal/utils"
+	u "github.com/tanq16/anbu/utils"
 )
 
 func textToBase64(input string) error {
