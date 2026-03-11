@@ -50,12 +50,13 @@ A summary of everything that **Anbu** can perform:
   ```bash
   git clone https://github.com/tanq16/anbu.git && \
   cd anbu && \
+  make assets && \
   go build .
   ```
 
 ## Usage
 
-Anbu supports a large number of operations across the board. All commands support the `--debug` flag to enable debug logging.
+Anbu supports a large number of operations across the board. All commands support the `--debug` flag to enable debug logging and the `--for-ai` flag for machine-readable output (plain text with `[OK]`/`[ERROR]`/`[WARN]`/`[INFO]` prefixes and markdown tables).
 
 The specific details of each are:
 

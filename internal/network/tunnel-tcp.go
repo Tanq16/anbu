@@ -32,6 +32,7 @@ func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecu
 	}()
 
 	var activeConns sync.WaitGroup
+	sem := make(chan struct{}, 100)
 	for {
 		select {
 		case <-ctx.Done():
@@ -51,9 +52,17 @@ func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecu
 				continue
 			}
 
+			select {
+			case sem <- struct{}{}:
+			default:
+				u.PrintWarn("Connection limit reached, rejecting", nil)
+				localConn.Close()
+				continue
+			}
 			activeConns.Add(1)
 			go func() {
 				defer activeConns.Done()
+				defer func() { <-sem }()
 				defer localConn.Close()
 				u.PrintInfo(fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
 

@@ -45,6 +45,7 @@ func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string,
 	}()
 
 	var activeConns sync.WaitGroup
+	sem := make(chan struct{}, 100)
 	for {
 		select {
 		case <-ctx.Done():
@@ -64,9 +65,17 @@ func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string,
 				continue
 			}
 
+			select {
+			case sem <- struct{}{}:
+			default:
+				u.PrintWarn("Connection limit reached, rejecting", nil)
+				localConn.Close()
+				continue
+			}
 			activeConns.Add(1)
 			go func() {
 				defer activeConns.Done()
+				defer func() { <-sem }()
 				defer localConn.Close()
 				u.PrintInfo(fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
 				remoteConn, err := sshClient.Dial("tcp", remoteAddr)
@@ -135,6 +144,7 @@ func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user 
 	}()
 
 	var activeConns sync.WaitGroup
+	sem := make(chan struct{}, 100)
 	for {
 		select {
 		case <-ctx.Done():
@@ -157,9 +167,17 @@ func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user 
 				continue
 			}
 
+			select {
+			case sem <- struct{}{}:
+			default:
+				u.PrintWarn("Connection limit reached, rejecting", nil)
+				remoteConn.Close()
+				continue
+			}
 			activeConns.Add(1)
 			go func() {
 				defer activeConns.Done()
+				defer func() { <-sem }()
 				defer remoteConn.Close()
 				u.PrintInfo(fmt.Sprintf("New connection from remote %s", remoteConn.RemoteAddr()))
 

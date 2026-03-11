@@ -29,7 +29,7 @@ func PrintFatal(text string, err error) {
 	if GlobalDebugFlag {
 		log.Fatal().Str("package", "utils").Err(err).Msg(text)
 	} else if GlobalForAIFlag {
-		fmt.Printf("[ERROR] %s: %v\n", text, err)
+		fmt.Println("[ERROR] " + text)
 		os.Exit(1)
 	} else {
 		fmt.Println(errorStyle.Render(StyleSymbols["fail"] + " " + text))
