@@ -38,7 +38,7 @@ STATIC_DIR := internal/generics/static
 assets: ## Download frontend assets (JS, CSS, fonts)
 	@mkdir -p $(STATIC_DIR)/js $(STATIC_DIR)/css $(STATIC_DIR)/fonts
 	@echo "Downloading JS assets..."
-	@curl -sL -o $(STATIC_DIR)/js/marked.min.js "https://cdn.jsdelivr.net/npm/marked@17.0.5/marked.min.js"
+	@curl -sL -o $(STATIC_DIR)/js/marked.min.js "https://cdn.jsdelivr.net/npm/marked@17.0.5/lib/marked.umd.js"
 	@curl -sL -o $(STATIC_DIR)/js/mermaid.min.js "https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.min.js"
 	@curl -sL -o $(STATIC_DIR)/js/highlight.min.js "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"
 	@curl -sL -o $(STATIC_DIR)/js/tailwindcss.js "https://cdn.tailwindcss.com/3.4.16"

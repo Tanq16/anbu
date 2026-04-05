@@ -444,6 +444,10 @@
                 return `<blockquote>${body}</blockquote>`;
             },
             image({ href, text }) {
+                if (href && !href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('data:')) {
+                    const dir = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+                    href = href.startsWith('/') ? '/files' + href : '/files/' + dir + href;
+                }
                 return `<img src="${href}" alt="${text || ''}" style="max-width:100%; border-radius:0.5rem;">`;
             },
         };
@@ -516,24 +520,30 @@
                 }
 
                 const response = await fetch(`/api/blob?path=${encodeURIComponent(path)}`);
-                if (!response.ok) throw new Error('Failed to fetch file content');
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(errText || 'Failed to fetch file content');
+                }
                 const content = await response.text();
                 const target = document.getElementById('markdown-target');
+                const ext = path.substring(path.lastIndexOf('.')).toLowerCase();
 
-                try {
-                    target.innerHTML = marked.parse(content);
-
-                    // Run mermaid on detected blocks
-                    const mermaidBlocks = target.querySelectorAll('.mermaid');
-                    if (mermaidBlocks.length > 0) {
-                        await mermaid.run({ nodes: mermaidBlocks });
-                    }
-
+                if (ext === '.txt') {
+                    target.innerHTML = `<pre style="white-space:pre-wrap; word-wrap:break-word;"><code class="hljs">${escapeHtml(content)}</code></pre>`;
                     addCopyButtons();
-                    lucide.createIcons();
-                } catch (parseError) {
-                    console.warn('Failed to parse as markdown, showing as plain text:', parseError);
-                    target.innerHTML = `<pre><code>${escapeHtml(content)}</code></pre>`;
+                } else {
+                    try {
+                        target.innerHTML = marked.parse(content);
+                        const mermaidBlocks = target.querySelectorAll('.mermaid');
+                        if (mermaidBlocks.length > 0) {
+                            await mermaid.run({ nodes: mermaidBlocks });
+                        }
+                        addCopyButtons();
+                        lucide.createIcons();
+                    } catch (parseError) {
+                        console.warn('Failed to parse as markdown, showing as plain text:', parseError);
+                        target.innerHTML = `<pre><code>${escapeHtml(content)}</code></pre>`;
+                    }
                 }
 
                 // Scroll to top
@@ -543,8 +553,8 @@
                 console.error('Error loading file:', error);
                 const target = document.getElementById('markdown-target');
                 target.innerHTML = `<div class="text-center py-10">
-                    <p class="text-subtext0 text-base mb-2">Unable to render file: <strong>${escapeHtml(filename)}</strong></p>
-                    <p class="text-subtext0 text-sm">${escapeHtml(error.message)}</p>
+                    <p class="text-overlay1 text-lg mb-2">Unable to Render</p>
+                    <p class="text-subtext0 text-sm">${escapeHtml(filename)}</p>
                 </div>`;
             }
         }

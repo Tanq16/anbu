@@ -57,6 +57,7 @@ func (s *MarkdownServer) Setup() error {
 	s.mux.HandleFunc("/", s.serveHTML)
 	s.mux.HandleFunc("/api/tree", s.serveFileTree)
 	s.mux.HandleFunc("/api/blob", s.serveFileContent)
+	s.mux.HandleFunc("/files/", s.serveRawFile)
 	return nil
 }
 
@@ -96,6 +97,16 @@ func (s *MarkdownServer) serveFileTree(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tree)
 }
 
+var supportedExts = map[string]bool{
+	".md": true, ".markdown": true, ".txt": true,
+}
+
+var imageContentTypes = map[string]string{
+	".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+	".gif": "image/gif", ".svg": "image/svg+xml", ".webp": "image/webp",
+	".ico": "image/x-icon", ".bmp": "image/bmp",
+}
+
 func (s *MarkdownServer) serveFileContent(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
 	if path == "" {
@@ -121,111 +132,50 @@ func (s *MarkdownServer) serveFileContent(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Path is a directory", http.StatusBadRequest)
 		return
 	}
+	ext := strings.ToLower(filepath.Ext(fullPath))
+	if !supportedExts[ext] {
+		http.Error(w, "Unable to Render", http.StatusUnsupportedMediaType)
+		return
+	}
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		u.PrintError("failed to read file", err)
 		http.Error(w, "Failed to read file", http.StatusInternalServerError)
 		return
 	}
-	ext := strings.ToLower(filepath.Ext(fullPath))
-	filename := filepath.Base(fullPath)
-	if ext == ".md" || ext == ".markdown" {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Write(content)
-		return
-	}
-	lang := getLanguageFromFilename(filename)
-	if lang == "" {
-		if ext == "" {
-			http.Error(w, "File type not supported for rendering", http.StatusUnsupportedMediaType)
-			return
-		}
-		lang = getLanguageFromExtension(ext)
-		if lang == "" {
-			http.Error(w, "File type not supported for rendering", http.StatusUnsupportedMediaType)
-			return
-		}
-	}
-	content = fmt.Appendf(nil, "```%s\n%s\n```", lang, string(content))
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write(content)
 }
 
-func getLanguageFromExtension(ext string) string {
-	ext = strings.TrimPrefix(ext, ".")
-
-	langMap := map[string]string{
-		"go": "go",
-		"py": "python", "pyw": "python", "pyi": "python",
-		"js": "javascript", "jsx": "javascript", "mjs": "javascript", "cjs": "javascript",
-		"ts": "typescript", "tsx": "typescript",
-		"java": "java",
-		"c":    "c", "h": "c",
-		"cpp": "cpp", "cc": "cpp", "cxx": "cpp", "hpp": "cpp", "hxx": "cpp",
-		"rs": "rust",
-		"rb": "ruby", "rake": "ruby",
-		"php": "php", "phtml": "php",
-		"sh": "bash", "bash": "bash", "zsh": "bash",
-		"yaml": "yaml", "yml": "yaml",
-		"json": "json",
-		"xml":  "xml", "html": "html", "htm": "html",
-		"css": "css", "scss": "scss", "sass": "sass", "less": "less",
-		"sql":   "sql",
-		"swift": "swift",
-		"kt":    "kotlin", "kts": "kotlin",
-		"hs": "haskell", "lhs": "haskell",
-		"ml": "ocaml", "mli": "ocaml",
-		"lua": "lua",
-		"r":   "r",
-		"pl":  "perl", "pm": "perl",
-		"vim":        "vim",
-		"dockerfile": "dockerfile",
-		"makefile":   "makefile", "mk": "makefile",
-		"cmake":      "cmake",
-		"toml":       "toml",
-		"ini":        "ini",
-		"properties": "properties",
-		"diff":       "diff", "patch": "diff",
-		"tex":  "latex",
-		"dart": "dart",
-		"cs":   "csharp",
-		"ps1":  "powershell", "psm1": "powershell", "psd1": "powershell",
-		"tf":      "hcl",
-		"hcl":     "hcl",
-		"graphql": "graphql", "gql": "graphql",
-		"proto": "protobuf",
-		"awk":   "awk",
-		"sed":   "sed",
+func (s *MarkdownServer) serveRawFile(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/files/")
+	if path == "" {
+		http.Error(w, "Missing path", http.StatusBadRequest)
+		return
 	}
-	if lang, ok := langMap[ext]; ok {
-		return lang
+	cleanPath := filepath.Clean(path)
+	fullPath := filepath.Join(s.Options.RootDir, cleanPath)
+	if !strings.HasPrefix(fullPath, s.Options.RootDir) {
+		http.Error(w, "Invalid path", http.StatusForbidden)
+		return
 	}
-	return ""
-}
-
-func getLanguageFromFilename(filename string) string {
-	filenameMap := map[string]string{
-		"LICENSE":         "text",
-		"Dockerfile":      "dockerfile",
-		"Makefile":        "makefile",
-		"CMakeLists.txt":  "cmake",
-		"Rakefile":        "ruby",
-		"Gemfile":         "ruby",
-		"Gemfile.lock":    "ruby",
-		"BUILD":           "python",
-		"BUILD.bazel":     "python",
-		"WORKSPACE":       "python",
-		"WORKSPACE.bazel": "python",
-		"Justfile":        "makefile",
-		"justfile":        "makefile",
+	ext := strings.ToLower(filepath.Ext(fullPath))
+	contentType, ok := imageContentTypes[ext]
+	if !ok {
+		http.Error(w, "Not an image file", http.StatusUnsupportedMediaType)
+		return
 	}
-	if lang, ok := filenameMap[filename]; ok {
-		return lang
+	content, err := os.ReadFile(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "File not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Error reading file", http.StatusInternalServerError)
+		}
+		return
 	}
-	if lang, ok := filenameMap[strings.ToLower(filename)]; ok {
-		return lang
-	}
-	return ""
+	w.Header().Set("Content-Type", contentType)
+	w.Write(content)
 }
 
 func (s *MarkdownServer) buildFileTree(rootPath string) (map[string]FileNode, error) {
@@ -246,6 +196,12 @@ func (s *MarkdownServer) buildFileTree(rootPath string) (map[string]FileNode, er
 		}
 		if relPath == "." {
 			return nil
+		}
+		if !d.IsDir() {
+			ext := strings.ToLower(filepath.Ext(d.Name()))
+			if !supportedExts[ext] {
+				return nil
+			}
 		}
 		parts := strings.Split(relPath, string(filepath.Separator))
 		current := tree
@@ -277,7 +233,22 @@ func (s *MarkdownServer) buildFileTree(rootPath string) (map[string]FileNode, er
 		}
 		return nil
 	})
-	return tree, err
+	if err != nil {
+		return nil, err
+	}
+	pruneEmptyDirs(tree)
+	return tree, nil
+}
+
+func pruneEmptyDirs(tree map[string]FileNode) {
+	for name, node := range tree {
+		if node.IsDir {
+			pruneEmptyDirs(node.Children)
+			if len(node.Children) == 0 {
+				delete(tree, name)
+			}
+		}
+	}
 }
 
 func withLogging(next http.Handler) http.HandlerFunc {
