@@ -16,7 +16,7 @@ import (
 //go:embed markdown-viewer.html
 var markdownViewerHTML []byte
 
-//go:embed static/*
+//go:embed static
 var staticFiles embed.FS
 
 type FileNode struct {
@@ -31,30 +31,49 @@ type MarkdownServerOptions struct {
 
 type MarkdownServer struct {
 	Options *MarkdownServerOptions
+	mux     *http.ServeMux
 }
 
-func StartMarkdownServer(listenAddr string) error {
+func NewMarkdownServer(listenAddr string) (*MarkdownServer, error) {
 	rootDir, err := os.Getwd()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	server := &MarkdownServer{
+	return &MarkdownServer{
 		Options: &MarkdownServerOptions{
 			ListenAddress: listenAddr,
 			RootDir:       rootDir,
 		},
-	}
-	mux := http.NewServeMux()
+	}, nil
+}
+
+func (s *MarkdownServer) Setup() error {
+	s.mux = http.NewServeMux()
 	staticFS, err := fs.Sub(staticFiles, "static")
 	if err != nil {
 		return err
 	}
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
-	mux.HandleFunc("/", server.serveHTML)
-	mux.HandleFunc("/api/tree", server.serveFileTree)
-	mux.HandleFunc("/api/blob", server.serveFileContent)
-	u.PrintInfo(fmt.Sprintf("Markdown viewer started at http://%s/", listenAddr))
-	return http.ListenAndServe(listenAddr, loggingMiddleware(mux))
+	s.mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
+	s.mux.HandleFunc("/", s.serveHTML)
+	s.mux.HandleFunc("/api/tree", s.serveFileTree)
+	s.mux.HandleFunc("/api/blob", s.serveFileContent)
+	return nil
+}
+
+func (s *MarkdownServer) Run() error {
+	u.PrintInfo(fmt.Sprintf("Markdown viewer started at http://%s/", s.Options.ListenAddress))
+	return http.ListenAndServe(s.Options.ListenAddress, withLogging(s.mux))
+}
+
+func StartMarkdownServer(listenAddr string) error {
+	server, err := NewMarkdownServer(listenAddr)
+	if err != nil {
+		return err
+	}
+	if err := server.Setup(); err != nil {
+		return err
+	}
+	return server.Run()
 }
 
 func (s *MarkdownServer) serveHTML(w http.ResponseWriter, r *http.Request) {
@@ -261,9 +280,9 @@ func (s *MarkdownServer) buildFileTree(rootPath string) (map[string]FileNode, er
 	return tree, err
 }
 
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func withLogging(next http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		u.PrintStream(fmt.Sprintf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path))
 		next.ServeHTTP(w, r)
-	})
+	}
 }

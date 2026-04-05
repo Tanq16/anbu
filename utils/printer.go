@@ -118,8 +118,3 @@ func FGeneric(text string) string {
 func LineBreak() {
 	fmt.Println()
 }
-func ClearTerminal(lines int) {
-	if lines > 0 {
-		fmt.Printf("\033[%dA\r\033[K", lines)
-	}
-}

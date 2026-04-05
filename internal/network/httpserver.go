@@ -23,17 +23,22 @@ type HTTPServer struct {
 	Server  *http.Server
 }
 
-func (s *HTTPServer) Start() error {
+func NewHTTPServer(options *HTTPServerOptions) *HTTPServer {
+	return &HTTPServer{
+		Options: options,
+	}
+}
+
+func (s *HTTPServer) Setup() error {
 	var handler http.Handler
 	if s.Options.EnableUpload {
 		handler = http.HandlerFunc(s.handleUpload)
 	} else {
 		handler = http.FileServer(http.Dir("."))
 	}
-	handler = s.loggingMiddleware(handler)
 	s.Server = &http.Server{
 		Addr:    s.Options.ListenAddress,
-		Handler: handler,
+		Handler: withHTTPLogging(handler),
 	}
 	if s.Options.EnableTLS {
 		tlsConfig, err := s.getTLSConfig()
@@ -41,6 +46,12 @@ func (s *HTTPServer) Start() error {
 			return err
 		}
 		s.Server.TLSConfig = tlsConfig
+	}
+	return nil
+}
+
+func (s *HTTPServer) Run() error {
+	if s.Options.EnableTLS {
 		u.PrintInfo(fmt.Sprintf("HTTPS server started on https://%s/", s.Options.ListenAddress))
 		return s.Server.ListenAndServeTLS("", "")
 	}
@@ -55,11 +66,11 @@ func (s *HTTPServer) Stop() error {
 	return nil
 }
 
-func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func withHTTPLogging(next http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		u.PrintStream(fmt.Sprintf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path))
 		next.ServeHTTP(w, r)
-	})
+	}
 }
 
 func (s *HTTPServer) handleUpload(w http.ResponseWriter, r *http.Request) {

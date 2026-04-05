@@ -66,16 +66,12 @@ func init() {
 	rootCmd.AddCommand(genericsCmd.TimeCmd)
 	rootCmd.AddCommand(genericsCmd.BulkRenameCmd)
 	rootCmd.AddCommand(genericsCmd.ManualRenameCmd)
-	rootCmd.AddCommand(genericsCmd.SedCmd)
 	rootCmd.AddCommand(genericsCmd.ConvertCmd)
 	rootCmd.AddCommand(genericsCmd.MarkdownCmd)
 	rootCmd.AddCommand(genericsCmd.StashCmd)
 	rootCmd.AddCommand(genericsCmd.TasksCmd)
 	rootCmd.AddCommand(genericsCmd.DuplicatesCmd)
 
-	rootCmd.AddCommand(cryptoCmd.FileCryptoCmd)
-	rootCmd.AddCommand(cryptoCmd.KeyPairCmd)
-	rootCmd.AddCommand(cryptoCmd.SecretsScanCmd)
 	rootCmd.AddCommand(cryptoCmd.SecretsCmd)
 
 	rootCmd.AddCommand(networkCmd.TunnelCmd)

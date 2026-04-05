@@ -5,9 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anbu Markdown Viewer</title>
 
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon.png">
     <link rel="stylesheet" href="/static/css/inter.css">
     <link rel="stylesheet" href="/static/css/jetbrains-mono.css">
     <link rel="stylesheet" href="/static/css/github-dark.min.css">
+
+    <style>
+        :root {
+            --rosewater: #f5e0dc;
+            --flamingo: #f2cdcd;
+            --pink: #f5c2e7;
+            --mauve: #cba6f7;
+            --red: #f38ba8;
+            --maroon: #eba0ac;
+            --peach: #fab387;
+            --yellow: #f9e2af;
+            --green: #a6e3a1;
+            --teal: #94e2d5;
+            --sky: #89dceb;
+            --sapphire: #74c7ec;
+            --blue: #89b4fa;
+            --lavender: #b4befe;
+            --text: #cdd6f4;
+            --subtext1: #bac2de;
+            --subtext0: #a6adc8;
+            --overlay2: #9399b2;
+            --overlay1: #7f849c;
+            --overlay0: #6c7086;
+            --surface2: #585b70;
+            --surface1: #45475a;
+            --surface0: #313244;
+            --base: #1e1e2e;
+            --mantle: #181825;
+            --crust: #11111b;
+        }
+    </style>
 
     <script src="/static/js/tailwindcss.js"></script>
     <script>
@@ -15,32 +47,32 @@
             theme: {
                 extend: {
                     colors: {
-                        rosewater: '#f5e0dc',
-                        flamingo: '#f2cdcd',
-                        pink: '#f5c2e7',
-                        mauve: '#cba6f7',
-                        red: '#f38ba8',
-                        maroon: '#eba0ac',
-                        peach: '#fab387',
-                        yellow: '#f9e2af',
-                        green: '#a6e3a1',
-                        teal: '#94e2d5',
-                        sky: '#89dceb',
-                        sapphire: '#74c7ec',
-                        blue: '#89b4fa',
-                        lavender: '#b4befe',
-                        text: '#cdd6f4',
-                        subtext1: '#bac2de',
-                        subtext0: '#a6adc8',
-                        overlay2: '#9399b2',
-                        overlay1: '#7f849c',
-                        overlay0: '#6c7086',
-                        surface2: '#585b70',
-                        surface1: '#45475a',
-                        surface0: '#313244',
-                        base: '#1e1e2e',
-                        mantle: '#181825',
-                        crust: '#11111b',
+                        rosewater: 'var(--rosewater)',
+                        flamingo: 'var(--flamingo)',
+                        pink: 'var(--pink)',
+                        mauve: 'var(--mauve)',
+                        red: 'var(--red)',
+                        maroon: 'var(--maroon)',
+                        peach: 'var(--peach)',
+                        yellow: 'var(--yellow)',
+                        green: 'var(--green)',
+                        teal: 'var(--teal)',
+                        sky: 'var(--sky)',
+                        sapphire: 'var(--sapphire)',
+                        blue: 'var(--blue)',
+                        lavender: 'var(--lavender)',
+                        text: 'var(--text)',
+                        subtext1: 'var(--subtext1)',
+                        subtext0: 'var(--subtext0)',
+                        overlay2: 'var(--overlay2)',
+                        overlay1: 'var(--overlay1)',
+                        overlay0: 'var(--overlay0)',
+                        surface2: 'var(--surface2)',
+                        surface1: 'var(--surface1)',
+                        surface0: 'var(--surface0)',
+                        base: 'var(--base)',
+                        mantle: 'var(--mantle)',
+                        crust: 'var(--crust)',
                     },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],

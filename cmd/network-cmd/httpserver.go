@@ -16,19 +16,18 @@ var HTTPServerCmd = &cobra.Command{
 	Use:   "http-server",
 	Short: "Start a simple HTTP/HTTPS file server with optional file uploads",
 	Run: func(cmd *cobra.Command, args []string) {
-		options := &anbuNetwork.HTTPServerOptions{
+		server := anbuNetwork.NewHTTPServer(&anbuNetwork.HTTPServerOptions{
 			ListenAddress: httpServerFlags.listenAddress,
 			EnableUpload:  httpServerFlags.enableUpload,
 			EnableTLS:     httpServerFlags.enableTLS,
-		}
-		server := &anbuNetwork.HTTPServer{
-			Options: options,
-		}
-		err := server.Start()
-		if err != nil {
-			u.PrintFatal("Failed to start HTTP server", err)
+		})
+		if err := server.Setup(); err != nil {
+			u.PrintFatal("Failed to setup HTTP server", err)
 		}
 		defer server.Stop()
+		if err := server.Run(); err != nil {
+			u.PrintFatal("Failed to start HTTP server", err)
+		}
 	},
 }
 

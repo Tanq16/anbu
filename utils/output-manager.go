@@ -31,7 +31,7 @@ type progressModel struct {
 
 func initialModel() progressModel {
 	bar := progress.New(progress.WithFillCharacters('━', ' '))
-	bar.FullColor = lipgloss.Color("7")
+	bar.FullColor = lipgloss.ANSIColor(7)
 	return progressModel{
 		current: 0,
 		total:   100,
