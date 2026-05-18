@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -166,49 +167,68 @@ form.addEventListener('submit', function(e) {
 	}
 
 	if r.Method == http.MethodPost {
-		err := r.ParseMultipartForm(32 << 20)
+		reader, err := r.MultipartReader()
 		if err != nil {
-			u.PrintError("failed to parse multipart form", err)
+			u.PrintError("failed to get multipart reader", err)
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 
-		textContent := r.FormValue("text")
-		if strings.TrimSpace(textContent) != "" {
-			epoch := time.Now().Unix()
-			filename := fmt.Sprintf("text-%d.txt", epoch)
-			filename = s.ensureUniqueFilename(filename)
-			if err := os.WriteFile(filename, []byte(textContent), 0644); err != nil {
-				u.PrintError("failed to write text file", err)
+		for {
+			part, err := reader.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				u.PrintError("failed to read multipart part", err)
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
-			u.PrintInfo(fmt.Sprintf("Text saved to %s", filename))
+
+			if part.FormName() == "text" {
+				buf := new(strings.Builder)
+				// Limit text size to 10MB to avoid excessive memory usage
+				_, err := io.Copy(buf, io.LimitReader(part, 10<<20))
+				if err != nil {
+					u.PrintError("failed to read text part", err)
+					continue
+				}
+				textContent := buf.String()
+				if strings.TrimSpace(textContent) != "" {
+					epoch := time.Now().Unix()
+					filename := fmt.Sprintf("text-%d.txt", epoch)
+					filename = s.ensureUniqueFilename(filename)
+					if err := os.WriteFile(filename, []byte(textContent), 0644); err != nil {
+						u.PrintError("failed to write text file", err)
+					} else {
+						u.PrintInfo(fmt.Sprintf("Text saved to %s", filename))
+					}
+				}
+				continue
+			}
+
+			if part.FormName() == "files" {
+				filename := part.FileName()
+				if filename == "" {
+					continue
+				}
+				filename = s.ensureUniqueFilename(filename)
+				outFile, err := os.Create(filename)
+				if err != nil {
+					u.PrintError("failed to create file", err)
+					continue
+				}
+				_, err = io.Copy(outFile, part)
+				outFile.Close()
+				if err != nil {
+					u.PrintError("failed to write file", err)
+					os.Remove(filename)
+					continue
+				}
+				u.PrintInfo(fmt.Sprintf("File uploaded to %s", filename))
+			}
 		}
 
-		files := r.MultipartForm.File["files"]
-		for _, fileHeader := range files {
-			file, err := fileHeader.Open()
-			if err != nil {
-				u.PrintError("failed to open uploaded file", err)
-				continue
-			}
-			filename := s.ensureUniqueFilename(fileHeader.Filename)
-			outFile, err := os.Create(filename)
-			if err != nil {
-				u.PrintError("failed to create file", err)
-				file.Close()
-				continue
-			}
-			_, err = io.Copy(outFile, file)
-			file.Close()
-			outFile.Close()
-			if err != nil {
-				u.PrintError("failed to write file", err)
-				continue
-			}
-			u.PrintInfo(fmt.Sprintf("File uploaded to %s", filename))
-		}
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprint(w, `<!DOCTYPE html>
 <html>
@@ -228,11 +248,25 @@ body { background-color: #2a2a2a; color: #fff; font-family: sans-serif; padding:
 }
 
 func (s *HTTPServer) ensureUniqueFilename(filename string) string {
+	filename = filepath.Base(filename)
+	if filename == "." || filename == "/" {
+		filename = "uploaded_file"
+	}
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return filename
 	}
-	epoch := time.Now().Unix()
-	return fmt.Sprintf("%d-%s", epoch, filename)
+
+	ext := filepath.Ext(filename)
+	name := strings.TrimSuffix(filename, ext)
+
+	counter := 1
+	for {
+		newFilename := fmt.Sprintf("%s-%d%s", name, counter, ext)
+		if _, err := os.Stat(newFilename); os.IsNotExist(err) {
+			return newFilename
+		}
+		counter++
+	}
 }
 
 func (s *HTTPServer) getTLSConfig() (*tls.Config, error) {
