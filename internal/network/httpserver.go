@@ -187,8 +187,8 @@ form.addEventListener('submit', function(e) {
 
 			if part.FormName() == "text" {
 				buf := new(strings.Builder)
-				// Limit text size to 10MB to avoid excessive memory usage
-				_, err := io.Copy(buf, io.LimitReader(part, 10<<20))
+				// Limit text size to 200MB to avoid excessive memory usage while allowing large clipboards
+				_, err := io.Copy(buf, io.LimitReader(part, 200<<20))
 				if err != nil {
 					u.PrintError("failed to read text part", err)
 					continue
