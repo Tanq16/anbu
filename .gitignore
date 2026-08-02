@@ -21,8 +21,3 @@ go.work.sum
 
 # env file
 .env
-
-# Downloaded static assets (regenerated via make assets)
-internal/generics/static/js/
-internal/generics/static/css/
-internal/generics/static/fonts/

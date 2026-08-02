@@ -11,9 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.33.3
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.45.3
-	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
-	github.com/neo4j/neo4j-go-driver/v5 v5.28.4
 	github.com/rs/zerolog v1.35.1
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/crypto v0.54.0

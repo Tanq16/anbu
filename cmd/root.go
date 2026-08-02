@@ -11,7 +11,6 @@ import (
 	cloudCmd "github.com/tanq16/anbu/cmd/cloud-cmd"
 	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
-	interactionsCmd "github.com/tanq16/anbu/cmd/interactions-cmd"
 	networkCmd "github.com/tanq16/anbu/cmd/network-cmd"
 	"github.com/tanq16/anbu/utils"
 )
@@ -65,11 +64,7 @@ func init() {
 	rootCmd.AddCommand(genericsCmd.StringCmd)
 	rootCmd.AddCommand(genericsCmd.TimeCmd)
 	rootCmd.AddCommand(genericsCmd.BulkRenameCmd)
-	rootCmd.AddCommand(genericsCmd.ManualRenameCmd)
-	rootCmd.AddCommand(genericsCmd.ConvertCmd)
-	rootCmd.AddCommand(genericsCmd.MarkdownCmd)
 	rootCmd.AddCommand(genericsCmd.StashCmd)
-	rootCmd.AddCommand(genericsCmd.TasksCmd)
 	rootCmd.AddCommand(genericsCmd.DuplicatesCmd)
 
 	rootCmd.AddCommand(cryptoCmd.SecretsCmd)
@@ -77,9 +72,6 @@ func init() {
 	rootCmd.AddCommand(networkCmd.TunnelCmd)
 	rootCmd.AddCommand(networkCmd.HTTPServerCmd)
 	rootCmd.AddCommand(networkCmd.IPInfoCmd)
-
-	rootCmd.AddCommand(interactionsCmd.Neo4jCmd)
-	rootCmd.AddCommand(interactionsCmd.FSSyncCmd)
 
 	rootCmd.AddCommand(cloudCmd.AwsCmd)
 	rootCmd.AddCommand(cloudCmd.AzureCmd)
