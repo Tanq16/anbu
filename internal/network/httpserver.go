@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -166,49 +167,51 @@ form.addEventListener('submit', function(e) {
 	}
 
 	if r.Method == http.MethodPost {
-		err := r.ParseMultipartForm(32 << 20)
+		reader, err := r.MultipartReader()
 		if err != nil {
-			u.PrintError("failed to parse multipart form", err)
+			u.PrintError("failed to get multipart reader", err)
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 
-		textContent := r.FormValue("text")
-		if strings.TrimSpace(textContent) != "" {
-			epoch := time.Now().Unix()
-			filename := fmt.Sprintf("text-%d.txt", epoch)
-			filename = s.ensureUniqueFilename(filename)
-			if err := os.WriteFile(filename, []byte(textContent), 0644); err != nil {
-				u.PrintError("failed to write text file", err)
+		for {
+			part, err := reader.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				u.PrintError("failed to read multipart part", err)
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
-			u.PrintInfo(fmt.Sprintf("Text saved to %s", filename))
+
+			switch part.FormName() {
+			case "text":
+				filename := fmt.Sprintf("text-%d.txt", time.Now().Unix())
+				path, n, err := streamPartToUniqueFile(filename, part)
+				if err != nil {
+					u.PrintError("failed to write text file", err)
+					continue
+				}
+				if n == 0 {
+					os.Remove(path)
+					continue
+				}
+				u.PrintInfo(fmt.Sprintf("Text saved to %s", path))
+			case "files":
+				filename := part.FileName()
+				if filename == "" {
+					continue
+				}
+				path, _, err := streamPartToUniqueFile(filename, part)
+				if err != nil {
+					u.PrintError("failed to write file", err)
+					continue
+				}
+				u.PrintInfo(fmt.Sprintf("File uploaded to %s", path))
+			}
 		}
 
-		files := r.MultipartForm.File["files"]
-		for _, fileHeader := range files {
-			file, err := fileHeader.Open()
-			if err != nil {
-				u.PrintError("failed to open uploaded file", err)
-				continue
-			}
-			filename := s.ensureUniqueFilename(fileHeader.Filename)
-			outFile, err := os.Create(filename)
-			if err != nil {
-				u.PrintError("failed to create file", err)
-				file.Close()
-				continue
-			}
-			_, err = io.Copy(outFile, file)
-			file.Close()
-			outFile.Close()
-			if err != nil {
-				u.PrintError("failed to write file", err)
-				continue
-			}
-			u.PrintInfo(fmt.Sprintf("File uploaded to %s", filename))
-		}
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprint(w, `<!DOCTYPE html>
 <html>
@@ -227,12 +230,49 @@ body { background-color: #2a2a2a; color: #fff; font-family: sans-serif; padding:
 	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
 
-func (s *HTTPServer) ensureUniqueFilename(filename string) string {
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		return filename
+func sanitizeUploadFilename(filename string) string {
+	filename = filepath.Base(filename)
+	if filename == "." || filename == ".." || filename == "/" || filename == string(filepath.Separator) {
+		return "uploaded_file"
 	}
-	epoch := time.Now().Unix()
-	return fmt.Sprintf("%d-%s", epoch, filename)
+	return filename
+}
+
+func createUniqueFile(filename string) (*os.File, string, error) {
+	filename = sanitizeUploadFilename(filename)
+	ext := filepath.Ext(filename)
+	name := strings.TrimSuffix(filename, ext)
+	for counter := 0; ; counter++ {
+		candidate := filename
+		if counter > 0 {
+			candidate = fmt.Sprintf("%s-%d%s", name, counter, ext)
+		}
+		f, err := os.OpenFile(candidate, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+		if err == nil {
+			return f, candidate, nil
+		}
+		if !os.IsExist(err) {
+			return nil, "", err
+		}
+	}
+}
+
+func streamPartToUniqueFile(filename string, part io.Reader) (string, int64, error) {
+	outFile, path, err := createUniqueFile(filename)
+	if err != nil {
+		return "", 0, err
+	}
+	n, copyErr := io.Copy(outFile, part)
+	closeErr := outFile.Close()
+	if copyErr != nil {
+		os.Remove(path)
+		return path, n, copyErr
+	}
+	if closeErr != nil {
+		os.Remove(path)
+		return path, n, closeErr
+	}
+	return path, n, nil
 }
 
 func (s *HTTPServer) getTLSConfig() (*tls.Config, error) {
