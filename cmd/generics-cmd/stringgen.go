@@ -198,7 +198,7 @@ var passphraseCmd = &cobra.Command{
 
 func init() {
 	seqCmd.Flags().IntVarP(&seqLength, "length", "l", 100, "Length of sequence string")
-	ruidCmd.Flags().IntVarP(&ruidLength, "length", "l", 18, "Length of RUID (1-32)")
+	ruidCmd.Flags().IntVarP(&ruidLength, "length", "l", 18, "Length of RUID (1-30)")
 
 	passwordCmd.Flags().IntVarP(&passwordLength, "length", "l", 12, "Length of password")
 	passwordCmd.Flags().BoolVarP(&passwordSimple, "simple", "s", false, "Use simple lowercase password")

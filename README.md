@@ -133,11 +133,11 @@ The specific details of each are:
 
   ```bash
   anbu string 23               # generate 23 (100 if not specified) random alphanumeric chars
-  anbu string seq 29           # prints "abcdefghijklmnopqrstuvxyz" until desired length
+  anbu string seq 29           # prints "abcdefghijklmnopqrstuvwxyz" until desired length
   anbu string rep 23 str2rep   # prints "str2repstr2rep...23 times"
 
   anbu string uuid     # generates a uuid
-  anbu string ruid 16  # generates a short uuid of length b/w 1-32
+  anbu string ruid 16  # generates a short uuid of length b/w 1-30
   anbu string suid     # generates a short uuid of length 18
 
   anbu string password           # generate a 12-character complex password

@@ -59,14 +59,16 @@ func GenerateUUIDString() (string, error) {
 }
 
 func GenerateRUIDString(length int) (string, error) {
-	if length <= 0 || length > 32 {
+	if length <= 0 || length > 30 {
 		length = 18
 	}
 	u, err := uuid.NewRandom()
 	if err != nil {
 		return "", err
 	}
-	cleanUUID := strings.ReplaceAll(u.String(), "-", "")
-	return cleanUUID[:length], nil
+	str := u.String()
+	// Strip hyphens and constant UUID v4 version (index 14) and variant (index 19) characters
+	shortUUID := str[0:8] + str[9:13] + str[15:18] + str[20:23] + str[24:]
+	return shortUUID[:length], nil
 }
 

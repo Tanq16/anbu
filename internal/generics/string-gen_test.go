@@ -49,9 +49,9 @@ func TestGenerateRUIDString(t *testing.T) {
 		wantLength int
 	}{
 		{"default for invalid <=0", 0, 18},
-		{"default for invalid >32", 35, 18},
+		{"default for invalid >30", 35, 18},
 		{"valid length 16", 16, 16},
-		{"max length 32", 32, 32},
+		{"max length 30", 30, 30},
 	}
 
 	for _, tt := range tests {
