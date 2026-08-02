@@ -5,7 +5,7 @@ GOARCH ?= $(shell go env GOARCH)
 CYAN := \033[0;36m
 GREEN := \033[0;32m
 NC := \033[0m
-.PHONY: help clean build build-for build-all version assets verify-assets
+.PHONY: help clean build build-for build-all version
 .DEFAULT_GOAL := help
 
 help: ## Show this help
@@ -14,7 +14,6 @@ help: ## Show this help
 clean: ## Remove build artifacts
 	rm -f $(APP_NAME)
 	rm -rf dist/
-	rm -rf $(STATIC_DIR)/js $(STATIC_DIR)/css $(STATIC_DIR)/fonts
 
 build: ## Build for current platform
 	@go build -ldflags="-s -w -X 'github.com/tanq16/anbu/cmd.AppVersion=$(VERSION)'" -o $(APP_NAME) .
@@ -32,51 +31,6 @@ build-all: ## Build for all platforms
 	$(MAKE) build-for GOOS=darwin GOARCH=arm64
 	$(MAKE) build-for GOOS=windows GOARCH=amd64
 	$(MAKE) build-for GOOS=windows GOARCH=arm64
-
-STATIC_DIR := internal/generics/static
-
-assets: ## Download frontend assets (JS, CSS, fonts)
-	@mkdir -p $(STATIC_DIR)/js $(STATIC_DIR)/css $(STATIC_DIR)/fonts
-	@echo "Downloading JS assets..."
-	@curl -sL -o $(STATIC_DIR)/js/marked.min.js "https://cdn.jsdelivr.net/npm/marked@17.0.5/lib/marked.umd.js"
-	@curl -sL -o $(STATIC_DIR)/js/mermaid.min.js "https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.min.js"
-	@curl -sL -o $(STATIC_DIR)/js/highlight.min.js "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"
-	@curl -sL -o $(STATIC_DIR)/js/tailwindcss.js "https://cdn.tailwindcss.com/3.4.16"
-	@curl -sL -o $(STATIC_DIR)/js/lucide.min.js "https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"
-	@echo "Downloading CSS assets..."
-	@curl -sL -o $(STATIC_DIR)/css/github-dark.min.css "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
-	@echo "Downloading Inter font..."
-	@curl -sL -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-		-o /tmp/inter.css "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-	@grep -o 'https://[^)]*' /tmp/inter.css | while read url; do \
-		filename=$$(basename "$$url"); \
-		curl -sL -o $(STATIC_DIR)/fonts/"$$filename" "$$url"; \
-	done
-	@sed -E 's|url\(https://[^)]*/([^/)]*)\)|url(../fonts/\1)|g' /tmp/inter.css > $(STATIC_DIR)/css/inter.css
-	@echo "Downloading JetBrains Mono font..."
-	@curl -sL -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-		-o /tmp/jetbrains-mono.css "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-	@grep -o 'https://[^)]*' /tmp/jetbrains-mono.css | while read url; do \
-		filename=$$(basename "$$url"); \
-		curl -sL -o $(STATIC_DIR)/fonts/"$$filename" "$$url"; \
-	done
-	@sed -E 's|url\(https://[^)]*/([^/)]*)\)|url(../fonts/\1)|g' /tmp/jetbrains-mono.css > $(STATIC_DIR)/css/jetbrains-mono.css
-	@rm -f /tmp/inter.css /tmp/jetbrains-mono.css
-	@echo "$(GREEN)All assets downloaded to $(STATIC_DIR)/$(NC)"
-
-verify-assets: ## Verify frontend assets are present
-	@MISSING=0; \
-	for f in $(STATIC_DIR)/js/tailwindcss.js $(STATIC_DIR)/js/marked.min.js $(STATIC_DIR)/js/mermaid.min.js $(STATIC_DIR)/js/highlight.min.js $(STATIC_DIR)/js/lucide.min.js $(STATIC_DIR)/css/github-dark.min.css $(STATIC_DIR)/css/inter.css $(STATIC_DIR)/css/jetbrains-mono.css; do \
-		if [ ! -f "$$f" ]; then \
-			echo "$(CYAN)Missing:$(NC) $$f"; \
-			MISSING=1; \
-		fi; \
-	done; \
-	if [ "$$MISSING" = "1" ]; then \
-		echo "Run '$(CYAN)make assets$(NC)' to download missing assets"; \
-		exit 1; \
-	fi; \
-	echo "$(GREEN)All frontend assets present$(NC)"
 
 version: ## Calculate next version from git tags and commit message
 	@LATEST_TAG=$$(git tag --sort=-v:refname | head -n1 || echo "0.0.0"); \

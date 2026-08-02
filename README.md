@@ -21,22 +21,12 @@ A summary of everything that **Anbu** can perform:
 | **Secrets Management** | Securely store and retrieve secrets with encryption at rest |
 | **Network Tunneling** | Create TCP and SSH tunnels (forward and reverse) to securely access remote services |
 | **Simple HTTP/HTTPS Server** | Host a simple webserver over HTTP/HTTPS or serve an upload page for text and file uploads |
-| **Secrets Scan** | Find common secrets in file systems using regular expressions |
 | **IP Information** | Display local and public IP details, including geolocation information |
 | **Bulk Rename** | Batch rename files or directories using regular expression patterns, supporting capture groups |
-| **Manual Rename** | Interactively rename files and directories one by one with TUI-style inline input |
 | **Find Duplicates** | Find duplicate files by comparing file sizes and SHA256 hashes, with support for recursive search |
-| **Bulk Sed (Regex Substitution)** | Apply regex pattern matching and replacement to file content, supporting capture groups |
-| **Data & Encoding Conversion** | Convert between data formats (YAML/JSON), decode JWTs, and handle various encodings (Base64, Hex, URL) |
-| **File Encryption/Decryption** | Secure file encryption and decryption with AES-256-GCM symmetric encryption |
-| **RSA Key Pair Generation** | Create RSA key pairs for encryption or SSH authentication |
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 | **Stash** | Persistent clipboard for files, folders, and text snippets with apply, pop, and clear operations, almost similar to `git` stash |
-| **Tasks** | Simple task tracker with add, list, done, and delete operations stored locally in `~/.config/anbu/tasks.json` |
-| **File System Synchronization** | One-shot bidirectional file synchronization between two machines over HTTP/HTTPS with decoupled send/receive and listen/connect roles |
-| **Neo4j Database Interaction** | Execute Cypher queries against Neo4j databases from command line or YAML files |
-| **Markdown Viewer** | Start a web server to view rendered markdown files with syntax highlighting, navigation, and Mermaid support |
-| **AWS Helper Utilities** | Configure AWS SSO with IAM Identity Center for multi-role access and generate console URLs from CLI profiles |
+| **AWS Helper Utilities** | Configure AWS SSO with IAM Identity Center, SAML direct login, and generate console URLs from CLI profiles |
 | **Azure Helper Utilities** | Switch between Azure subscriptions interactively |
 
 ## Installation
@@ -50,7 +40,6 @@ A summary of everything that **Anbu** can perform:
   ```bash
   git clone https://github.com/tanq16/anbu.git && \
   cd anbu && \
-  make assets && \
   go build .
   ```
 
@@ -114,14 +103,6 @@ The specific details of each are:
   anbu http-server -u -t               # Serve upload page over HTTPS with self-signed cert
   ```
 
-- ***Secrets Scan***
-
-  ```bash
-  anbu secret-scan                 # Scans current directory for secrets based on regex matches
-  anbu secret-scan ./path/to/scan  # Scans path for secrets based on regex matches
-  anbu secret-scan ./path -p       # Scans path with generic matches table (maybe false positive)
-  ```
-
 - ***IP Information*** (alias: `ip`)
 
   ```bash
@@ -140,72 +121,12 @@ The specific details of each are:
   anbu rename '(.*)\.(.*)' '\1_\suid.\2'           # Insert short UUID before extension
   ```
 
-- ***Manual Rename*** (alias: `mrename`)
-
-  ```bash
-  anbu manual-rename                    # Interactively rename files one by one
-  anbu mrename -d                       # Include directories in the rename operation
-  anbu mrename -H                       # Include hidden files and directories
-  anbu mrename -x                       # Allow changing file extension
-  anbu mrename -d -H -x                 # Include directories, hidden files, and allow extension changes
-  ```
-
 - ***Find Duplicates*** (alias: `dup`)
 
   ```bash
   anbu duplicates                 # Find duplicate files in the current directory
   anbu dup --recursive            # Find duplicate files recursively in subdirectories
   anbu dup --delete               # Find and delete duplicate files
-  ```
-
-- ***Sed (Regex Substitution)***
-
-  ```bash
-  anbu sed 'old' 'new' file.txt                            # Replace all occurrences of 'old' with 'new' in a file
-  anbu sed '([a-z]+)@([a-z]+)\.com' '\1@***.com' file.txt  # Replace email patterns with masked version
-  anbu sed 'foo' 'bar' ./directory                         # Apply substitution to all files in directory
-  anbu sed 'foo' 'bar' ./directory -r                      # Perform a dry-run without modifying files
-  ```
-
-- ***Data & Encoding Conversion*** (alias: `c`)
-
-  ```bash
-  # File format conversion
-  anbu convert yaml-json config.yaml  # Convert YAML file to JSON
-  anbu convert json-yaml data.json    # Convert JSON file to YAML
-
-  # Encoding conversion
-  anbu convert b64 "Hello World"              # Convert text to base64
-  anbu convert b64d "SGVsbG8gV29ybGQ="        # Decode base64 to text
-  anbu convert hex "Hello World"              # Convert text to hex
-  anbu convert hexd "48656c6c6f20576f726c64"  # Decode hex to text
-  anbu convert url "Hello World"              # URL encode text
-  anbu convert urld "Hello%20World"           # URL decode text
-
-  # Cross-encoding conversion
-  anbu convert b64-hex "SGVsbG8gV29ybGQ="        # Convert base64 to hex
-  anbu convert hex-b64 "48656c6c6f20576f726c64"  # Convert hex to base64
-
-  # JWT Decoding
-  anbu convert jwtd "$TOKEN"  # Decodes and prints the headers and payload
-
-  # Docker command conversion
-  anbu convert docker-compose "docker run -p 8080:80 nginx"  # Convert docker run command to docker-compose.yml
-  anbu convert compose-docker docker-compose.yml             # Convert docker-compose.yml to docker run command
-  ```
-
-- ***File Encryption/Decryption*** (alias: `fc`)
-
-  ```bash
-  anbu file-crypt /path/to/file.zip -p "P@55w0rd"    # Encrypt a file
-  anbu file-crypt /path/to/encrypted.enc -p "P@55w0rd" -d # Decrypt a file
-  ```
-
-- ***RSA Key Pair Generation***
-
-  ```bash
-  anbu key-pair -o mykey -k 4096  # 4096 bit RSA key pair in PEM format
-  anbu key-pair -s -o anbu-key    # 2048 bit RSA key pair in OpenSSH format
   ```
 
 - ***String Generation*** (alias: `s`)
@@ -255,76 +176,6 @@ The specific details of each are:
   anbu stash clear 1
   ```
 
-- ***Tasks***
-
-  ```bash
-  # Add a new task interactively (prompts for input)
-  anbu tasks add
-  echo "deploy to prod" | anbu tasks add --for-ai  # Add from piped stdin (AI-friendly mode)
-
-  # List pending tasks (shows ID, Task, Added columns)
-  anbu tasks list
-
-  # List all tasks including completed (adds Status column)
-  anbu tasks list --done
-
-  # Filter tasks by regex
-  anbu tasks list --filter "deploy.*prod"
-
-  # Mark a task as done
-  anbu tasks done 1
-
-  # Delete a task regardless of status
-  anbu tasks delete 1
-  ```
-
-- ***File System Synchronization***
-
-  Send and receive roles are decoupled from listen and connect roles, so either side can be the sender or receiver regardless of which side listens.
-
-  ```bash
-  # Sender listens, receiver connects (sender has open port)
-  anbu fs-sync send --listen -p 8080 -d /path/to/sync/dir --ignore ".git,node_modules"
-  anbu fs-sync receive --connect http://sender.example.com:8080 -d /path/to/local/dir
-
-  # Receiver listens, sender connects (receiver has open port)
-  anbu fs-sync receive --listen -p 8080 -d /path/to/local/dir
-  anbu fs-sync send --connect http://receiver.example.com:8080 -d /path/to/sync/dir --ignore ".git,node_modules"
-
-  # With TLS (listener enables TLS, connector skips verification for self-signed certs)
-  anbu fs-sync send --listen -p 8443 -d ./sync-dir -t
-  anbu fs-sync receive --connect https://sender.com:8443 -d ./local-dir -k
-
-  # Dry run and delete options (receiver-side flags)
-  anbu fs-sync receive --connect http://sender.com:8080 -d ./local-dir -r       # Dry run
-  anbu fs-sync receive --connect http://sender.com:8080 -d ./local-dir --delete  # Delete extra local files
-  anbu fs-sync receive --listen -p 8080 -d ./local-dir --delete --dry-run        # Dry run with delete preview
-  ```
-
-- ***Neo4j Database Interaction***
-
-  ```bash
-  # Execute a single Cypher query
-  anbu neo4j -q "MATCH (n) RETURN n LIMIT 5"
-  anbu neo4j -r neo4j://localhost:7687 -u neo4j -p password -d neo4j -q "MATCH (n) RETURN count(n)"
-
-  # Execute queries from a YAML file (multi-line queries supported using '|' in YAML)
-  anbu neo4j --query-file ./queries.yaml --output-file results.json
-
-  # Execute write queries (CREATE, UPDATE, DELETE, etc.)
-  anbu neo4j --write -q "CREATE (n:Person {name: 'Alice'}) RETURN n"
-
-  # Custom connection settings
-  anbu neo4j -r neo4j+s://example.com:7687 -u admin -p secret -d mydb -q "MATCH (n) RETURN n" -o output.json
-  ```
-
-- ***Markdown Viewer*** (alias: `md`)
-
-  ```bash
-  anbu markdown          # Start markdown viewer on default address (0.0.0.0:8080)
-  anbu md -l :3000       # Start on port 3000 on all interfaces
-  ```
-
 - ***AWS Helper Utilities***
 
   ```bash
@@ -332,6 +183,9 @@ The specific details of each are:
   # This will create profiles in ~/.aws/config for all accounts and roles
   anbu aws iidc-login -u https://my-sso.awsapps.com/start -r us-east-1
   anbu aws iidc-login --start-url https://my-sso.awsapps.com/start --sso-region us-east-1 --cli-region us-west-2 --session-name my-sso
+
+  # Login with a SAML response captured from a browser session
+  anbu aws saml-direct-login -r ROLE_ARN -i PRINCIPAL_ARN -p my-profile
 
   # Generate AWS console URL from a local CLI profile (valid for up to 12 hours)
   anbu aws cli-ui -p my-profile
@@ -389,13 +243,13 @@ This allows a connection to restricted databases while maintaining security best
 It's quite helpful to use Anbu within shell commands for simple things like UUIDs or for more sensitive things like secrets. Imagine a shell script that requires a username and password:
 
 ```bash
-hypothetical --neo4j-username neo4j --neo4j-password sensitive
+hypothetical --username admin --password sensitive
 ```
 
 Using such commands leaves credentials within the shell history and is not safe for screen sharing. Instead of exposing secrets here, we can use `anbu`:
 
 ```bash
-hypothetical --neo4j-username $(anbu pass get n4jun) --neo4j-password $(anbu pass get neo4jpw)
+hypothetical --username $(anbu pass get myuser) --password $(anbu pass get mypw)
 ```
 
 Furthermore, you can create an alias for `anbu` as `a` and use it to say generate a UUID like so:
@@ -405,4 +259,3 @@ hypothetical_command --uuid $(a s uuid)
 ```
 
 </details>
-
