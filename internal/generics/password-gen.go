@@ -2,71 +2,124 @@ package anbuGenerics
 
 import (
 	cryptoRand "crypto/rand"
-	"math/rand"
-	"strconv"
+	"math/big"
 	"strings"
-
-	u "github.com/tanq16/anbu/utils"
 )
 
-func GeneratePassword(lengthS string, simple bool) {
-	length, err := strconv.Atoi(lengthS)
+const (
+	lowerSet   = "abcdefghijklmnopqrstuvwxyz"
+	upperSet   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	digitSet   = "0123456789"
+	specialSet = "!@#$%^&*()-_=+[]{}|;:,.<>?/"
+)
+
+func cryptoRandInt(max int) (int, error) {
+	n, err := cryptoRand.Int(cryptoRand.Reader, big.NewInt(int64(max)))
 	if err != nil {
-		u.PrintFatal("invalid length", err)
+		return 0, err
 	}
-	if length <= 0 {
-		u.PrintWarn("length must be greater than 0; using 15", nil)
-		length = 15
-	}
-	alphabet := "abcdefghijklmnopqrstuvwxyz"
-	if !simple {
-		alphabet += "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{}|;:,.<>?/"
-	}
-	var result strings.Builder
-	for result.Len() < length {
-		randomBytes := make([]byte, length)
-		cryptoRand.Read(randomBytes)
-		for _, b := range randomBytes {
-			result.WriteByte(alphabet[b%byte(len(alphabet))])
-		}
-	}
-	u.PrintGeneric(result.String()[:length])
+	return int(n.Int64()), nil
 }
 
-func GeneratePassPhrase(lengthS string, separator string, simple bool) {
-	length, err := strconv.Atoi(lengthS)
-	if err != nil {
-		u.PrintFatal("invalid length", err)
+func GeneratePassword(length int, simple bool) (string, error) {
+	if length <= 0 {
+		length = 12
 	}
-	if length < 2 || length > 50 {
-		u.PrintWarn("length must be between 2 to 50; using 3", nil)
-		length = 3
+	if simple {
+		var sb strings.Builder
+		sb.Grow(length)
+		for range length {
+			idx, err := cryptoRandInt(len(lowerSet))
+			if err != nil {
+				return "", err
+			}
+			sb.WriteByte(lowerSet[idx])
+		}
+		return sb.String(), nil
+	}
+
+	fullCharset := lowerSet + upperSet + digitSet + specialSet
+	buf := make([]byte, length)
+
+	if length >= 4 {
+		lIdx, err := cryptoRandInt(len(lowerSet))
+		if err != nil {
+			return "", err
+		}
+		uIdx, err := cryptoRandInt(len(upperSet))
+		if err != nil {
+			return "", err
+		}
+		dIdx, err := cryptoRandInt(len(digitSet))
+		if err != nil {
+			return "", err
+		}
+		sIdx, err := cryptoRandInt(len(specialSet))
+		if err != nil {
+			return "", err
+		}
+		buf[0] = lowerSet[lIdx]
+		buf[1] = upperSet[uIdx]
+		buf[2] = digitSet[dIdx]
+		buf[3] = specialSet[sIdx]
+
+		for i := 4; i < length; i++ {
+			cIdx, err := cryptoRandInt(len(fullCharset))
+			if err != nil {
+				return "", err
+			}
+			buf[i] = fullCharset[cIdx]
+		}
+
+		for i := length - 1; i > 0; i-- {
+			j, err := cryptoRandInt(i + 1)
+			if err != nil {
+				return "", err
+			}
+			buf[i], buf[j] = buf[j], buf[i]
+		}
+	} else {
+		for i := 0; i < length; i++ {
+			cIdx, err := cryptoRandInt(len(fullCharset))
+			if err != nil {
+				return "", err
+			}
+			buf[i] = fullCharset[cIdx]
+		}
+	}
+
+	return string(buf), nil
+}
+
+func GeneratePassPhrase(wordsCount int, separator string, capitalize bool) (string, error) {
+	if wordsCount < 1 || wordsCount > 50 {
+		wordsCount = 3
 	}
 	if separator == "" {
 		separator = "-"
 	}
-	if len(separator) > 1 {
-		u.PrintWarn("separator must be a single character; using -", nil)
-	}
-	numberList := "0123456789"
+
 	var result strings.Builder
-	complexified := false
-	for i := range length {
-		randomIndex := rand.Intn(len(passphraseWords))
-		toWrite := passphraseWords[randomIndex]
-		if !simple && rand.Intn(2) == 1 {
-			toWrite = strings.ToUpper(string(toWrite[0])) + toWrite[1:] + string(numberList[rand.Intn(10)])
-			complexified = true
+	for i := range wordsCount {
+		idx, err := cryptoRandInt(len(passphraseWords))
+		if err != nil {
+			return "", err
 		}
-		if i == length-1 && !simple && !complexified {
-			toWrite = strings.ToUpper(string(toWrite[0])) + toWrite[1:] + string(numberList[rand.Intn(10)])
+		word := passphraseWords[idx]
+		if capitalize {
+			numIdx, err := cryptoRandInt(10)
+			if err != nil {
+				return "", err
+			}
+			word = strings.ToUpper(string(word[0])) + word[1:] + string(digitSet[numIdx])
 		}
-		result.WriteString(toWrite)
-		if i < length-1 {
+		result.WriteString(word)
+		if i < wordsCount-1 {
 			result.WriteString(separator)
 		}
 	}
-	u.PrintGeneric(result.String())
+
+	return result.String(), nil
 }
 
 var passphraseWords = []string{
