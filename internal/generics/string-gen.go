@@ -1,79 +1,74 @@
 package anbuGenerics
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-	"strconv"
+	cryptoRand "crypto/rand"
+	"math/big"
 	"strings"
 
 	"github.com/google/uuid"
-	u "github.com/tanq16/anbu/utils"
 )
 
-func GenerateRandomString(length int) {
+const randomCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func GenerateRandomString(length int) (string, error) {
 	if length <= 0 {
 		length = 100
 	}
-	randomBytes := make([]byte, length)
-	_, err := rand.Read(randomBytes)
-	if err != nil {
-		u.PrintFatal("failed to generate random bytes", err)
-	}
-	encoded := base64.StdEncoding.EncodeToString(randomBytes)
-	encoded = strings.Map(func(r rune) rune {
-		switch r {
-		case '=', '+', '/', '\n':
-			return -1
-		default:
-			return r
+	var sb strings.Builder
+	sb.Grow(length)
+	charsetLen := big.NewInt(int64(len(randomCharset)))
+	for range length {
+		idx, err := cryptoRand.Int(cryptoRand.Reader, charsetLen)
+		if err != nil {
+			return "", err
 		}
-	}, encoded)
-	if len(encoded) > length {
-		encoded = encoded[:length]
+		sb.WriteByte(randomCharset[idx.Int64()])
 	}
-	u.PrintGeneric(encoded)
+	return sb.String(), nil
 }
 
-func GenerateSequenceString(length int) {
+func GenerateSequenceString(length int) string {
 	if length <= 0 {
-		u.PrintWarn("length must be greater than 0; using 100", nil)
 		length = 100
 	}
-	alphabet := "abcdefghijklmnopqrstuvxyz"
+	alphabet := "abcdefghijklmnopqrstuvwxyz"
 	var result strings.Builder
 	for result.Len() < length {
 		result.WriteString(alphabet)
 	}
-	u.PrintGeneric(result.String()[:length])
+	return result.String()[:length]
 }
 
-func GenerateRepetitionString(count int, str string) {
+func GenerateRepetitionString(count int, str string) string {
 	if count <= 0 {
-		u.PrintWarn("count must be greater than 0; using 10", nil)
 		count = 10
 	}
 	var result strings.Builder
 	for range count {
 		result.WriteString(str)
 	}
-	u.PrintGeneric(result.String())
+	return result.String()
 }
 
-func GenerateUUIDString() {
-	uuid, _ := uuid.NewRandom()
-	u.PrintGeneric(uuid.String())
-}
-
-func GenerateRUIDString(len string) {
-	length, err := strconv.Atoi(len)
+func GenerateUUIDString() (string, error) {
+	u, err := uuid.NewRandom()
 	if err != nil {
-		u.PrintFatal("not a valid length", err)
+		return "", err
 	}
+	return u.String(), nil
+}
+
+func GenerateRUIDString(length int) (string, error) {
 	if length <= 0 || length > 30 {
-		u.PrintWarn("length must be between 1 and 30; using 18", nil)
 		length = 18
 	}
-	uuid, _ := uuid.NewRandom()
-	shortUUID := uuid.String()[0:8] + uuid.String()[9:13] + uuid.String()[15:18] + uuid.String()[20:23] + uuid.String()[24:]
-	u.PrintGeneric(shortUUID[:length])
+	u, err := uuid.NewRandom()
+	if err != nil {
+		return "", err
+	}
+	str := u.String()
+	// Strip hyphens and constant UUID v4 version (index 14) and variant (index 19) characters
+	shortUUID := str[0:8] + str[9:13] + str[15:18] + str[20:23] + str[24:]
+	return shortUUID[:length], nil
 }
+
