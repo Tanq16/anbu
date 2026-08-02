@@ -19,6 +19,8 @@ A summary of everything that **Anbu** can perform:
 | --- | --- |
 | **Time Operations** | Display current time in various formats, calculate time differences, and parse time strings |
 | **Secrets Management** | Securely store and retrieve secrets with encryption at rest |
+| **Key Pair Generation** | Generate RSA key pairs in PEM or OpenSSH format with strict permissioning |
+| **File Encryption** | Encrypt or decrypt files using AES-256-GCM with password-based key derivation |
 | **Network Tunneling** | Create TCP and SSH tunnels (forward and reverse) to securely access remote services |
 | **Simple HTTP/HTTPS Server** | Host a simple webserver over HTTP/HTTPS or serve an upload page for text and file uploads |
 | **IP Information** | Display local and public IP details, including geolocation information |
@@ -77,6 +79,21 @@ The specific details of each are:
   # Import and Export to file
   anbu pass export backup.json  # Export to a file (secrets are decrypted)
   anbu pass import backup.json  # Import from a file
+  ```
+
+- ***Key Pair Generation*** (alias: `kp`)
+
+  ```bash
+  anbu key-pair                      # Generate a 2048-bit RSA PEM key pair (anbu-key, anbu-key.pub)
+  anbu kp -o ~/.ssh/id_rsa -k 4096   # Generate a 4096-bit RSA PEM key pair at specified output path
+  anbu kp -s -o ~/.ssh/id_ed25519    # Generate key pair in OpenSSH format
+  ```
+
+- ***File Encryption*** (alias: `fc`)
+
+  ```bash
+  anbu file-crypt document.pdf -p "mysecretpass"  # Encrypt file with AES-256-GCM -> document.pdf.enc
+  anbu fc document.pdf.enc -p "mysecretpass" -d   # Decrypt .enc file back to original file
   ```
 
 - ***Network Tunneling***
