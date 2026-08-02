@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -31,7 +32,7 @@ func GenerateKeyPair(outputDir, name string, keySize int) (*KeyPairResult, error
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	}
-	privateKeyPath := fmt.Sprintf("%s/%s.private.pem", outputDir, name)
+	privateKeyPath := filepath.Join(outputDir, name+".private.pem")
 	privateKeyFile, err := os.OpenFile(privateKeyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create private key file: %w", err)
@@ -50,7 +51,7 @@ func GenerateKeyPair(outputDir, name string, keySize int) (*KeyPairResult, error
 		Type:  "PUBLIC KEY",
 		Bytes: publicKeyBytes,
 	}
-	publicKeyPath := fmt.Sprintf("%s/%s.public.pem", outputDir, name)
+	publicKeyPath := filepath.Join(outputDir, name+".public.pem")
 	publicKeyFile, err := os.Create(publicKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create public key file: %w", err)
@@ -82,7 +83,7 @@ func GenerateSSHKeyPair(outputDir, name string, keySize int) (*KeyPairResult, er
 	}
 	sshPublicKeyBytes := ssh.MarshalAuthorizedKey(publicKey)
 
-	publicKeyPath := fmt.Sprintf("%s/%s.pub", outputDir, name)
+	publicKeyPath := filepath.Join(outputDir, name+".pub")
 	if err := os.WriteFile(publicKeyPath, sshPublicKeyBytes, 0644); err != nil {
 		return nil, fmt.Errorf("failed to write SSH public key file: %w", err)
 	}
@@ -90,7 +91,7 @@ func GenerateSSHKeyPair(outputDir, name string, keySize int) (*KeyPairResult, er
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	}
-	privateKeyPath := fmt.Sprintf("%s/%s", outputDir, name)
+	privateKeyPath := filepath.Join(outputDir, name)
 	privateKeyFile, err := os.OpenFile(privateKeyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create private key file: %w", err)
