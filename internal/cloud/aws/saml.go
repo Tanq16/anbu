@@ -34,7 +34,10 @@ func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlResponseFile string
 		}
 		samlAssertion = strings.TrimSpace(string(data))
 	} else {
-		samlAssertion = u.GetInput("Enter SAML assertion:", "Paste SAML assertion here")
+		samlAssertion, err = u.PromptInput("Enter SAML assertion:", "Paste SAML assertion here")
+		if err != nil {
+			return err
+		}
 	}
 
 	if samlAssertion == "" {
