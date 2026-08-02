@@ -72,9 +72,7 @@ func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string,
 				localConn.Close()
 				continue
 			}
-			activeConns.Add(1)
-			go func() {
-				defer activeConns.Done()
+			activeConns.Go(func() {
 				defer func() { <-sem }()
 				defer localConn.Close()
 				u.PrintInfo(fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
@@ -87,26 +85,23 @@ func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string,
 				u.PrintInfo(fmt.Sprintf("Connected to remote %s via SSH", remoteAddr))
 
 				var wg sync.WaitGroup
-				wg.Add(2)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data to remote", err)
 					}
 					u.PrintStream(fmt.Sprintf("%s Sent %d bytes to remote via SSH", u.StyleSymbols["arrow"], n))
-				}()
-				go func() {
-					defer wg.Done()
+				})
+				wg.Go(func() {
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data from remote", err)
 					}
 					u.PrintStream(fmt.Sprintf("← Received %d bytes from remote via SSH", n))
-				}()
+				})
 				wg.Wait()
 				u.PrintInfo(fmt.Sprintf("Connection closed from %s", localConn.RemoteAddr()))
-			}()
+			})
 		}
 	}
 }
@@ -174,9 +169,7 @@ func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user 
 				remoteConn.Close()
 				continue
 			}
-			activeConns.Add(1)
-			go func() {
-				defer activeConns.Done()
+			activeConns.Go(func() {
 				defer func() { <-sem }()
 				defer remoteConn.Close()
 				u.PrintInfo(fmt.Sprintf("New connection from remote %s", remoteConn.RemoteAddr()))
@@ -190,26 +183,23 @@ func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user 
 				u.PrintInfo(fmt.Sprintf("Connected to local service %s", localAddr))
 
 				var wg sync.WaitGroup
-				wg.Add(2)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data to remote", err)
 					}
 					u.PrintStream(fmt.Sprintf("%s Sent %d bytes to remote", u.StyleSymbols["arrow"], n))
-				}()
-				go func() {
-					defer wg.Done()
+				})
+				wg.Go(func() {
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data from remote", err)
 					}
 					u.PrintStream(fmt.Sprintf("← Received %d bytes from remote", n))
-				}()
+				})
 				wg.Wait()
 				u.PrintInfo(fmt.Sprintf("Connection closed from remote %s", remoteConn.RemoteAddr()))
-			}()
+			})
 		}
 	}
 }

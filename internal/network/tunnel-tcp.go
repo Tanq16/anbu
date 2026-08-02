@@ -59,9 +59,7 @@ func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecu
 				localConn.Close()
 				continue
 			}
-			activeConns.Add(1)
-			go func() {
-				defer activeConns.Done()
+			activeConns.Go(func() {
 				defer func() { <-sem }()
 				defer localConn.Close()
 				u.PrintInfo(fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
@@ -83,26 +81,23 @@ func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecu
 				u.PrintInfo(fmt.Sprintf("Connected to remote %s", remoteAddr))
 
 				var wg sync.WaitGroup
-				wg.Add(2)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					n, err := io.Copy(remoteConn, localConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data to remote", err)
 					}
 					u.PrintStream(fmt.Sprintf("%s Sent %d bytes to remote", u.StyleSymbols["arrow"], n))
-				}()
-				go func() {
-					defer wg.Done()
+				})
+				wg.Go(func() {
 					n, err := io.Copy(localConn, remoteConn)
 					if err != nil && err != io.EOF {
 						u.PrintError("Error copying data from remote", err)
 					}
 					u.PrintStream(fmt.Sprintf("← Received %d bytes from remote", n))
-				}()
+				})
 				wg.Wait()
 				u.PrintSuccess(fmt.Sprintf("Connection closed from %s", localConn.RemoteAddr()))
-			}()
+			})
 		}
 	}
 }

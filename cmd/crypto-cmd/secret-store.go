@@ -87,10 +87,14 @@ var secretsSetCmd = &cobra.Command{
 		initSecretsStore()
 		secretID := args[0]
 		var value string
+		var err error
 		if secretsFlags.multiline {
-			value = u.GetMultilineInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
+			value, err = u.PromptTextArea(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
 		} else {
-			value = u.GetInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
+			value, err = u.PromptInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
+		}
+		if err != nil {
+			u.PrintFatal("failed to read secret value", err)
 		}
 		if value == "" {
 			u.PrintFatal("no value provided for secret", nil)
