@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"strconv"
+	"strings"
 
 	u "github.com/tanq16/anbu/utils"
 )
@@ -16,8 +16,14 @@ type Subscription struct {
 
 func SwitchSubscription() error {
 	cmd := exec.Command("az", "account", "list", "--query", "[].{name:name,id:id}", "-o", "json", "--all")
+	var listStderr strings.Builder
+	cmd.Stderr = &listStderr
 	output, err := cmd.Output()
 	if err != nil {
+		detail := strings.TrimSpace(listStderr.String())
+		if detail != "" {
+			err = fmt.Errorf("%s: %w", detail, err)
+		}
 		return fmt.Errorf("failed to list subscriptions: %w", err)
 	}
 	var subscriptions []Subscription
@@ -27,27 +33,26 @@ func SwitchSubscription() error {
 	if len(subscriptions) == 0 {
 		return fmt.Errorf("no subscriptions found")
 	}
-	table := u.NewTable([]string{"#", "Name", "ID"})
+	options := make([]string, len(subscriptions))
 	for i, sub := range subscriptions {
-		table.Rows = append(table.Rows, []string{
-			fmt.Sprintf("%d", i+1),
-			sub.Name,
-			u.FDebug(sub.ID),
-		})
+		options[i] = fmt.Sprintf("%s (%s)", sub.Name, sub.ID)
 	}
-	table.PrintTable(false)
-	u.LineBreak()
-	input := u.GetInput("Select subscription number to activate:", "")
-	subNumber, err := strconv.Atoi(input)
+	idx, err := u.PromptSelect("Select subscription to activate:", options)
 	if err != nil {
-		return fmt.Errorf("invalid subscription number: %w", err)
+		return err
 	}
-	if subNumber < 1 || subNumber > len(subscriptions) {
-		return fmt.Errorf("subscription number out of range")
+	if idx < 0 {
+		return nil
 	}
-	selectedSub := subscriptions[subNumber-1]
+	selectedSub := subscriptions[idx]
 	setCmd := exec.Command("az", "account", "set", "--subscription", selectedSub.ID)
+	var setStderr strings.Builder
+	setCmd.Stderr = &setStderr
 	if err := setCmd.Run(); err != nil {
+		detail := strings.TrimSpace(setStderr.String())
+		if detail != "" {
+			err = fmt.Errorf("%s: %w", detail, err)
+		}
 		return fmt.Errorf("failed to set subscription: %w", err)
 	}
 	u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(selectedSub.Name), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(fmt.Sprintf("Subscription switched (%s)", selectedSub.ID))))

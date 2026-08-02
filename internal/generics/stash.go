@@ -171,7 +171,10 @@ func StashFS(path string) error {
 }
 
 func StashText(name string) error {
-	text := u.GetMultilineInput(fmt.Sprintf("Enter text to stash (name: %s):", name), "")
+	text, err := u.PromptTextArea(fmt.Sprintf("Enter text to stash (name: %s):", name), "")
+	if err != nil {
+		return err
+	}
 	if text == "" {
 		return fmt.Errorf("no input provided")
 	}

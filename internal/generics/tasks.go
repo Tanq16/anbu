@@ -162,7 +162,10 @@ func TasksList(showDone bool, filter string) error {
 }
 
 func TasksAdd() error {
-	task := u.GetInput("Enter task:", "What needs to be done?")
+	task, err := u.PromptInput("Enter task:", "What needs to be done?")
+	if err != nil {
+		return err
+	}
 	if task == "" {
 		return fmt.Errorf("no task provided")
 	}
