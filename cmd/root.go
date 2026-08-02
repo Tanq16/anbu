@@ -68,6 +68,8 @@ func init() {
 	rootCmd.AddCommand(genericsCmd.DuplicatesCmd)
 
 	rootCmd.AddCommand(cryptoCmd.SecretsCmd)
+	rootCmd.AddCommand(cryptoCmd.KeyPairCmd)
+	rootCmd.AddCommand(cryptoCmd.FileCryptoCmd)
 
 	rootCmd.AddCommand(networkCmd.TunnelCmd)
 	rootCmd.AddCommand(networkCmd.HTTPServerCmd)
