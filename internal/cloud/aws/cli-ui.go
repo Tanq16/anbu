@@ -2,7 +2,7 @@ package aws
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -106,7 +106,7 @@ func generateConsoleURL(credentials *ststypes.Credentials) (string, error) {
 	var tokenResponse struct {
 		SigninToken string `json:"SigninToken"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &tokenResponse); err != nil {
 		return "", fmt.Errorf("failed to decode sign-in token response: %w", err)
 	}
 	consoleURL := fmt.Sprintf("%s?Action=login&Issuer=%s&Destination=%s&SigninToken=%s", awsFedEndpoint, defaultIssuer, consoleBase, url.QueryEscape(tokenResponse.SigninToken))

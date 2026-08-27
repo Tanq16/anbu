@@ -2,48 +2,86 @@ package utils
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
+	"io"
 	"os"
-	"strconv"
 	"strings"
 
 	"charm.land/bubbles/v2/textarea"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var stdinScanner *bufio.Scanner
+var ErrNoTerminal = errors.New("no interactive terminal")
 
-func getStdinScanner() *bufio.Scanner {
-	if stdinScanner == nil {
-		stdinScanner = bufio.NewScanner(os.Stdin)
-	}
-	return stdinScanner
+const stdinAnnotation = "stdin"
+
+func MarkStdinLine(cmd *cobra.Command, name string) error {
+	return cmd.Flags().SetAnnotation(name, stdinAnnotation, []string{"line"})
 }
 
-func ReadPipedInput() string {
-	fi, err := os.Stdin.Stat()
-	if err != nil || fi.Mode()&os.ModeCharDevice != 0 {
-		return ""
-	}
-	scanner := getStdinScanner()
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	return strings.TrimSpace(strings.Join(lines, "\n"))
+func MarkStdinStream(cmd *cobra.Command, name string) error {
+	return cmd.Flags().SetAnnotation(name, stdinAnnotation, []string{"stream"})
 }
 
-func ReadPipedLine() string {
-	fi, err := os.Stdin.Stat()
-	if err != nil || fi.Mode()&os.ModeCharDevice != 0 {
-		return ""
+func ResolveStdin(cmd *cobra.Command) error {
+	var target *pflag.Flag
+	var mode string
+	var err error
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		modes, ok := f.Annotations[stdinAnnotation]
+		if !ok || len(modes) == 0 || !f.Changed || f.Value.String() != "-" {
+			return
+		}
+		if target != nil {
+			err = fmt.Errorf("only one flag can read stdin: --%s and --%s were both given -", target.Name, f.Name)
+			return
+		}
+		target, mode = f, modes[0]
+	})
+	if err != nil || target == nil {
+		return err
 	}
-	scanner := getStdinScanner()
-	if scanner.Scan() {
-		return strings.TrimSpace(scanner.Text())
+	if StdinIsTerminal {
+		return fmt.Errorf("--%s was given - but nothing is piped into stdin", target.Name)
 	}
-	return ""
+
+	var value string
+	if mode == "line" {
+		line, readErr := bufio.NewReader(os.Stdin).ReadString('\n')
+		if readErr != nil && !errors.Is(readErr, io.EOF) {
+			return readErr
+		}
+		value = strings.TrimRight(line, "\r\n")
+	} else {
+		data, readErr := io.ReadAll(os.Stdin)
+		if readErr != nil {
+			return readErr
+		}
+		value = strings.TrimRight(string(data), "\r\n")
+	}
+	if value == "" {
+		return fmt.Errorf("--%s was given - but stdin was empty", target.Name)
+	}
+	return target.Value.Set(value)
+}
+
+func ReadFileFlag(value string) (string, error) {
+	if value == "" {
+		return "", nil
+	}
+	data, err := os.ReadFile(value)
+	if err == nil {
+		return strings.TrimRight(string(data), "\r\n"), nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return value, nil
+	}
+	return "", err
 }
 
 type inputModel struct {
@@ -83,16 +121,14 @@ func (m inputModel) View() tea.View {
 }
 
 func PromptInput(prompt string, placeholder string) (string, error) {
-	if GlobalForAIFlag {
-		return ReadPipedLine(), nil
+	if !StdinIsTerminal {
+		return "", ErrNoTerminal
 	}
 
 	ti := textinput.New()
 	ti.Placeholder = placeholder
 	ti.Prompt = prompt + " "
-	focusCmd := ti.Focus()
-
-	m := inputModel{textInput: ti, initCmd: focusCmd}
+	m := inputModel{textInput: ti, initCmd: ti.Focus()}
 	finalModel, err := tea.NewProgram(m).Run()
 	if err != nil {
 		return "", err
@@ -101,17 +137,15 @@ func PromptInput(prompt string, placeholder string) (string, error) {
 }
 
 func PromptPassword(prompt string) (string, error) {
-	if GlobalForAIFlag {
-		return ReadPipedLine(), nil
+	if !StdinIsTerminal {
+		return "", ErrNoTerminal
 	}
 
 	ti := textinput.New()
 	ti.Placeholder = "••••••••"
 	ti.Prompt = prompt + " "
 	ti.EchoMode = textinput.EchoPassword
-	focusCmd := ti.Focus()
-
-	m := inputModel{textInput: ti, initCmd: focusCmd}
+	m := inputModel{textInput: ti, initCmd: ti.Focus()}
 	finalModel, err := tea.NewProgram(m).Run()
 	if err != nil {
 		return "", err
@@ -156,17 +190,15 @@ func (m textAreaModel) View() tea.View {
 }
 
 func PromptTextArea(prompt string, placeholder string) (string, error) {
-	if GlobalForAIFlag {
-		return ReadPipedInput(), nil
+	if !StdinIsTerminal {
+		return "", ErrNoTerminal
 	}
 
 	PrintInfo(prompt)
 
 	ta := textarea.New()
 	ta.Placeholder = placeholder
-	focusCmd := ta.Focus()
-
-	m := textAreaModel{textarea: ta, initCmd: focusCmd}
+	m := textAreaModel{textarea: ta, initCmd: ta.Focus()}
 	finalModel, err := tea.NewProgram(m).Run()
 	if err != nil {
 		return "", err
@@ -234,12 +266,8 @@ func PromptSelect(label string, options []string) (int, error) {
 	if len(options) == 0 {
 		return -1, nil
 	}
-	if GlobalForAIFlag {
-		n, err := strconv.Atoi(ReadPipedLine())
-		if err != nil || n < 1 || n > len(options) {
-			return -1, nil
-		}
-		return n - 1, nil
+	if !StdinIsTerminal {
+		return -1, ErrNoTerminal
 	}
 
 	m := selectModel{label: label, options: options, chosen: -1}
@@ -313,19 +341,8 @@ func PromptMultiSelect(label string, options []string) (map[int]bool, error) {
 	if len(options) == 0 {
 		return nil, nil
 	}
-	if GlobalForAIFlag {
-		line := strings.TrimSpace(ReadPipedLine())
-		if line == "" || strings.EqualFold(line, "none") {
-			return nil, nil
-		}
-		selected := make(map[int]bool)
-		for tok := range strings.SplitSeq(line, ",") {
-			n, err := strconv.Atoi(strings.TrimSpace(tok))
-			if err == nil && n >= 1 && n <= len(options) {
-				selected[n-1] = true
-			}
-		}
-		return selected, nil
+	if !StdinIsTerminal {
+		return nil, ErrNoTerminal
 	}
 
 	m := multiSelectModel{label: label, options: options, selected: make(map[int]bool)}
@@ -340,7 +357,7 @@ func PromptMultiSelect(label string, options []string) (map[int]bool, error) {
 	return result.selected, nil
 }
 
-func DeviceCodeFlow(url string, userCode string) string {
+func DeviceCodeFlow(url string, userCode string) (string, error) {
 	LineBreak()
 	PrintInfo("Visit this URL to authorize Anbu:")
 	PrintGeneric(url)
@@ -355,8 +372,7 @@ func DeviceCodeFlow(url string, userCode string) string {
 	}
 	value, err := PromptInput("", placeholder)
 	if err != nil {
-		PrintError("Input error", err)
-		return ""
+		return "", err
 	}
-	return value
+	return value, nil
 }

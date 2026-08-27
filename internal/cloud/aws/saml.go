@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,10 +30,13 @@ func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlResponseFile string
 
 	if samlResponseFile != "" {
 		data, err := os.ReadFile(samlResponseFile)
-		if err != nil {
+		if err == nil {
+			samlAssertion = strings.TrimSpace(string(data))
+		} else if errors.Is(err, os.ErrNotExist) {
+			samlAssertion = strings.TrimSpace(samlResponseFile)
+		} else {
 			return fmt.Errorf("failed to read SAML response file: %w", err)
 		}
-		samlAssertion = strings.TrimSpace(string(data))
 	} else {
 		samlAssertion, err = u.PromptInput("Enter SAML assertion:", "Paste SAML assertion here")
 		if err != nil {
@@ -44,7 +48,7 @@ func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlResponseFile string
 		return fmt.Errorf("SAML assertion cannot be empty")
 	}
 
-	log.Debug().Str("package", "aws").Msg("authenticating with SAML assertion")
+	log.Debug().Msg("authenticating with SAML assertion")
 	region := config.CLIRegion
 	if region == "" {
 		region = "us-east-1"
@@ -69,7 +73,7 @@ func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlResponseFile string
 	if err != nil {
 		return fmt.Errorf("failed to assume role with SAML: %w", err)
 	}
-	log.Debug().Str("package", "aws").Msg("successfully assumed role")
+	log.Debug().Msg("successfully assumed role")
 
 	if err := writeCredentialsToProfile(config.Profile, result.Credentials); err != nil {
 		return fmt.Errorf("failed to write credentials: %w", err)
@@ -118,6 +122,6 @@ func writeCredentialsToProfile(profile string, credentials *types.Credentials) e
 	if err := os.Chmod(credentialsPath, 0600); err != nil {
 		return fmt.Errorf("failed to set credentials file permissions: %w", err)
 	}
-	log.Debug().Str("package", "aws").Str("profile", profile).Msg("credentials written to profile")
+	log.Debug().Str("profile", profile).Msg("credentials written to profile")
 	return nil
 }

@@ -1,12 +1,17 @@
 package genericsCmd
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
 	u "github.com/tanq16/anbu/utils"
 )
+
+var stashTextFlags struct {
+	textFile string
+}
 
 var StashCmd = &cobra.Command{
 	Use:   "stash",
@@ -26,10 +31,26 @@ var stashFSCmd = &cobra.Command{
 
 var stashTextCmd = &cobra.Command{
 	Use:   "text <name>",
-	Short: "Stash text from stdin and stash it with a given name",
+	Short: "Stash text from a file, stdin, or an interactive editor",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuGenerics.StashText(args[0]); err != nil {
+		text, err := u.ReadFileFlag(stashTextFlags.textFile)
+		if err != nil {
+			u.PrintFatal("failed to read --text-file", err)
+		}
+		if text == "" {
+			text, err = u.PromptTextArea("Enter text to stash (name: "+args[0]+"):", "")
+			if errors.Is(err, u.ErrNoTerminal) {
+				u.PrintFatal("stash text needs --text-file, or --text-file - to read it from stdin", nil)
+			}
+			if err != nil {
+				u.PrintFatal("failed to stash text", err)
+			}
+		}
+		if text == "" {
+			u.PrintFatal("stash text needs --text-file, or --text-file - to read it from stdin", nil)
+		}
+		if err := anbuGenerics.StashText(args[0], text); err != nil {
 			u.PrintFatal("failed to stash text", err)
 		}
 	},
@@ -53,7 +74,7 @@ var stashApplyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := strconv.Atoi(args[0])
 		if err != nil {
-			u.PrintFatal("invalid stash ID", nil)
+			u.PrintFatal("invalid stash ID", err)
 		}
 		if err := anbuGenerics.StashApply(id); err != nil {
 			u.PrintFatal("failed to apply stash", err)
@@ -68,7 +89,7 @@ var stashPopCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := strconv.Atoi(args[0])
 		if err != nil {
-			u.PrintFatal("invalid stash ID", nil)
+			u.PrintFatal("invalid stash ID", err)
 		}
 		if err := anbuGenerics.StashPop(id); err != nil {
 			u.PrintFatal("failed to pop stash", err)
@@ -83,7 +104,7 @@ var stashClearCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := strconv.Atoi(args[0])
 		if err != nil {
-			u.PrintFatal("invalid stash ID", nil)
+			u.PrintFatal("invalid stash ID", err)
 		}
 		if err := anbuGenerics.StashClear(id); err != nil {
 			u.PrintFatal("failed to clear stash", err)
@@ -92,6 +113,9 @@ var stashClearCmd = &cobra.Command{
 }
 
 func init() {
+	stashTextCmd.Flags().StringVar(&stashTextFlags.textFile, "text-file", "", "File of text to stash, or - for stdin")
+	_ = u.MarkStdinStream(stashTextCmd, "text-file")
+
 	StashCmd.AddCommand(stashFSCmd)
 	StashCmd.AddCommand(stashTextCmd)
 	StashCmd.AddCommand(stashListCmd)

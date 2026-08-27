@@ -1,7 +1,7 @@
 package azure
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -14,7 +14,21 @@ type Subscription struct {
 	ID   string `json:"id"`
 }
 
-func SwitchSubscription() error {
+func SwitchSubscription(subscription string) error {
+	if subscription != "" {
+		setCmd := exec.Command("az", "account", "set", "--subscription", subscription)
+		var setStderr strings.Builder
+		setCmd.Stderr = &setStderr
+		if err := setCmd.Run(); err != nil {
+			detail := strings.TrimSpace(setStderr.String())
+			if detail != "" {
+				err = fmt.Errorf("%s: %w", detail, err)
+			}
+			return fmt.Errorf("failed to set subscription: %w", err)
+		}
+		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(subscription), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("Subscription switched")))
+		return nil
+	}
 	cmd := exec.Command("az", "account", "list", "--query", "[].{name:name,id:id}", "-o", "json", "--all")
 	var listStderr strings.Builder
 	cmd.Stderr = &listStderr
