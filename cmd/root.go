@@ -73,6 +73,7 @@ func init() {
 	rootCmd.AddCommand(networkCmd.TunnelCmd)
 	rootCmd.AddCommand(networkCmd.HTTPServerCmd)
 	rootCmd.AddCommand(networkCmd.IPInfoCmd)
+	rootCmd.AddCommand(networkCmd.WgProxyCmd)
 
 	rootCmd.AddCommand(cloudCmd.AwsCmd)
 	rootCmd.AddCommand(cloudCmd.AzureCmd)
