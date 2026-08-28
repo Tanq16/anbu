@@ -19,6 +19,7 @@ import (
 var ErrNoTerminal = errors.New("no interactive terminal")
 
 const stdinAnnotation = "stdin"
+const stdinResolvedAnnotation = "stdin-resolved"
 
 func MarkStdinLine(cmd *cobra.Command, name string) error {
 	return cmd.Flags().SetAnnotation(name, stdinAnnotation, []string{"line"})
@@ -67,21 +68,29 @@ func ResolveStdin(cmd *cobra.Command) error {
 	if value == "" {
 		return fmt.Errorf("--%s was given - but stdin was empty", target.Name)
 	}
-	return target.Value.Set(value)
+	if err := target.Value.Set(value); err != nil {
+		return err
+	}
+	return cmd.Flags().SetAnnotation(target.Name, stdinResolvedAnnotation, []string{"true"})
 }
 
-func ReadFileFlag(value string) (string, error) {
+func ReadFileFlag(cmd *cobra.Command, name string) (string, error) {
+	f := cmd.Flags().Lookup(name)
+	if f == nil {
+		return "", nil
+	}
+	value := f.Value.String()
 	if value == "" {
 		return "", nil
 	}
-	data, err := os.ReadFile(value)
-	if err == nil {
-		return strings.TrimRight(string(data), "\r\n"), nil
-	}
-	if errors.Is(err, os.ErrNotExist) {
+	if resolved, ok := f.Annotations[stdinResolvedAnnotation]; ok && len(resolved) > 0 {
 		return value, nil
 	}
-	return "", err
+	data, err := os.ReadFile(value)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimRight(string(data), "\r\n"), nil
 }
 
 type inputModel struct {

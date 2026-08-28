@@ -10,7 +10,7 @@ import (
 )
 
 var stashTextFlags struct {
-	textFile string
+	text string
 }
 
 var StashCmd = &cobra.Command{
@@ -31,24 +31,22 @@ var stashFSCmd = &cobra.Command{
 
 var stashTextCmd = &cobra.Command{
 	Use:   "text <name>",
-	Short: "Stash text from a file, stdin, or an interactive editor",
+	Short: "Stash text from --text or an interactive editor",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		text, err := u.ReadFileFlag(stashTextFlags.textFile)
-		if err != nil {
-			u.PrintFatal("failed to read --text-file", err)
-		}
+		text := stashTextFlags.text
 		if text == "" {
+			var err error
 			text, err = u.PromptTextArea("Enter text to stash (name: "+args[0]+"):", "")
 			if errors.Is(err, u.ErrNoTerminal) {
-				u.PrintFatal("stash text needs --text-file, or --text-file - to read it from stdin", nil)
+				u.PrintFatal("stash text needs --text when there is no interactive terminal", nil)
 			}
 			if err != nil {
 				u.PrintFatal("failed to stash text", err)
 			}
 		}
 		if text == "" {
-			u.PrintFatal("stash text needs --text-file, or --text-file - to read it from stdin", nil)
+			u.PrintFatal("stash text needs --text when there is no interactive terminal", nil)
 		}
 		if err := anbuGenerics.StashText(args[0], text); err != nil {
 			u.PrintFatal("failed to stash text", err)
@@ -113,8 +111,7 @@ var stashClearCmd = &cobra.Command{
 }
 
 func init() {
-	stashTextCmd.Flags().StringVar(&stashTextFlags.textFile, "text-file", "", "File of text to stash, or - for stdin")
-	_ = u.MarkStdinStream(stashTextCmd, "text-file")
+	stashTextCmd.Flags().StringVar(&stashTextFlags.text, "text", "", "Text to stash")
 
 	StashCmd.AddCommand(stashFSCmd)
 	StashCmd.AddCommand(stashTextCmd)

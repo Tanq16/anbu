@@ -71,5 +71,4 @@ func init() {
 	rootCmd.AddCommand(networkCmd.IPInfoCmd)
 
 	rootCmd.AddCommand(cloudCmd.AwsCmd)
-	rootCmd.AddCommand(cloudCmd.AzureCmd)
 }

@@ -28,7 +28,6 @@ A summary of everything that **Anbu** can perform:
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 | **Stash** | Persistent clipboard for files, folders, and text snippets with apply, pop, and clear operations, almost similar to `git` stash |
 | **AWS Helper Utilities** | Configure AWS SSO with IAM Identity Center, SAML direct login, and generate console URLs from CLI profiles |
-| **Azure Helper Utilities** | Switch between Azure subscriptions interactively |
 
 ## Installation
 
@@ -67,7 +66,9 @@ The specific details of each are:
   # Managing Secrets (Default password used or provide yours with --password)
   anbu pass add API_KEY                 # Create a new secret (encrypted with AES GCM at rest)
   anbu pass add API_KEY --multiline     # Create a new multi-line secret via the editor
+  anbu pass add API_KEY --value sk-1234 # Set the value from a flag
   echo "sk-1234" | anbu pass add API_KEY --value -  # Add from piped stdin
+  anbu pass add API_KEY --value-file ./key.pem      # Set the value from a file
   anbu pass get API_KEY     # Retrieve a secret (decrypted value)
   anbu pass delete API_KEY  # Delete a secret
 
@@ -164,9 +165,8 @@ The specific details of each are:
   # Stash text interactively (multiline TUI editor)
   anbu stash text my-snippet
 
-  # Stash text from a file or piped stdin
-  anbu stash text my-snippet --text-file notes.txt
-  cat notes.txt | anbu stash text my-notes --text-file -
+  # Stash text from a flag
+  anbu stash text my-snippet --text "the snippet"
 
   # List all stashed entries
   anbu stash list
@@ -191,19 +191,10 @@ The specific details of each are:
 
   # Login with a SAML response captured from a browser session
   anbu aws saml-direct-login -r ROLE_ARN -i PRINCIPAL_ARN -p my-profile
-  cat assertion.xml | anbu aws saml-direct-login -r ROLE_ARN -i PRINCIPAL_ARN --file -
+  anbu aws saml-direct-login -r ROLE_ARN -i PRINCIPAL_ARN --file assertion.xml
 
   # Generate AWS console URL from a local CLI profile (valid for up to 12 hours)
   anbu aws cli-ui -p my-profile
-  ```
-
-- ***Azure Helper Utilities*** (alias: `az`)
-
-  ```bash
-  # Switch between Azure subscriptions interactively
-  anbu azure switch-sub
-  anbu az switch
-  anbu azure switch-sub --subscription SUBSCRIPTION_ID
   ```
 
 ## Tips and Notes

@@ -2,18 +2,15 @@ package aws
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/rs/zerolog/log"
-	u "github.com/tanq16/anbu/utils"
 	"gopkg.in/ini.v1"
 )
 
@@ -24,26 +21,7 @@ type SamlDirectLoginConfig struct {
 	CLIRegion    string
 }
 
-func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlResponseFile string) error {
-	var samlAssertion string
-	var err error
-
-	if samlResponseFile != "" {
-		data, err := os.ReadFile(samlResponseFile)
-		if err == nil {
-			samlAssertion = strings.TrimSpace(string(data))
-		} else if errors.Is(err, os.ErrNotExist) {
-			samlAssertion = strings.TrimSpace(samlResponseFile)
-		} else {
-			return fmt.Errorf("failed to read SAML response file: %w", err)
-		}
-	} else {
-		samlAssertion, err = u.PromptInput("Enter SAML assertion:", "Paste SAML assertion here")
-		if err != nil {
-			return err
-		}
-	}
-
+func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlAssertion string) error {
 	if samlAssertion == "" {
 		return fmt.Errorf("SAML assertion cannot be empty")
 	}

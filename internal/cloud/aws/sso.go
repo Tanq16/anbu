@@ -98,7 +98,7 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 		return err
 	}
 	u.LineBreak()
-	_, err = u.DeviceCodeFlow(aws.ToString(deviceAuth.VerificationUriComplete), "")
+	_, err = u.DeviceCodeFlow(aws.ToString(deviceAuth.VerificationUriComplete), aws.ToString(deviceAuth.UserCode))
 	if err != nil {
 		return err
 	}

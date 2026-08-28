@@ -85,7 +85,7 @@ var secretsSetCmd = &cobra.Command{
 		secretID := args[0]
 		value := secretsFlags.value
 		if secretsFlags.valueFile != "" {
-			loaded, err := u.ReadFileFlag(secretsFlags.valueFile)
+			loaded, err := u.ReadFileFlag(cmd, "value-file")
 			if err != nil {
 				u.PrintFatal("failed to read --value-file", err)
 			}
@@ -99,14 +99,14 @@ var secretsSetCmd = &cobra.Command{
 				value, err = u.PromptInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
 			}
 			if errors.Is(err, u.ErrNoTerminal) {
-				u.PrintFatal("add needs --value, --value-file, or --value-file - to read it from stdin", nil)
+				u.PrintFatal("add needs --value, --value -, --value-file, or --value-file -", nil)
 			}
 			if err != nil {
 				u.PrintFatal("failed to read secret value", err)
 			}
 		}
 		if value == "" {
-			u.PrintFatal("add needs --value, --value-file, or --value-file - to read it from stdin", nil)
+			u.PrintFatal("add needs --value, --value -, --value-file, or --value-file -", nil)
 		}
 		password := secretsFlags.password
 		if err := anbuCrypto.SetSecret(secretsFlags.secretsFile, secretID, value, password); err != nil {
