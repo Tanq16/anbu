@@ -152,7 +152,7 @@ The specific details of each are:
 
   anbu string passphrase               # generate a 3-word passphrase with hyphens
   anbu string passphrase 5             # generate a 5-word passphrase with hyphens
-  anbu string passphrase 4 '@'         # generate a 4-word passphrase with a custom separator
+  anbu string passphrase 4 --separator '@'  # generate a 4-word passphrase with a custom separator
   ```
 
 - ***Stash***
