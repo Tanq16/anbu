@@ -18,7 +18,7 @@ var BulkRenameCmd = &cobra.Command{
 	Long: `Rename multiple files or directories in a single operation using regex patterns.
 Examples:
   anbu rename 'old_(.*)' 'new_\1'                 # Rename files matching regex pattern
-  anbu rename -d 'old_(.*)' 'new_\1'              # Rename directories instead of files
+  anbu rename --directories 'old_(.*)' 'new_\1'   # Rename directories instead of files
   anbu rename '(.*)\.(.*)' '\1_backup.\2'         # Add _backup before extension`,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -29,6 +29,6 @@ Examples:
 }
 
 func init() {
-	BulkRenameCmd.Flags().BoolVarP(&bulkRenameFlags.renameDirectories, "directories", "d", false, "Rename directories instead of files")
-	BulkRenameCmd.Flags().BoolVarP(&bulkRenameFlags.dryRun, "dry-run", "r", false, "Simulate the rename operation without making changes")
+	BulkRenameCmd.Flags().BoolVar(&bulkRenameFlags.renameDirectories, "directories", false, "Rename directories instead of files")
+	BulkRenameCmd.Flags().BoolVar(&bulkRenameFlags.dryRun, "dry-run", false, "Simulate the rename operation without making changes")
 }

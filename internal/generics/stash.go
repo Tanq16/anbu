@@ -2,7 +2,8 @@ package anbuGenerics
 
 import (
 	"archive/zip"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"io"
 	"os"
@@ -10,8 +11,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	u "github.com/tanq16/anbu/utils"
 )
 
@@ -35,21 +36,19 @@ type StashIndex struct {
 	Entries []StashEntry `json:"entries"`
 }
 
+func ensureDir(path string) error {
+	if err := os.MkdirAll(path, 0700); err != nil {
+		return err
+	}
+	return os.Chmod(path, 0700)
+}
+
 func getStashDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
+	stashDir := filepath.Join(u.ConfigDir(), "stash")
+	if err := ensureDir(stashDir); err != nil {
 		return "", err
 	}
-	anbuDir := filepath.Join(homeDir, ".config", "anbu")
-	if err := os.MkdirAll(anbuDir, 0755); err != nil {
-		return "", err
-	}
-	stashDir := filepath.Join(anbuDir, "stash")
-	if err := os.MkdirAll(stashDir, 0755); err != nil {
-		return "", err
-	}
-	blobsDir := filepath.Join(stashDir, "blobs")
-	if err := os.MkdirAll(blobsDir, 0755); err != nil {
+	if err := ensureDir(filepath.Join(stashDir, "blobs")); err != nil {
 		return "", err
 	}
 	return stashDir, nil
@@ -89,11 +88,11 @@ func saveIndex(index *StashIndex) error {
 	if err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(index, "", "  ")
+	data, err := json.Marshal(index, jsontext.WithIndent("  "))
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(indexPath, data, 0644)
+	return os.WriteFile(indexPath, data, 0600)
 }
 
 func findEntryByID(index *StashIndex, id int) *StashEntry {
@@ -170,11 +169,7 @@ func StashFS(path string) error {
 	return nil
 }
 
-func StashText(name string) error {
-	text, err := u.PromptTextArea(fmt.Sprintf("Enter text to stash (name: %s):", name), "")
-	if err != nil {
-		return err
-	}
+func StashText(name string, text string) error {
 	if text == "" {
 		return fmt.Errorf("no input provided")
 	}
@@ -186,7 +181,7 @@ func StashText(name string) error {
 	blobUUID := uuid.New().String()
 	blobName := blobUUID + ".txt"
 	blobPath := filepath.Join(stashDir, "blobs", blobName)
-	if err := os.WriteFile(blobPath, input, 0644); err != nil {
+	if err := os.WriteFile(blobPath, input, 0600); err != nil {
 		return fmt.Errorf("failed to write blob: %w", err)
 	}
 	index, err := loadIndex()
@@ -231,7 +226,7 @@ func StashList() error {
 			timeAgoStr,
 		})
 	}
-	table.PrintTable(false)
+	table.PrintTable()
 	return nil
 }
 
@@ -333,7 +328,7 @@ func StashClear(id int) error {
 }
 
 func zipDir(source, destZip string) error {
-	zipFile, err := os.Create(destZip)
+	zipFile, err := os.OpenFile(destZip, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -412,7 +407,7 @@ func unzipDir(srcZip, destDir string) error {
 }
 
 func zipFile(source, destZip string) error {
-	zipFile, err := os.Create(destZip)
+	zipFile, err := os.OpenFile(destZip, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}

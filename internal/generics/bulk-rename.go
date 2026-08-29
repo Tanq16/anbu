@@ -6,8 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	u "github.com/tanq16/anbu/utils"
 )
@@ -80,8 +79,7 @@ func BulkRename(pattern string, replacement string, renameDirectories bool, dryR
 }
 
 func generateUUIDString() string {
-	uuid, _ := uuid.NewRandom()
-	return uuid.String()
+	return uuid.New().String()
 }
 
 func generateRUIDString(length int) string {
@@ -89,7 +87,7 @@ func generateRUIDString(length int) string {
 		u.PrintWarn("length must be between 1 and 30; using 18", nil)
 		length = 18
 	}
-	uuid, _ := uuid.NewRandom()
-	shortUUID := uuid.String()[0:8] + uuid.String()[9:13] + uuid.String()[15:18] + uuid.String()[20:23] + uuid.String()[24:]
+	id := uuid.New().String()
+	shortUUID := id[0:8] + id[9:13] + id[15:18] + id[20:23] + id[24:]
 	return shortUUID[:length]
 }

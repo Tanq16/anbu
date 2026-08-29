@@ -1,8 +1,8 @@
 package cryptoCmd
 
 import (
+	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -20,6 +20,8 @@ var secretsFlags struct {
 	secretsFile string
 	multiline   bool
 	password    string
+	value       string
+	valueFile   string
 	initialized bool
 }
 
@@ -28,15 +30,7 @@ func initSecretsStore() {
 		return
 	}
 	secretsFlags.initialized = true
-	homeDir, err := os.UserHomeDir()
-	secretsFlags.secretsFile = "secrets.json"
-	if err == nil {
-		anbuDir := filepath.Join(homeDir, ".config", "anbu")
-		if err := os.MkdirAll(anbuDir, 0755); err != nil {
-			u.PrintFatal("failed to create anbu directory", err)
-		}
-		secretsFlags.secretsFile = filepath.Join(anbuDir, "secrets.json")
-	}
+	secretsFlags.secretsFile = filepath.Join(u.ConfigDir(), "secrets.json")
 	if err := anbuCrypto.InitializeSecretsStore(secretsFlags.secretsFile); err != nil {
 		u.PrintFatal("failed to initialize secrets store", err)
 	}
@@ -45,6 +39,7 @@ func initSecretsStore() {
 var secretsListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all secrets with their IDs",
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		initSecretsStore()
 		secrets, err := anbuCrypto.ListSecrets(secretsFlags.secretsFile)
@@ -62,9 +57,10 @@ var secretsListCmd = &cobra.Command{
 				id,
 			})
 		}
-		table.PrintTable(false)
+		table.PrintTable()
 	},
 }
+
 var secretsGetCmd = &cobra.Command{
 	Use:   "get <secret-id>",
 	Short: "Print the decrypted value of a specific secret",
@@ -79,6 +75,7 @@ var secretsGetCmd = &cobra.Command{
 		u.PrintGeneric(value)
 	},
 }
+
 var secretsSetCmd = &cobra.Command{
 	Use:   "add <secret-id>",
 	Short: "Set the value for a secret with optional multiline input",
@@ -86,18 +83,30 @@ var secretsSetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		initSecretsStore()
 		secretID := args[0]
-		var value string
-		var err error
-		if secretsFlags.multiline {
-			value, err = u.PromptTextArea(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
-		} else {
-			value, err = u.PromptInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
-		}
-		if err != nil {
-			u.PrintFatal("failed to read secret value", err)
+		value := secretsFlags.value
+		if secretsFlags.valueFile != "" {
+			loaded, err := u.ReadFileFlag(cmd, "value-file")
+			if err != nil {
+				u.PrintFatal("failed to read --value-file", err)
+			}
+			value = loaded
 		}
 		if value == "" {
-			u.PrintFatal("no value provided for secret", nil)
+			var err error
+			if secretsFlags.multiline {
+				value, err = u.PromptTextArea(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
+			} else {
+				value, err = u.PromptInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
+			}
+			if errors.Is(err, u.ErrNoTerminal) {
+				u.PrintFatal("add needs --value, --value -, --value-file, or --value-file -", nil)
+			}
+			if err != nil {
+				u.PrintFatal("failed to read secret value", err)
+			}
+		}
+		if value == "" {
+			u.PrintFatal("add needs --value, --value -, --value-file, or --value-file -", nil)
 		}
 		password := secretsFlags.password
 		if err := anbuCrypto.SetSecret(secretsFlags.secretsFile, secretID, value, password); err != nil {
@@ -106,6 +115,7 @@ var secretsSetCmd = &cobra.Command{
 		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(secretID), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("Secret set")))
 	},
 }
+
 var secretsDeleteCmd = &cobra.Command{
 	Use:   "delete <secret-id>",
 	Short: "Delete a secret from the store",
@@ -118,6 +128,7 @@ var secretsDeleteCmd = &cobra.Command{
 		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(args[0]), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("Secret deleted")))
 	},
 }
+
 var secretsImportCmd = &cobra.Command{
 	Use:   "import <file-path>",
 	Short: "Import secrets from a JSON file and encrypt them in the store",
@@ -132,6 +143,7 @@ var secretsImportCmd = &cobra.Command{
 		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(importFile), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("Secrets imported")))
 	},
 }
+
 var secretsExportCmd = &cobra.Command{
 	Use:   "export <file-path>",
 	Short: "Export all secrets to a JSON file in decrypted form",
@@ -149,7 +161,12 @@ var secretsExportCmd = &cobra.Command{
 
 func init() {
 	SecretsCmd.PersistentFlags().StringVar(&secretsFlags.password, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
-	secretsSetCmd.Flags().BoolVarP(&secretsFlags.multiline, "multiline", "m", false, "Enable multiline input (end with 'EOF' on a new line)")
+	secretsSetCmd.Flags().StringVar(&secretsFlags.value, "value", "", "Secret value, or - to read it from stdin")
+	secretsSetCmd.Flags().StringVar(&secretsFlags.valueFile, "value-file", "", "File containing the secret value, or - for stdin")
+	secretsSetCmd.Flags().BoolVar(&secretsFlags.multiline, "multiline", false, "Prompt with a multi-line editor when no value flag is set")
+	secretsSetCmd.MarkFlagsMutuallyExclusive("value", "value-file")
+	_ = u.MarkStdinLine(secretsSetCmd, "value")
+	_ = u.MarkStdinStream(secretsSetCmd, "value-file")
 	SecretsCmd.AddCommand(secretsListCmd)
 	SecretsCmd.AddCommand(secretsGetCmd)
 	SecretsCmd.AddCommand(secretsSetCmd)

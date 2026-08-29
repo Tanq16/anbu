@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/rs/zerolog/log"
-	u "github.com/tanq16/anbu/utils"
 	"gopkg.in/ini.v1"
 )
 
@@ -23,28 +21,12 @@ type SamlDirectLoginConfig struct {
 	CLIRegion    string
 }
 
-func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlResponseFile string) error {
-	var samlAssertion string
-	var err error
-
-	if samlResponseFile != "" {
-		data, err := os.ReadFile(samlResponseFile)
-		if err != nil {
-			return fmt.Errorf("failed to read SAML response file: %w", err)
-		}
-		samlAssertion = strings.TrimSpace(string(data))
-	} else {
-		samlAssertion, err = u.PromptInput("Enter SAML assertion:", "Paste SAML assertion here")
-		if err != nil {
-			return err
-		}
-	}
-
+func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlAssertion string) error {
 	if samlAssertion == "" {
 		return fmt.Errorf("SAML assertion cannot be empty")
 	}
 
-	log.Debug().Str("package", "aws").Msg("authenticating with SAML assertion")
+	log.Debug().Msg("authenticating with SAML assertion")
 	region := config.CLIRegion
 	if region == "" {
 		region = "us-east-1"
@@ -69,7 +51,7 @@ func LoginWithSAMLResponse(config SamlDirectLoginConfig, samlResponseFile string
 	if err != nil {
 		return fmt.Errorf("failed to assume role with SAML: %w", err)
 	}
-	log.Debug().Str("package", "aws").Msg("successfully assumed role")
+	log.Debug().Msg("successfully assumed role")
 
 	if err := writeCredentialsToProfile(config.Profile, result.Credentials); err != nil {
 		return fmt.Errorf("failed to write credentials: %w", err)
@@ -118,6 +100,6 @@ func writeCredentialsToProfile(profile string, credentials *types.Credentials) e
 	if err := os.Chmod(credentialsPath, 0600); err != nil {
 		return fmt.Errorf("failed to set credentials file permissions: %w", err)
 	}
-	log.Debug().Str("package", "aws").Str("profile", profile).Msg("credentials written to profile")
+	log.Debug().Str("profile", profile).Msg("credentials written to profile")
 	return nil
 }

@@ -5,7 +5,8 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -97,7 +98,10 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 		return err
 	}
 	u.LineBreak()
-	u.DeviceCodeFlow(aws.ToString(deviceAuth.VerificationUriComplete), "")
+	_, err = u.DeviceCodeFlow(aws.ToString(deviceAuth.VerificationUriComplete), aws.ToString(deviceAuth.UserCode))
+	if err != nil {
+		return err
+	}
 	tokenResp, err := getAccessToken(oidcClient, regResp, deviceAuth.DeviceCode)
 	if err != nil {
 		return err
@@ -105,12 +109,12 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 	if err := createCacheFile(home, ssoConfig.SessionName, ssoConfig.StartURL, ssoConfig.SSORegion, regResp, tokenResp); err != nil {
 		return fmt.Errorf("failed to create cache file: %w", err)
 	}
-	log.Debug().Str("package", "aws").Msg("SSO login successful")
+	log.Debug().Msg("SSO login successful")
 	accounts, err := listAccounts(sso.NewFromConfig(cfg), tokenResp.AccessToken)
 	if err != nil {
 		return err
 	}
-	log.Debug().Str("package", "aws").Int("accounts", len(accounts.AccountList)).Msg("found accounts")
+	log.Debug().Int("accounts", len(accounts.AccountList)).Msg("found accounts")
 
 	configData, err := processAccounts(context.Background(), sso.NewFromConfig(cfg), tokenResp.AccessToken, accounts, ssoConfig)
 	if err != nil {
@@ -122,7 +126,7 @@ func ConfigureSSO(ssoConfig SSOConfig) error {
 	if err := writeConfigFile(configFilePath, configData); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
-	log.Debug().Str("package", "aws").Str("path", configFilePath).Msg("AWS config updated successfully")
+	log.Debug().Str("path", configFilePath).Msg("AWS config updated successfully")
 	return nil
 }
 
@@ -159,8 +163,8 @@ func processAccounts(ctx context.Context, client *sso.Client, accessToken *strin
 			}
 			accountID := aws.ToString(account.AccountId)
 			accountName := strings.ToLower(re.ReplaceAllString(aws.ToString(account.AccountName), "-"))
-			log.Debug().Str("package", "aws").Str("id", accountID).Str("name", accountName).Msg("processing account")
-			roles, err := listAccountRoles(client, accessToken, accountID)
+			log.Debug().Str("id", accountID).Str("name", accountName).Msg("processing account")
+			roles, err := listAccountRoles(ctx, client, accessToken, accountID)
 			if err != nil {
 				u.PrintWarn("failed to list roles", err)
 				return nil
@@ -173,7 +177,7 @@ func processAccounts(ctx context.Context, client *sso.Client, accessToken *strin
 				for _, profile := range configData.Profiles {
 					if profile.Name == profileName {
 						profileName = fmt.Sprintf("%s-%s-%s", profileName, accountID, roleName)
-						log.Debug().Str("package", "aws").Str("originalName", originalProfileName).Str("resolvedName", profileName).Msg("profile name conflict resolved")
+						log.Debug().Str("originalName", originalProfileName).Str("resolvedName", profileName).Msg("profile name conflict resolved")
 						break
 					}
 				}
@@ -187,7 +191,7 @@ func processAccounts(ctx context.Context, client *sso.Client, accessToken *strin
 					Output:      "json",
 				})
 				mu.Unlock()
-				log.Debug().Str("package", "aws").Str("profile", profileName).Msg("added profile")
+				log.Debug().Str("profile", profileName).Msg("added profile")
 			}
 			return nil
 		})
@@ -271,14 +275,14 @@ func createCacheFile(home string, sessionName string, startURL string, region st
 		RegistrationExpiresAt: now.Add(24 * time.Hour).Format(time.RFC3339),
 		StartUrl:              startURL,
 	}
-	cacheData, err := json.MarshalIndent(cache, "", "  ")
+	cacheData, err := json.Marshal(cache, jsontext.WithIndent("  "))
 	if err != nil {
 		return fmt.Errorf("failed to marshal cache data: %w", err)
 	}
 	if err := os.WriteFile(filepath.Join(cacheDir, filename), cacheData, 0600); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
-	log.Debug().Str("package", "aws").Str("file", filename).Msg("cache file created")
+	log.Debug().Str("file", filename).Msg("cache file created")
 	return nil
 }
 
@@ -316,11 +320,11 @@ func listAccounts(client *sso.Client, accessToken *string) (sso.ListAccountsOutp
 	return accounts, nil
 }
 
-func listAccountRoles(client *sso.Client, accessToken *string, accountID string) (sso.ListAccountRolesOutput, error) {
+func listAccountRoles(ctx context.Context, client *sso.Client, accessToken *string, accountID string) (sso.ListAccountRolesOutput, error) {
 	var roles sso.ListAccountRolesOutput
 	var nextToken *string
 	for {
-		resp, err := client.ListAccountRoles(context.TODO(), &sso.ListAccountRolesInput{
+		resp, err := client.ListAccountRoles(ctx, &sso.ListAccountRolesInput{
 			AccessToken: accessToken,
 			AccountId:   aws.String(accountID),
 			MaxResults:  aws.Int32(100),

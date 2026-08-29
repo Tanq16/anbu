@@ -1,7 +1,10 @@
 package cloudCmd
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	anbuCloud "github.com/tanq16/anbu/internal/cloud/aws"
@@ -35,9 +38,10 @@ var AwsCmd = &cobra.Command{
 var awsIidcLoginCmd = &cobra.Command{
 	Use:   "iidc-login",
 	Short: "Configure AWS SSO with IAM Identity Center for multi-role access",
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		if awsIidcLoginFlags.startURL == "" || awsIidcLoginFlags.ssoRegion == "" {
-			u.PrintFatal("both --start-url and --sso-region flags are required", nil)
+		if !u.StdinIsTerminal {
+			u.PrintFatal("iidc-login needs an interactive terminal for device authorization", nil)
 		}
 		config := anbuCloud.SSOConfig{
 			StartURL:    awsIidcLoginFlags.startURL,
@@ -46,6 +50,9 @@ var awsIidcLoginCmd = &cobra.Command{
 			SessionName: awsIidcLoginFlags.sessionName,
 		}
 		if err := anbuCloud.ConfigureSSO(config); err != nil {
+			if errors.Is(err, u.ErrNoTerminal) {
+				u.PrintFatal("iidc-login needs an interactive terminal for device authorization", nil)
+			}
 			u.PrintFatal("failed to configure SSO", err)
 		}
 		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug("iidc-login"), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("AWS SSO configured")))
@@ -55,12 +62,33 @@ var awsIidcLoginCmd = &cobra.Command{
 var awsSamlDirectLoginCmd = &cobra.Command{
 	Use:   "saml-direct-login",
 	Short: "Login to AWS CLI with SAML response grabbed from a browser session directly",
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		if awsSamlDirectLoginFlags.roleArn == "" || awsSamlDirectLoginFlags.principalArn == "" {
-			u.PrintFatal("both --role-arn and --principal-arn flags are required", nil)
-		}
 		if awsSamlDirectLoginFlags.profile == "" {
 			awsSamlDirectLoginFlags.profile = "default"
+		}
+		assertion := ""
+		if awsSamlDirectLoginFlags.samlResponseFile != "" {
+			data, err := os.ReadFile(awsSamlDirectLoginFlags.samlResponseFile)
+			if err != nil {
+				u.PrintFatal("failed to read --file", err)
+			}
+			assertion = strings.TrimSpace(string(data))
+		} else {
+			var err error
+			assertion, err = u.PromptInput("Enter SAML assertion:", "Paste SAML assertion here")
+			if errors.Is(err, u.ErrNoTerminal) {
+				u.PrintFatal("saml-direct-login needs --file when there is no interactive terminal", nil)
+			}
+			if err != nil {
+				u.PrintFatal("failed to read SAML assertion", err)
+			}
+		}
+		if assertion == "" {
+			if awsSamlDirectLoginFlags.samlResponseFile != "" {
+				u.PrintFatal("SAML assertion cannot be empty", nil)
+			}
+			u.PrintFatal("saml-direct-login needs --file when there is no interactive terminal", nil)
 		}
 		config := anbuCloud.SamlDirectLoginConfig{
 			Profile:      awsSamlDirectLoginFlags.profile,
@@ -68,7 +96,7 @@ var awsSamlDirectLoginCmd = &cobra.Command{
 			PrincipalArn: awsSamlDirectLoginFlags.principalArn,
 			CLIRegion:    awsSamlDirectLoginFlags.cliRegion,
 		}
-		if err := anbuCloud.LoginWithSAMLResponse(config, awsSamlDirectLoginFlags.samlResponseFile); err != nil {
+		if err := anbuCloud.LoginWithSAMLResponse(config, assertion); err != nil {
 			u.PrintFatal("failed to login via SAML", err)
 		}
 		u.PrintGeneric(fmt.Sprintf("%s %s %s", u.FDebug(awsSamlDirectLoginFlags.profile), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess("SAML login successful")))
@@ -78,6 +106,7 @@ var awsSamlDirectLoginCmd = &cobra.Command{
 var awsCliUiCmd = &cobra.Command{
 	Use:   "cli-ui",
 	Short: "Get a console URL from an AWS CLI profile with a pre-signed URL valid for up to 12 hours",
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		consoleURL, err := anbuCloud.GenerateConsoleURLFromProfile(awsCliUiFlags.profile)
 		if err != nil {
@@ -98,12 +127,15 @@ func init() {
 	awsIidcLoginCmd.Flags().StringVarP(&awsIidcLoginFlags.ssoRegion, "sso-region", "r", "us-east-1", "AWS SSO region (e.g. us-east-1)")
 	awsIidcLoginCmd.Flags().StringVarP(&awsIidcLoginFlags.cliRegion, "cli-region", "e", "us-east-1", "Default AWS CLI region for the new profiles")
 	awsIidcLoginCmd.Flags().StringVarP(&awsIidcLoginFlags.sessionName, "session-name", "n", "my-sso", "SSO session name to use in the config file")
+	_ = awsIidcLoginCmd.MarkFlagRequired("start-url")
 
 	awsSamlDirectLoginCmd.Flags().StringVarP(&awsSamlDirectLoginFlags.roleArn, "role-arn", "r", "", "AWS IAM role ARN to assume")
 	awsSamlDirectLoginCmd.Flags().StringVarP(&awsSamlDirectLoginFlags.principalArn, "principal-arn", "i", "", "AWS SAML provider ARN")
-	awsSamlDirectLoginCmd.Flags().StringVarP(&awsSamlDirectLoginFlags.samlResponseFile, "file", "f", "", "File containing SAML assertion (otherwise reads from stdin)")
+	awsSamlDirectLoginCmd.Flags().StringVarP(&awsSamlDirectLoginFlags.samlResponseFile, "file", "f", "", "File containing SAML assertion")
 	awsSamlDirectLoginCmd.Flags().StringVarP(&awsSamlDirectLoginFlags.profile, "profile", "p", "default", "AWS profile name to write credentials to")
 	awsSamlDirectLoginCmd.Flags().StringVarP(&awsSamlDirectLoginFlags.cliRegion, "cli-region", "e", "us-east-1", "Default AWS CLI region for the profile")
+	_ = awsSamlDirectLoginCmd.MarkFlagRequired("role-arn")
+	_ = awsSamlDirectLoginCmd.MarkFlagRequired("principal-arn")
 
 	awsCliUiCmd.Flags().StringVarP(&awsCliUiFlags.profile, "profile", "p", "default", "AWS profile to use for console URL generation (default: 'default')")
 }

@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) {
+func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) error {
 	u.PrintInfo(fmt.Sprintf("SSH tunnel %s %s %s via %s", localAddr, u.StyleSymbols["arrow"], remoteAddr, sshAddr))
 	config := &ssh.ClientConfig{
 		User:            user,
@@ -25,14 +25,14 @@ func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string,
 	u.PrintInfo(fmt.Sprintf("Connecting to SSH server at %s...", sshAddr))
 	sshClient, err := ssh.Dial("tcp", sshAddr, config)
 	if err != nil {
-		u.PrintFatal(fmt.Sprintf("failed to connect to SSH server: %s", sshAddr), err)
+		return fmt.Errorf("failed to connect to SSH server: %s: %w", sshAddr, err)
 	}
 	defer sshClient.Close()
 	u.PrintInfo(fmt.Sprintf("Connected to SSH server as %s", user))
 
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
-		u.PrintFatal(fmt.Sprintf("failed to listen on %s", localAddr), err)
+		return fmt.Errorf("failed to listen on %s: %w", localAddr, err)
 	}
 	defer listener.Close()
 	u.PrintInfo(fmt.Sprintf("Listening on %s", localAddr))
@@ -50,7 +50,7 @@ func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string,
 		select {
 		case <-ctx.Done():
 			activeConns.Wait()
-			return
+			return nil
 		default:
 			listener.(*net.TCPListener).SetDeadline(time.Now().Add(time.Second))
 			localConn, err := listener.Accept()
@@ -59,7 +59,7 @@ func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string,
 					continue
 				}
 				if opErr, ok := err.(*net.OpError); ok && !opErr.Temporary() {
-					return
+					return nil
 				}
 				u.PrintWarn("Failed to accept connection", err)
 				continue
@@ -106,7 +106,7 @@ func SSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string,
 	}
 }
 
-func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) {
+func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user string, authMethods []ssh.AuthMethod) error {
 	u.PrintInfo(fmt.Sprintf("Reverse SSH tunnel %s %s %s via %s", remoteAddr, u.StyleSymbols["arrow"], localAddr, sshAddr))
 	config := &ssh.ClientConfig{
 		User:            user,
@@ -118,7 +118,7 @@ func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user 
 	u.PrintInfo(fmt.Sprintf("Connecting to SSH server at %s...", sshAddr))
 	sshClient, err := ssh.Dial("tcp", sshAddr, config)
 	if err != nil {
-		u.PrintFatal("failed to connect to SSH server", err)
+		return fmt.Errorf("failed to connect to SSH server: %w", err)
 	}
 	defer sshClient.Close()
 	u.PrintInfo(fmt.Sprintf("Connected to SSH server as %s", user))
@@ -126,7 +126,7 @@ func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user 
 	u.PrintInfo(fmt.Sprintf("Setting up listener on remote address %s", remoteAddr))
 	listener, err := sshClient.Listen("tcp", remoteAddr)
 	if err != nil {
-		u.PrintFatal(fmt.Sprintf("failed to listen on remote address %s", remoteAddr), err)
+		return fmt.Errorf("failed to listen on remote address %s: %w", remoteAddr, err)
 	}
 	defer listener.Close()
 	u.PrintInfo(fmt.Sprintf("Listening on remote address %s", remoteAddr))
@@ -144,7 +144,7 @@ func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user 
 		select {
 		case <-ctx.Done():
 			activeConns.Wait()
-			return
+			return nil
 		default:
 			if tcpListener, ok := listener.(*net.TCPListener); ok {
 				tcpListener.SetDeadline(time.Now().Add(time.Second))
@@ -155,7 +155,7 @@ func ReverseSSHTunnel(ctx context.Context, localAddr, remoteAddr, sshAddr, user 
 					if netErr.Timeout() {
 						continue
 					} else {
-						return
+						return nil
 					}
 				}
 				u.PrintWarn("Failed to accept connection", err)

@@ -24,6 +24,6 @@ var DuplicatesCmd = &cobra.Command{
 }
 
 func init() {
-	DuplicatesCmd.Flags().BoolVarP(&duplicatesFlags.recursive, "recursive", "r", false, "Search recursively in subdirectories")
+	DuplicatesCmd.Flags().BoolVar(&duplicatesFlags.recursive, "recursive", false, "Search recursively in subdirectories")
 	DuplicatesCmd.Flags().BoolVar(&duplicatesFlags.delete, "delete", false, "Delete duplicate files, keeping only the first copy in each set")
 }

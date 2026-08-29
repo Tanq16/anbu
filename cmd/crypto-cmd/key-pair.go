@@ -19,6 +19,7 @@ var KeyPairCmd = &cobra.Command{
 	Use:     "key-pair",
 	Aliases: []string{"kp"},
 	Short:   "Generate RSA key pairs in PEM or SSH format",
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		keyName := filepath.Base(keyPairFlags.outputPath)
 		keyDir := filepath.Dir(keyPairFlags.outputPath)
@@ -46,5 +47,5 @@ var KeyPairCmd = &cobra.Command{
 func init() {
 	KeyPairCmd.Flags().StringVarP(&keyPairFlags.outputPath, "output-path", "o", "./anbu-key", "Output path and name for the key files")
 	KeyPairCmd.Flags().IntVarP(&keyPairFlags.keySize, "key-size", "k", 2048, "RSA key size (e.g., 2048, 3072, 4096)")
-	KeyPairCmd.Flags().BoolVarP(&keyPairFlags.sshFormat, "ssh", "s", false, "Generate keys in SSH format instead of PEM")
+	KeyPairCmd.Flags().BoolVar(&keyPairFlags.sshFormat, "ssh", false, "Generate keys in SSH format instead of PEM")
 }
