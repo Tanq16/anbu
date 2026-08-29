@@ -1,7 +1,7 @@
 package anbuNetwork
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"io"
 	"net"
@@ -69,9 +69,9 @@ func GetLocalIPInfo(includeIPv6 bool) {
 	}
 
 	u.LineBreak()
-	ipv4Table.PrintTable(false)
+	ipv4Table.PrintTable()
 	if includeIPv6 {
-		ipv6Table.PrintTable(false)
+		ipv6Table.PrintTable()
 	}
 	u.LineBreak()
 
@@ -125,7 +125,7 @@ func GetLocalIPInfo(includeIPv6 bool) {
 			pubIPTable.Rows = append(pubIPTable.Rows, []string{key, fmt.Sprintf("%v", value)})
 		}
 		pubIPTable.Rows = append(pubIPTable.Rows, []string{"geography", fmt.Sprintf("%s, %s, %s, %s (TZ: %s)", geography.Postal, geography.City, geography.Region, geography.Country, geography.Timezone)})
-		pubIPTable.PrintTable(false)
+		pubIPTable.PrintTable()
 	} else {
 		u.PrintWarn("Could not retrieve public IP", err)
 	}
@@ -136,7 +136,7 @@ func GetPublicIP() (u.Dictionary, error) {
 		Timeout: 5 * time.Second,
 	}
 	resp, err := client.Get("https://ipinfo.io")
-	log.Debug().Str("package", "network").Msg("requested IP info from IP-Info.io")
+	log.Debug().Msg("requested IP info from IP-Info.io")
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to ipinfo.io: %w", err)
 	}

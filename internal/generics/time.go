@@ -34,7 +34,7 @@ func printTimeTable(concern time.Time) {
 	for _, format := range timeFormats {
 		table.Rows = append(table.Rows, []string{format.Format, format.Value})
 	}
-	table.PrintTable(false)
+	table.PrintTable()
 }
 
 func printTimeTablePurple(concern time.Time) {
@@ -56,7 +56,7 @@ func printTimeTablePurple(concern time.Time) {
 		ipAddress := ipAddr.UnwindString("ip")
 		table.Rows = append(table.Rows, []string{"Public IP", ipAddress})
 	}
-	table.PrintTable(false)
+	table.PrintTable()
 }
 
 func printTimeDifferenceFromNow(targetTime time.Time) {
@@ -125,13 +125,13 @@ func TimeParse(timeStr string, printType string) {
 		time.RFC1123,
 		time.UnixDate,
 		time.DateTime,
-		"Mon Jan 2 15:04:05 MST 2006",    // Human readable format
-		"January 2, 2006 3:04:05 PM MST", // should read "March 8, 2025 14:05:43 GMT-4"
+		"Mon Jan 2 15:04:05 MST 2006",
+		"January 2, 2006 3:04:05 PM MST",
 		"2006-01-02",
 		"2006-01-02 15:04:05",
 		"01/02/2006",
 		"02-Jan-2006",
-		"2006-01-02T15:04:05Z07:00", // Additional ISO8601 variant
+		"2006-01-02T15:04:05Z07:00",
 	}
 	var parsedTime time.Time
 	for _, format := range formats {

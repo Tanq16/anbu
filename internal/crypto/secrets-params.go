@@ -6,7 +6,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"io"
 	"os"
@@ -38,7 +39,7 @@ func saveSecretsStore(store *SecretsStore, filePath string) error {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
-	data, err := json.MarshalIndent(store, "", "  ")
+	data, err := json.Marshal(store, jsontext.WithIndent("  "))
 	if err != nil {
 		return fmt.Errorf("failed to marshal store: %w", err)
 	}
@@ -137,7 +138,7 @@ func ExportSecrets(filePath, exportFilePath string, password string) error {
 		}
 		exportStore.Secrets[id] = decryptedValue
 	}
-	exportData, err := json.MarshalIndent(exportStore, "", "  ")
+	exportData, err := json.Marshal(exportStore, jsontext.WithIndent("  "))
 	if err != nil {
 		return fmt.Errorf("failed to marshal export data: %w", err)
 	}

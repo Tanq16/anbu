@@ -3,7 +3,6 @@ package networkCmd
 import (
 	"github.com/spf13/cobra"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
-	u "github.com/tanq16/anbu/utils"
 )
 
 var httpServerFlags struct {
@@ -15,24 +14,23 @@ var httpServerFlags struct {
 var HTTPServerCmd = &cobra.Command{
 	Use:   "http-server",
 	Short: "Start a simple HTTP/HTTPS file server with optional file uploads",
-	Run: func(cmd *cobra.Command, args []string) {
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		server := anbuNetwork.NewHTTPServer(&anbuNetwork.HTTPServerOptions{
 			ListenAddress: httpServerFlags.listenAddress,
 			EnableUpload:  httpServerFlags.enableUpload,
 			EnableTLS:     httpServerFlags.enableTLS,
 		})
 		if err := server.Setup(); err != nil {
-			u.PrintFatal("Failed to setup HTTP server", err)
+			return err
 		}
 		defer server.Stop()
-		if err := server.Run(); err != nil {
-			u.PrintFatal("Failed to start HTTP server", err)
-		}
+		return server.Run()
 	},
 }
 
 func init() {
 	HTTPServerCmd.Flags().StringVarP(&httpServerFlags.listenAddress, "listen", "l", "0.0.0.0:8080", "Address and port to listen on")
-	HTTPServerCmd.Flags().BoolVarP(&httpServerFlags.enableUpload, "upload", "u", false, "Enable file uploads via PUT requests")
-	HTTPServerCmd.Flags().BoolVarP(&httpServerFlags.enableTLS, "tls", "t", false, "Enable HTTPS with a self-signed certificate")
+	HTTPServerCmd.Flags().BoolVar(&httpServerFlags.enableUpload, "upload", false, "Enable file uploads via PUT requests")
+	HTTPServerCmd.Flags().BoolVar(&httpServerFlags.enableTLS, "tls", false, "Enable HTTPS with a self-signed certificate")
 }

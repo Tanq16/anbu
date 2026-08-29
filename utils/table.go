@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"strings"
-
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/table"
 )
@@ -46,46 +44,11 @@ func (t *Table) reconcileRows() {
 	}
 }
 
-func (t *Table) formatMarkdown() string {
-	if len(t.Headers) == 0 {
-		return ""
-	}
-	var sb strings.Builder
-	sb.WriteString("| " + strings.Join(escapeCells(t.Headers), " | ") + " |")
-	sb.WriteByte('\n')
-	seps := make([]string, len(t.Headers))
-	for i := range seps {
-		seps[i] = "---"
-	}
-	sb.WriteString("| " + strings.Join(seps, " | ") + " |")
-	for _, row := range t.Rows {
-		sb.WriteByte('\n')
-		sb.WriteString("| " + strings.Join(escapeCells(row), " | ") + " |")
-	}
-	return sb.String()
-}
-
-func escapeCells(cells []string) []string {
-	escaped := make([]string, len(cells))
-	for i, cell := range cells {
-		cell = strings.ReplaceAll(cell, "|", "\\|")
-		cell = strings.ReplaceAll(cell, "\n", " ")
-		escaped[i] = cell
-	}
-	return escaped
-}
-
-func (t *Table) FormatTable(useMarkdown bool) string {
-	if useMarkdown {
-		return t.formatMarkdown()
-	}
+func (t *Table) FormatTable() string {
 	t.reconcileRows()
 	return t.table.String()
 }
 
-func (t *Table) PrintTable(useMarkdown bool) {
-	if GlobalForAIFlag {
-		useMarkdown = true
-	}
-	PrintGeneric(t.FormatTable(useMarkdown))
+func (t *Table) PrintTable() {
+	PrintGeneric(t.FormatTable())
 }

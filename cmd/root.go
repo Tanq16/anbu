@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -17,7 +17,6 @@ import (
 
 var AppVersion = "dev-build"
 var debugFlag bool
-var forAIFlag bool
 
 var rootCmd = &cobra.Command{
 	Use:     "anbu",
@@ -26,39 +25,36 @@ var rootCmd = &cobra.Command{
 	CompletionOptions: cobra.CompletionOptions{
 		HiddenDefaultCmd: true,
 	},
+	SilenceErrors: true,
+	SilenceUsage:  true,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		return utils.ResolveStdin(cmd)
+	},
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		utils.PrintFatal(err.Error(), err)
 	}
 }
 
 func setupLogs() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	output := zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: time.DateTime,
-		NoColor:    false,
+	var out io.Writer = os.Stdout
+	if utils.StdoutIsTerminal {
+		out = zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.DateTime}
 	}
-	log.Logger = zerolog.New(output).With().Timestamp().Logger()
+	log.Logger = zerolog.New(out).With().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if debugFlag {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		utils.GlobalDebugFlag = true
-	}
-	if forAIFlag {
-		utils.GlobalForAIFlag = true
-		zerolog.SetGlobalLevel(zerolog.Disabled)
 	}
 }
 
 func init() {
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Enable debug logging")
-	rootCmd.PersistentFlags().BoolVar(&forAIFlag, "for-ai", false, "AI-friendly output (plain text, markdown tables, stdin input)")
-	rootCmd.MarkFlagsMutuallyExclusive("debug", "for-ai")
 	cobra.OnInitialize(setupLogs)
 
 	rootCmd.AddCommand(genericsCmd.StringCmd)
@@ -76,5 +72,4 @@ func init() {
 	rootCmd.AddCommand(networkCmd.WgProxyCmd)
 
 	rootCmd.AddCommand(cloudCmd.AwsCmd)
-	rootCmd.AddCommand(cloudCmd.AzureCmd)
 }

@@ -12,12 +12,32 @@ import (
 	u "github.com/tanq16/anbu/utils"
 )
 
-func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) {
+type closerSet struct {
+	mu      sync.Mutex
+	closers []io.Closer
+}
+
+func (s *closerSet) add(c io.Closer) {
+	s.mu.Lock()
+	s.closers = append(s.closers, c)
+	s.mu.Unlock()
+}
+
+func (s *closerSet) closeAll() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, c := range s.closers {
+		_ = c.Close()
+	}
+	s.closers = nil
+}
+
+func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecureSkipVerify bool) error {
 	u.PrintInfo(fmt.Sprintf("TCP tunnel %s %s %s", localAddr, u.StyleSymbols["arrow"], remoteAddr))
 
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
-		u.PrintFatal(fmt.Sprintf("failed to listen on %s", localAddr), err)
+		return fmt.Errorf("failed to listen on %s: %w", localAddr, err)
 	}
 	defer listener.Close()
 	u.PrintInfo(fmt.Sprintf("Listening on %s", localAddr))
@@ -25,10 +45,12 @@ func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecu
 		u.PrintStream("Using TLS for remote connections")
 	}
 
+	var live closerSet
 	go func() {
 		<-ctx.Done()
 		u.PrintInfo("TCP tunnel stopped gracefully")
 		listener.Close()
+		live.closeAll()
 	}()
 
 	var activeConns sync.WaitGroup
@@ -37,7 +59,7 @@ func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecu
 		select {
 		case <-ctx.Done():
 			activeConns.Wait()
-			return
+			return nil
 		default:
 			listener.(*net.TCPListener).SetDeadline(time.Now().Add(2 * time.Second))
 			localConn, err := listener.Accept()
@@ -46,7 +68,7 @@ func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecu
 					continue
 				}
 				if opErr, ok := err.(*net.OpError); ok && !opErr.Temporary() {
-					return
+					return nil
 				}
 				u.PrintError("Failed to accept connection", err)
 				continue
@@ -59,10 +81,17 @@ func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecu
 				localConn.Close()
 				continue
 			}
+			live.add(localConn)
 			activeConns.Go(func() {
 				defer func() { <-sem }()
 				defer localConn.Close()
 				u.PrintInfo(fmt.Sprintf("New connection from %s", localConn.RemoteAddr()))
+
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
 
 				var remoteConn net.Conn
 				if useTLS {
@@ -77,6 +106,7 @@ func TCPTunnel(ctx context.Context, localAddr, remoteAddr string, useTLS, insecu
 					u.PrintError(fmt.Sprintf("Failed to connect to remote %s", remoteAddr), err)
 					return
 				}
+				live.add(remoteConn)
 				defer remoteConn.Close()
 				u.PrintInfo(fmt.Sprintf("Connected to remote %s", remoteAddr))
 

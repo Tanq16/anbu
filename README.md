@@ -29,16 +29,11 @@ A summary of everything that **Anbu** can perform:
 | **String Generation** | Generate random strings, UUIDs, passwords, and passphrases for various purposes |
 | **Stash** | Persistent clipboard for files, folders, and text snippets with apply, pop, and clear operations, almost similar to `git` stash |
 | **AWS Helper Utilities** | Configure AWS SSO with IAM Identity Center, SAML direct login, and generate console URLs from CLI profiles |
-| **Azure Helper Utilities** | Switch between Azure subscriptions interactively |
 
 ## Installation
 
 - Download directly from [RELEASES](https://github.com/Tanq16/anbu/releases). Anbu is available for AMD64 and ARM64 for Linux and MacOS.
-- To build latest commit directly via Go, use:
-  ```bash
-  go install github.com/tanq16/anbu@latest
-  ```
-- To clone and build locally for development, use:
+- To clone and build locally for development (requires Go 1.27 or newer), use:
   ```bash
   git clone https://github.com/tanq16/anbu.git && \
   cd anbu && \
@@ -47,7 +42,7 @@ A summary of everything that **Anbu** can perform:
 
 ## Usage
 
-Anbu supports a large number of operations across the board. All commands support the `--debug` flag to enable debug logging and the `--for-ai` flag for machine-readable output (plain text with `[OK]`/`[ERROR]`/`[WARN]`/`[INFO]` prefixes and markdown tables).
+Anbu supports a large number of operations across the board. All commands support the `--debug` flag to enable debug logging.
 
 The specific details of each are:
 
@@ -70,9 +65,11 @@ The specific details of each are:
   anbu pass list  # List all secrets
 
   # Managing Secrets (Default password used or provide yours with --password)
-  anbu pass add API_KEY     # Create a new secret (encrypted with AES GCM at rest)
-  anbu pass add API_KEY -m  # Create a new multi-line secret
-  echo "sk-1234" | anbu pass add API_KEY --for-ai  # Add from piped stdin (AI-friendly mode)
+  anbu pass add API_KEY                 # Create a new secret (encrypted with AES GCM at rest)
+  anbu pass add API_KEY --multiline     # Create a new multi-line secret via the editor
+  anbu pass add API_KEY --value sk-1234 # Set the value from a flag
+  echo "sk-1234" | anbu pass add API_KEY --value -  # Add from piped stdin
+  anbu pass add API_KEY --value-file ./key.pem      # Set the value from a file
   anbu pass get API_KEY     # Retrieve a secret (decrypted value)
   anbu pass delete API_KEY  # Delete a secret
 
@@ -86,7 +83,7 @@ The specific details of each are:
   ```bash
   anbu key-pair                      # Generate a 2048-bit RSA PEM key pair (anbu-key, anbu-key.pub)
   anbu kp -o ~/.ssh/id_rsa -k 4096   # Generate a 4096-bit RSA PEM key pair at specified output path
-  anbu kp -s -o ~/.ssh/id_ed25519    # Generate key pair in OpenSSH format
+  anbu kp --ssh -o ~/.ssh/id_ed25519 # Generate key pair in OpenSSH format
   ```
 
 - ***Network Tunneling***
@@ -125,26 +122,26 @@ The specific details of each are:
 - ***Simple HTTP/HTTPS Server***
 
   ```bash
-  anbu http-server                     # Serves current directory on http://0.0.0.0:8080
-  anbu http-server -l 0.0.0.0:8080 -t  # Serve HTTPS on given add:port with a self-signed cert
-  anbu http-server -u                  # Serve simple upload page for text and files
-  anbu http-server -u -t               # Serve upload page over HTTPS with self-signed cert
+  anbu http-server                           # Serves current directory on http://0.0.0.0:8080
+  anbu http-server -l 0.0.0.0:8080 --tls     # Serve HTTPS on given addr:port with a self-signed cert
+  anbu http-server --upload                  # Serve simple upload page for text and files
+  anbu http-server --upload --tls            # Serve upload page over HTTPS with self-signed cert
   ```
 
 - ***IP Information*** (alias: `ip`)
 
   ```bash
-  anbu ip-info      # Print local and public IP information
-  anbu ip-info -6   # Print local (IPv4 & IPv6) and public IP information
+  anbu ip-info         # Print local and public IP information
+  anbu ip-info --ipv6  # Print local (IPv4 & IPv6) and public IP information
   ```
 
 - ***Bulk Rename***
 
   ```bash
-  anbu rename 'prefix_(.*)' 'new_\1'              # Rename files matching regex pattern
-  anbu rename -d 'old_(.*)' 'new_\1'              # Rename directories instead of files
-  anbu rename '(.*)\.(.*)' '\1_backup.\2'         # Add _backup before extension
-  anbu rename 'image-(\d+).jpg' 'IMG_\1.jpeg' -r  # Perform a dry-run without renaming
+  anbu rename 'prefix_(.*)' 'new_\1'                     # Rename files matching regex pattern
+  anbu rename --directories 'old_(.*)' 'new_\1'          # Rename directories instead of files
+  anbu rename '(.*)\.(.*)' '\1_backup.\2'                # Add _backup before extension
+  anbu rename 'image-(\d+).jpg' 'IMG_\1.jpeg' --dry-run  # Perform a dry-run without renaming
   anbu rename '(.*)' '\1_\uuid'                    # Append UUID to filenames
   anbu rename '(.*)\.(.*)' '\1_\suid.\2'           # Insert short UUID before extension
   ```
@@ -160,7 +157,7 @@ The specific details of each are:
 - ***String Generation*** (alias: `s`)
 
   ```bash
-  anbu string 23               # generate 23 (100 if not specified) random alphanumeric chars
+  anbu string random 23        # generate 23 (100 if not specified) random alphanumeric chars
   anbu string seq 29           # prints "abcdefghijklmnopqrstuvwxyz" until desired length
   anbu string rep 23 str2rep   # prints "str2repstr2rep...23 times"
 
@@ -170,11 +167,11 @@ The specific details of each are:
 
   anbu string password           # generate a 12-character complex password
   anbu string password 16        # generate a 16-character complex password
-  anbu string password 8 simple  # generate an 8-letter lowercase password
+  anbu string password 8 --simple  # generate an 8-letter lowercase password
 
   anbu string passphrase               # generate a 3-word passphrase with hyphens
   anbu string passphrase 5             # generate a 5-word passphrase with hyphens
-  anbu string passphrase 4 '@'         # generate a 4-word passphrase with a custom separator
+  anbu string passphrase 4 --separator '@'  # generate a 4-word passphrase with a custom separator
   ```
 
 - ***Stash***
@@ -187,9 +184,8 @@ The specific details of each are:
   # Stash text interactively (multiline TUI editor)
   anbu stash text my-snippet
 
-  # Stash text from piped stdin (AI-friendly mode)
-  echo "my text" | anbu stash text my-snippet --for-ai
-  cat notes.txt | anbu stash text my-notes --for-ai
+  # Stash text from a flag
+  anbu stash text my-snippet --text "the snippet"
 
   # List all stashed entries
   anbu stash list
@@ -214,17 +210,10 @@ The specific details of each are:
 
   # Login with a SAML response captured from a browser session
   anbu aws saml-direct-login -r ROLE_ARN -i PRINCIPAL_ARN -p my-profile
+  anbu aws saml-direct-login -r ROLE_ARN -i PRINCIPAL_ARN --file assertion.xml
 
   # Generate AWS console URL from a local CLI profile (valid for up to 12 hours)
   anbu aws cli-ui -p my-profile
-  ```
-
-- ***Azure Helper Utilities*** (alias: `az`)
-
-  ```bash
-  # Switch between Azure subscriptions interactively
-  anbu azure switch-sub
-  anbu az switch
   ```
 
 ## Tips and Notes

@@ -96,7 +96,7 @@ func FindDuplicates(recursive bool, delete bool) error {
 			}
 			table.Rows = append(table.Rows, []string{fmt.Sprintf("%d", i+1), filesStr})
 		}
-		table.PrintTable(false)
+		table.PrintTable()
 		if delete {
 			for _, fileList := range hashedDuplicates {
 				for i := 1; i < len(fileList); i++ {
@@ -131,7 +131,7 @@ func FindDuplicates(recursive bool, delete bool) error {
 			}
 			table.Rows = append(table.Rows, []string{fmt.Sprintf("%d", startID+i), filesStr})
 		}
-		table.PrintTable(false)
+		table.PrintTable()
 		if delete {
 			for _, fileList := range unhashedDuplicates {
 				for i := 1; i < len(fileList); i++ {
