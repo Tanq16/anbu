@@ -21,6 +21,7 @@ A summary of everything that **Anbu** can perform:
 | **Secrets Management** | Securely store and retrieve secrets with encryption at rest |
 | **Key Pair Generation** | Generate RSA key pairs in PEM or OpenSSH format with strict permissioning |
 | **Network Tunneling** | Create TCP and SSH tunnels (forward and reverse) to securely access remote services |
+| **WireGuard Proxy** | Userspace WireGuard HTTP CONNECT and SOCKS5 proxy on one port, with no root, TUN device, or host routing changes |
 | **Simple HTTP/HTTPS Server** | Host a simple webserver over HTTP/HTTPS or serve an upload page for text and file uploads |
 | **IP Information** | Display local and public IP details, including geolocation information |
 | **Bulk Rename** | Batch rename files or directories using regular expression patterns, supporting capture groups |
@@ -98,6 +99,24 @@ The specific details of each are:
 
   # reverse SSH tunnels
   anbu tunnel rssh -l localhost:3389 -r 0.0.0.0:8080 -s ssh.vm.com:22 -u bob -p "builder"
+  ```
+
+- ***WireGuard Proxy*** (alias: `wgp`)
+
+  Runs entirely in userspace. It does not create a `utun`/`wg0` interface and does not change host routes or DNS. Only clients that use the local proxy are sent through the tunnel.
+
+  Keys may be standard WireGuard Base64 or 64-character hex.
+
+  ```bash
+  anbu wg-proxy -k "$WG_PRIVATE" -p "$WG_PEER" -e vpn.example.com:51820 -a 10.0.0.2
+  anbu wgp --private-key "$WG_PRIVATE" --peer-key "$WG_PEER" --endpoint 203.0.113.10:51820 --address 10.0.0.2 --listen 127.0.0.1:1080
+
+  # HTTP CONNECT
+  curl -x http://127.0.0.1:1080 https://icanhazip.com
+
+  # SOCKS5 (same port)
+  curl -x socks5h://127.0.0.1:1080 https://icanhazip.com
+  yt-dlp --proxy socks5://127.0.0.1:1080 "https://www.youtube.com/watch?v=..."
   ```
 
 - ***Simple HTTP/HTTPS Server***
