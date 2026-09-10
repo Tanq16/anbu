@@ -28,7 +28,7 @@ var wgProxyFlags struct {
 var WgProxyCmd = &cobra.Command{
 	Use:     "wg-proxy",
 	Aliases: []string{"wgp"},
-	Short:   "Start a userspace WireGuard HTTP CONNECT and SOCKS5 proxy",
+	Short:   "Start a userspace WireGuard SOCKS5 proxy",
 	Args:    cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -51,7 +51,7 @@ var WgProxyCmd = &cobra.Command{
 		}
 		defer srv.Close()
 
-		u.PrintInfo(fmt.Sprintf("WireGuard proxy listening on %s (HTTP CONNECT and SOCKS5)", wgProxyFlags.listen))
+		u.PrintInfo(fmt.Sprintf("WireGuard SOCKS5 proxy listening on %s", wgProxyFlags.listen))
 		u.PrintInfo(fmt.Sprintf("Peer endpoint %s", wgProxyFlags.endpoint))
 		if err := srv.Serve(ctx); err != nil {
 			u.PrintFatal("proxy failed", err)

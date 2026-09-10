@@ -52,7 +52,7 @@ func (s *Server) Serve(ctx context.Context) error {
 			return err
 		}
 		wg.Go(func() {
-			if err := handleHybrid(ctx, conn, s.dial); err != nil {
+			if err := handleSOCKS5(ctx, conn, s.dial); err != nil {
 				log.Debug().Err(err).Msg("proxy connection")
 			}
 		})

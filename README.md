@@ -21,7 +21,7 @@ A summary of everything that **Anbu** can perform:
 | **Secrets Management** | Securely store and retrieve secrets with encryption at rest |
 | **Key Pair Generation** | Generate RSA key pairs in PEM or OpenSSH format with strict permissioning |
 | **Network Tunneling** | Create TCP and SSH tunnels (forward and reverse) to securely access remote services |
-| **WireGuard Proxy** | Userspace WireGuard HTTP CONNECT and SOCKS5 proxy on one port, with no root, TUN device, or host routing changes |
+| **WireGuard Proxy** | Userspace WireGuard SOCKS5 proxy, with no root, TUN device, or host routing changes |
 | **Simple HTTP/HTTPS Server** | Host a simple webserver over HTTP/HTTPS or serve an upload page for text and file uploads |
 | **IP Information** | Display local and public IP details, including geolocation information |
 | **Bulk Rename** | Batch rename files or directories using regular expression patterns, supporting capture groups |
@@ -111,10 +111,6 @@ The specific details of each are:
   anbu wg-proxy -k "$WG_PRIVATE" -p "$WG_PEER" -e vpn.example.com:51820 -a 10.0.0.2
   anbu wgp --private-key "$WG_PRIVATE" --peer-key "$WG_PEER" --endpoint 203.0.113.10:51820 --address 10.0.0.2 --listen 127.0.0.1:1080
 
-  # HTTP CONNECT
-  curl -x http://127.0.0.1:1080 https://icanhazip.com
-
-  # SOCKS5 (same port)
   curl -x socks5h://127.0.0.1:1080 https://icanhazip.com
   yt-dlp --proxy socks5://127.0.0.1:1080 "https://www.youtube.com/watch?v=..."
   ```
