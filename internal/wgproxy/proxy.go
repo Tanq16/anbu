@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"slices"
 	"strconv"
 
@@ -37,59 +36,12 @@ func (c prefixConn) CloseWrite() error {
 	return c.Close()
 }
 
-func handleHybrid(ctx context.Context, client net.Conn, dial dialFunc) error {
+func handleSOCKS5(ctx context.Context, client net.Conn, dial dialFunc) error {
 	defer client.Close()
+	stop := context.AfterFunc(ctx, func() { client.Close() })
+	defer stop()
 	reader := bufio.NewReader(client)
-	peek, err := reader.Peek(1)
-	if err != nil {
-		return err
-	}
-	switch peek[0] {
-	case 0x05:
-		return handleSOCKS5(ctx, client, reader, dial)
-	case 0x04:
-		return errors.New("SOCKS4 is not supported")
-	default:
-		return handleHTTP(ctx, client, reader, dial)
-	}
-}
 
-func handleHTTP(ctx context.Context, client net.Conn, reader *bufio.Reader, dial dialFunc) error {
-	req, err := http.ReadRequest(reader)
-	if err != nil {
-		return err
-	}
-	defer req.Body.Close()
-
-	src := prefixConn{Conn: client, r: reader}
-	if req.Method == http.MethodConnect {
-		target := req.Host
-		if _, _, splitErr := net.SplitHostPort(target); splitErr != nil {
-			target = net.JoinHostPort(target, "443")
-		}
-		return tunnelTCP(ctx, src, client, target, dial, httpDialFail, func(net.Conn) error {
-			_, err := client.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n"))
-			return err
-		})
-	}
-
-	target := req.URL.Host
-	if target == "" {
-		target = req.Host
-	}
-	if _, _, splitErr := net.SplitHostPort(target); splitErr != nil {
-		target = net.JoinHostPort(target, "80")
-	}
-	return tunnelTCP(ctx, src, client, target, dial, httpDialFail, func(remote net.Conn) error {
-		req.RequestURI = ""
-		req.Header.Del("Proxy-Connection")
-		req.Header.Del("Proxy-Authenticate")
-		req.Header.Del("Proxy-Authorization")
-		return req.Write(remote)
-	})
-}
-
-func handleSOCKS5(ctx context.Context, client net.Conn, reader *bufio.Reader, dial dialFunc) error {
 	header := make([]byte, 2)
 	if _, err := io.ReadFull(reader, header); err != nil {
 		return err
@@ -153,22 +105,17 @@ func handleSOCKS5(ctx context.Context, client net.Conn, reader *bufio.Reader, di
 	}
 	target := net.JoinHostPort(host, strconv.Itoa(int(binary.BigEndian.Uint16(portBuf))))
 	src := prefixConn{Conn: client, r: reader}
-	return tunnelTCP(ctx, src, client, target, dial, socksDialFail, func(net.Conn) error {
+	return tunnelTCP(ctx, src, client, target, dial, func(net.Conn) error {
 		_, err := client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0})
 		return err
 	})
 }
 
-var (
-	httpDialFail  = []byte("HTTP/1.1 502 Bad Gateway\r\n\r\n")
-	socksDialFail = []byte{0x05, 0x05, 0x00, 0x01, 0, 0, 0, 0, 0, 0}
-)
-
-func tunnelTCP(ctx context.Context, src, client net.Conn, target string, dial dialFunc, failReply []byte, reply func(net.Conn) error) error {
+func tunnelTCP(ctx context.Context, src, client net.Conn, target string, dial dialFunc, reply func(net.Conn) error) error {
 	log.Debug().Str("target", target).Msg("proxy dial")
 	remote, err := dial(ctx, "tcp", target)
 	if err != nil {
-		_, _ = client.Write(failReply)
+		_, _ = client.Write([]byte{0x05, 0x05, 0x00, 0x01, 0, 0, 0, 0, 0, 0})
 		return fmt.Errorf("dial %s: %w", target, err)
 	}
 	defer remote.Close()

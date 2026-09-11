@@ -26,29 +26,6 @@ func GenerateRandomString(length int) (string, error) {
 	return sb.String(), nil
 }
 
-func GenerateSequenceString(length int) string {
-	if length <= 0 {
-		length = 100
-	}
-	alphabet := "abcdefghijklmnopqrstuvwxyz"
-	var result strings.Builder
-	for result.Len() < length {
-		result.WriteString(alphabet)
-	}
-	return result.String()[:length]
-}
-
-func GenerateRepetitionString(count int, str string) string {
-	if count <= 0 {
-		count = 10
-	}
-	var result strings.Builder
-	for range count {
-		result.WriteString(str)
-	}
-	return result.String()
-}
-
 func GenerateUUIDString() (string, error) {
 	return uuid.New().String(), nil
 }

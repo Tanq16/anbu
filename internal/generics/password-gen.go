@@ -6,13 +6,6 @@ import (
 	"strings"
 )
 
-const (
-	lowerSet   = "abcdefghijklmnopqrstuvwxyz"
-	upperSet   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	digitSet   = "0123456789"
-	specialSet = "!@#$%^&*()-_=+[]{}|;:,.<>?/"
-)
-
 func cryptoRandInt(max int) (int, error) {
 	n, err := cryptoRand.Int(cryptoRand.Reader, big.NewInt(int64(max)))
 	if err != nil {
@@ -21,105 +14,40 @@ func cryptoRandInt(max int) (int, error) {
 	return int(n.Int64()), nil
 }
 
-func GeneratePassword(length int, simple bool) (string, error) {
-	if length <= 0 {
-		length = 12
-	}
-	if simple {
-		var sb strings.Builder
-		sb.Grow(length)
-		for range length {
-			idx, err := cryptoRandInt(len(lowerSet))
-			if err != nil {
-				return "", err
-			}
-			sb.WriteByte(lowerSet[idx])
-		}
-		return sb.String(), nil
-	}
-
-	fullCharset := lowerSet + upperSet + digitSet + specialSet
-	buf := make([]byte, length)
-
-	if length >= 4 {
-		lIdx, err := cryptoRandInt(len(lowerSet))
-		if err != nil {
-			return "", err
-		}
-		uIdx, err := cryptoRandInt(len(upperSet))
-		if err != nil {
-			return "", err
-		}
-		dIdx, err := cryptoRandInt(len(digitSet))
-		if err != nil {
-			return "", err
-		}
-		sIdx, err := cryptoRandInt(len(specialSet))
-		if err != nil {
-			return "", err
-		}
-		buf[0] = lowerSet[lIdx]
-		buf[1] = upperSet[uIdx]
-		buf[2] = digitSet[dIdx]
-		buf[3] = specialSet[sIdx]
-
-		for i := 4; i < length; i++ {
-			cIdx, err := cryptoRandInt(len(fullCharset))
-			if err != nil {
-				return "", err
-			}
-			buf[i] = fullCharset[cIdx]
-		}
-
-		for i := length - 1; i > 0; i-- {
-			j, err := cryptoRandInt(i + 1)
-			if err != nil {
-				return "", err
-			}
-			buf[i], buf[j] = buf[j], buf[i]
-		}
-	} else {
-		for i := 0; i < length; i++ {
-			cIdx, err := cryptoRandInt(len(fullCharset))
-			if err != nil {
-				return "", err
-			}
-			buf[i] = fullCharset[cIdx]
-		}
-	}
-
-	return string(buf), nil
-}
-
-func GeneratePassPhrase(wordsCount int, separator string, capitalize bool) (string, error) {
+func GeneratePassPhrase(wordsCount int, simple bool) (string, error) {
 	if wordsCount < 1 || wordsCount > 50 {
 		wordsCount = 3
 	}
-	if separator == "" {
-		separator = "-"
-	}
 
-	var result strings.Builder
+	words := make([]string, wordsCount)
 	for i := range wordsCount {
 		idx, err := cryptoRandInt(len(passphraseWords))
 		if err != nil {
 			return "", err
 		}
-		word := passphraseWords[idx]
-		if capitalize {
-			numIdx, err := cryptoRandInt(10)
-			if err != nil {
-				return "", err
-			}
-			word = strings.ToUpper(string(word[0])) + word[1:] + string(digitSet[numIdx])
-		}
-		result.WriteString(word)
-		if i < wordsCount-1 {
-			result.WriteString(separator)
-		}
+		words[i] = passphraseWords[idx]
 	}
 
-	return result.String(), nil
+	if !simple {
+		capIdx, err := cryptoRandInt(wordsCount)
+		if err != nil {
+			return "", err
+		}
+		w := words[capIdx]
+		words[capIdx] = strings.ToUpper(w[:1]) + w[1:]
+
+		digitIdx, err := cryptoRandInt(wordsCount)
+		if err != nil {
+			return "", err
+		}
+		d, err := cryptoRandInt(10)
+		if err != nil {
+			return "", err
+		}
+		words[digitIdx] += string(rune('0' + d))
+	}
+
+	return strings.Join(words, "-"), nil
 }
 
 var passphraseWords = []string{

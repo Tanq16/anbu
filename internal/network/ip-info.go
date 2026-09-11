@@ -23,11 +23,10 @@ type NetworkInterface struct {
 	IsLoopback bool
 }
 
-func GetLocalIPInfo(includeIPv6 bool) {
+func GetLocalIPInfo(includeIPv6 bool) error {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		u.PrintError("failed to get network interfaces", err)
-		return
+		return err
 	}
 	ipv4Table := u.NewTable([]string{"Interface", "IP Address", "Subnet Mask", "MAC Address", "Status"})
 	ipv6Table := u.NewTable([]string{"Interface", "IPv6 Address", "MAC Address", "Status"})
@@ -129,6 +128,7 @@ func GetLocalIPInfo(includeIPv6 bool) {
 	} else {
 		u.PrintWarn("Could not retrieve public IP", err)
 	}
+	return nil
 }
 
 func GetPublicIP() (u.Dictionary, error) {

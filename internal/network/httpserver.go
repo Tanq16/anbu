@@ -1,7 +1,6 @@
 package anbuNetwork
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +15,6 @@ import (
 type HTTPServerOptions struct {
 	ListenAddress string
 	EnableUpload  bool
-	EnableTLS     bool
 }
 
 type HTTPServer struct {
@@ -41,21 +39,10 @@ func (s *HTTPServer) Setup() error {
 		Addr:    s.Options.ListenAddress,
 		Handler: withHTTPLogging(handler),
 	}
-	if s.Options.EnableTLS {
-		tlsConfig, err := s.getTLSConfig()
-		if err != nil {
-			return err
-		}
-		s.Server.TLSConfig = tlsConfig
-	}
 	return nil
 }
 
 func (s *HTTPServer) Run() error {
-	if s.Options.EnableTLS {
-		u.PrintInfo(fmt.Sprintf("HTTPS server started on https://%s/", s.Options.ListenAddress))
-		return s.Server.ListenAndServeTLS("", "")
-	}
 	u.PrintInfo(fmt.Sprintf("HTTP server started on http://%s/", s.Options.ListenAddress))
 	return s.Server.ListenAndServe()
 }
@@ -273,14 +260,4 @@ func streamPartToUniqueFile(filename string, part io.Reader) (string, int64, err
 		return path, n, closeErr
 	}
 	return path, n, nil
-}
-
-func (s *HTTPServer) getTLSConfig() (*tls.Config, error) {
-	cert, err := u.GenerateSelfSignedCert()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate self-signed certificate: %w", err)
-	}
-	return &tls.Config{
-		Certificates: []tls.Certificate{cert},
-	}, nil
 }

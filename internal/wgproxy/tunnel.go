@@ -49,16 +49,25 @@ func setupTunnel(cfg Config) (*device.Device, *netstack.Net, error) {
 		}
 	}
 
+	pskLine := ""
+	if cfg.PresharedKey != "" {
+		psk, err := NormalizeKey(cfg.PresharedKey)
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid preshared key: %w", err)
+		}
+		pskLine = "preshared_key=" + psk + "\n"
+	}
+
 	dev := device.NewDevice(tunDev, conn.NewDefaultBind(), logger)
 	ipcConfig := fmt.Sprintf(`private_key=%s
 replace_peers=true
 public_key=%s
-endpoint=%s
+%sendpoint=%s
 replace_allowed_ips=true
 allowed_ip=0.0.0.0/0
 allowed_ip=::/0
 persistent_keepalive_interval=%d
-`, privKey, peerKey, endpoint, cfg.KeepAlive)
+`, privKey, peerKey, pskLine, endpoint, cfg.KeepAlive)
 
 	if err := dev.IpcSet(ipcConfig); err != nil {
 		dev.Close()

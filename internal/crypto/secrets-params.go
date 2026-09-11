@@ -10,8 +10,10 @@ import (
 	"encoding/json/v2"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"golang.org/x/crypto/pbkdf2"
 )
@@ -58,10 +60,8 @@ func ListSecrets(filePath string) ([]string, error) {
 	if err := json.Unmarshal(data, &store); err != nil {
 		return nil, fmt.Errorf("failed to parse secrets file: %w", err)
 	}
-	var secrets []string
-	for id := range store.Secrets {
-		secrets = append(secrets, id)
-	}
+	secrets := slices.Collect(maps.Keys(store.Secrets))
+	slices.Sort(secrets)
 	return secrets, nil
 }
 
