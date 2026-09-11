@@ -38,6 +38,8 @@ func (c prefixConn) CloseWrite() error {
 
 func handleSOCKS5(ctx context.Context, client net.Conn, dial dialFunc) error {
 	defer client.Close()
+	stop := context.AfterFunc(ctx, func() { client.Close() })
+	defer stop()
 	reader := bufio.NewReader(client)
 
 	header := make([]byte, 2)

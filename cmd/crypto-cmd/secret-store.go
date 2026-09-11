@@ -169,7 +169,11 @@ var secretsExportCmd = &cobra.Command{
 }
 
 func init() {
-	SecretsCmd.PersistentFlags().StringVar(&secretsFlags.password, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
+	passwordHelp := "Password for encryption/decryption (default: p455w0rd)"
+	secretsGetCmd.Flags().StringVar(&secretsFlags.password, "password", "p455w0rd", passwordHelp)
+	secretsSetCmd.Flags().StringVar(&secretsFlags.password, "password", "p455w0rd", passwordHelp)
+	secretsImportCmd.Flags().StringVar(&secretsFlags.password, "password", "p455w0rd", passwordHelp)
+	secretsExportCmd.Flags().StringVar(&secretsFlags.password, "password", "p455w0rd", passwordHelp)
 	secretsListCmd.Flags().StringVarP(&secretsFlags.filter, "filter", "f", "", "Regex; keep names that match")
 	secretsSetCmd.Flags().StringVar(&secretsFlags.value, "value", "", "Secret value, or - to read it from stdin")
 	secretsSetCmd.Flags().StringVar(&secretsFlags.valueFile, "value-file", "", "File containing the secret value, or - for stdin")

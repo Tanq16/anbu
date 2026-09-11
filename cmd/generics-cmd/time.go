@@ -1,14 +1,12 @@
 package genericsCmd
 
 import (
+	"strconv"
+
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
 	u "github.com/tanq16/anbu/utils"
 )
-
-var timeDiffFlags struct {
-	epochs []int64
-}
 
 var TimeCmd = &cobra.Command{
 	Use:     "time",
@@ -43,13 +41,19 @@ var timeUntilCmd = &cobra.Command{
 }
 
 var timeDiffCmd = &cobra.Command{
-	Use:   "diff",
+	Use:   "diff <epoch> [epoch]",
 	Short: "Print the difference between Unix epochs",
-	Args:  cobra.NoArgs,
+	Args:  cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuGenerics.TimeEpochDiff(timeDiffFlags.epochs); err != nil {
-			u.PrintFatal("no epochs provided", err)
+		epochs := make([]int64, len(args))
+		for i, arg := range args {
+			epoch, err := strconv.ParseInt(arg, 10, 64)
+			if err != nil {
+				u.PrintFatal("invalid epoch", err)
+			}
+			epochs[i] = epoch
 		}
+		anbuGenerics.TimeEpochDiff(epochs)
 	},
 }
 
@@ -57,6 +61,4 @@ func init() {
 	TimeCmd.AddCommand(timeParseCmd)
 	TimeCmd.AddCommand(timeUntilCmd)
 	TimeCmd.AddCommand(timeDiffCmd)
-
-	timeDiffCmd.Flags().Int64SliceVarP(&timeDiffFlags.epochs, "epochs", "e", []int64{}, "Unix epochs (repeatable)")
 }

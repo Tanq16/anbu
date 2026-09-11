@@ -3,6 +3,7 @@ package networkCmd
 import (
 	"github.com/spf13/cobra"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var ipInfoFlags struct {
@@ -15,7 +16,9 @@ var IPInfoCmd = &cobra.Command{
 	Short:   "Display local network interface and public IP information",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		anbuNetwork.GetLocalIPInfo(ipInfoFlags.ipv6)
+		if err := anbuNetwork.GetLocalIPInfo(ipInfoFlags.ipv6); err != nil {
+			u.PrintFatal("failed to get network interfaces", err)
+		}
 	},
 }
 

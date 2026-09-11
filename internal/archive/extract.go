@@ -45,19 +45,33 @@ func Extract(cfg ExtractConfig) error {
 		if cfg.Password == "" {
 			return fmt.Errorf("password required")
 		}
-		data, err := os.ReadFile(cfg.Archive)
+		src, err := os.Open(cfg.Archive)
 		if err != nil {
 			return err
 		}
-		plain, err := decryptArchive(data, cfg.Password)
+		tmp, err := os.CreateTemp("", "anbu-archive-*.zip")
+		if err != nil {
+			src.Close()
+			return err
+		}
+		tmpName := tmp.Name()
+		err = decryptTo(tmp, src, cfg.Password)
+		closeErr := errors.Join(src.Close(), tmp.Close())
+		if err != nil {
+			os.Remove(tmpName)
+			return err
+		}
+		if closeErr != nil {
+			os.Remove(tmpName)
+			return closeErr
+		}
+		defer os.Remove(tmpName)
+		r, err := zip.OpenReader(tmpName)
 		if err != nil {
 			return err
 		}
-		zr, err := zip.NewReader(bytes.NewReader(plain), int64(len(plain)))
-		if err != nil {
-			return err
-		}
-		return extractFiles(zr.File, destDir, cfg.Bare)
+		defer r.Close()
+		return extractFiles(r.File, destDir, cfg.Bare)
 	}
 	r, err := zip.OpenReader(cfg.Archive)
 	if err != nil {

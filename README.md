@@ -52,8 +52,8 @@ The specific details of each are:
   anbu time                                 # table for now
   anbu t parse "13 Apr 25 16:30 EDT"        # parse a timestamp into the same table
   anbu t until "13 Apr 25 16:30 EDT"        # how far that time is from now
-  anbu t diff -e 1744192475 -e 1744497775   # difference between two epochs
-  anbu t diff -e 1744192475                 # difference between that epoch and now
+  anbu t diff 1744192475 1744497775         # difference between two epochs
+  anbu t diff 1744192475                    # difference between that epoch and now
   ```
 
 - ***Secrets*** (alias: `p`)
@@ -76,7 +76,7 @@ The specific details of each are:
 
 - ***SSH Sessions***
 
-  Sessions and keys live under `~/.config/anbu/ssh/`. Exec uses the system `ssh` binary with a private known_hosts file and `StrictHostKeyChecking=accept-new`.
+  Sessions and keys live under `~/.config/anbu/ssh/`. Exec uses the system `ssh` binary with a private known_hosts file and `StrictHostKeyChecking=accept-new`. A host already verified in `~/.ssh/known_hosts` is trust-on-first-use again here. Remote stderr is forwarded, and a remote command's exit code is preserved.
 
   ```bash
   anbu ssh setup prod --host 203.0.113.10 -u ubuntu
@@ -119,7 +119,7 @@ The specific details of each are:
 
 - ***Archive***
 
-  Default create wraps entries in a folder named after the output file. Default extract writes those stored paths into the current directory. `--bare` on create skips the wrapper. `--bare` on extract strips the first path component.
+  Default create wraps entries in a folder named after the output file. Default extract writes those stored paths into the current directory. `--bare` on create skips the wrapper. `--bare` on extract strips the first path component. `--encrypt` wraps the zip in AES-GCM and writes a `.enc` file; that is not `zip -e`.
 
   ```bash
   anbu archive ./src ./docs
@@ -127,6 +127,7 @@ The specific details of each are:
   anbu archive ./src --include '\.go$' --exclude '_test\.go$'
   anbu archive ./src --bare
   echo pw | anbu archive ./src --encrypt -
+  anbu archive extract archive.zip.enc --password pw
   anbu archive extract backup.zip
   anbu archive extract backup.zip --bare
   ```

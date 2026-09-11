@@ -42,9 +42,10 @@ var ArchiveCmd = &cobra.Command{
 			}
 			password = entered
 		}
+		output := archive.OutputPath(archiveFlags.output, encrypt)
 		cfg := archive.CreateConfig{
 			Paths:    args,
-			Output:   archiveFlags.output,
+			Output:   output,
 			Include:  include,
 			Exclude:  exclude,
 			Bare:     archiveFlags.bare,
@@ -54,7 +55,7 @@ var ArchiveCmd = &cobra.Command{
 		if err := archive.Create(cfg); err != nil {
 			u.PrintFatal("failed to create archive", err)
 		}
-		u.PrintSuccess(fmt.Sprintf("created %s", archiveFlags.output))
+		u.PrintSuccess(fmt.Sprintf("created %s", output))
 	},
 }
 

@@ -131,10 +131,7 @@ func TimeCurrent() {
 	printTimeTable(time.Now())
 }
 
-func TimeEpochDiff(epochs []int64) error {
-	if len(epochs) == 0 {
-		return fmt.Errorf("no epochs provided")
-	}
+func TimeEpochDiff(epochs []int64) {
 	var epoch1, epoch2 int64
 	if len(epochs) == 1 {
 		epoch1, epoch2 = epochs[0], time.Now().Unix()
@@ -154,5 +151,4 @@ func TimeEpochDiff(epochs []int64) error {
 	} else {
 		u.PrintGeneric(fmt.Sprintf("\n%s is %s before %s", u.FInfo("Time 2"), u.FSuccess(timeFormatDuration(-diff)), u.FInfo("Time 1")))
 	}
-	return nil
 }

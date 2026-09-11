@@ -1,11 +1,9 @@
 package ssh
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
-	"strings"
 )
 
 type ExecConfig struct {
@@ -38,17 +36,6 @@ func Exec(cfg ExecConfig) error {
 	cmd := exec.Command(bin, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
-	if cfg.Command == "" {
-		cmd.Stderr = os.Stderr
-		return cmd.Run()
-	}
-	var stderr strings.Builder
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		if detail := strings.TrimSpace(stderr.String()); detail != "" {
-			return fmt.Errorf("%s: %w", detail, err)
-		}
-		return err
-	}
-	return nil
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }

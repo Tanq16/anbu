@@ -39,7 +39,7 @@ var WgProxyCmd = &cobra.Command{
 		path := wgProxyFlags.configFile
 		if len(args) == 1 {
 			if path != "" {
-				u.PrintFatal("give the config file as an argument or as --config-file, not both", nil)
+				return fmt.Errorf("give the config file as an argument or as --config-file, not both")
 			}
 			path = args[0]
 		}
@@ -58,19 +58,19 @@ var WgProxyCmd = &cobra.Command{
 			Debug:         u.GlobalDebugFlag,
 		}, cmd.Flags().Changed)
 		if err != nil {
-			u.PrintFatal(err.Error(), err)
+			return fmt.Errorf("failed to load WireGuard config: %w", err)
 		}
 
 		srv, err := wgproxy.New(cfg)
 		if err != nil {
-			u.PrintFatal(err.Error(), err)
+			return fmt.Errorf("failed to start WireGuard proxy: %w", err)
 		}
 		defer srv.Close()
 
 		u.PrintInfo(fmt.Sprintf("WireGuard SOCKS5 proxy listening on %s", cfg.ListenAddr))
 		u.PrintInfo(fmt.Sprintf("Peer endpoint %s", cfg.Endpoint))
 		if err := srv.Serve(ctx); err != nil {
-			u.PrintFatal("proxy failed", err)
+			return fmt.Errorf("proxy failed: %w", err)
 		}
 		u.PrintInfo("proxy stopped")
 		return nil

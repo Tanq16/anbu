@@ -2,7 +2,7 @@ package archive
 
 import (
 	"archive/zip"
-	"bytes"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -18,37 +18,53 @@ type zipEntry struct {
 	info     os.FileInfo
 }
 
+func OutputPath(path string, encrypt bool) string {
+	if encrypt && !strings.HasSuffix(path, ".enc") {
+		return path + ".enc"
+	}
+	return path
+}
+
 func Create(cfg CreateConfig) error {
 	entries, err := collect(cfg)
 	if err != nil {
 		return err
+	}
+	if len(entries) == 0 {
+		return fmt.Errorf("no files to archive")
 	}
 	if dir := filepath.Dir(cfg.Output); dir != "." {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return err
 		}
 	}
-	if !cfg.Encrypt {
-		f, err := os.OpenFile(cfg.Output, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-		if err != nil {
-			return err
-		}
-		err = writeZip(f, entries)
-		closeErr := f.Close()
-		if err != nil {
-			return err
-		}
-		return closeErr
-	}
-	var buf bytes.Buffer
-	if err := writeZip(&buf, entries); err != nil {
-		return err
-	}
-	encrypted, err := encryptArchive(buf.Bytes(), cfg.Password)
+	f, err := os.OpenFile(cfg.Output, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(cfg.Output, encrypted, 0600)
+	var dest io.Writer = f
+	var enc *encryptWriter
+	if cfg.Encrypt {
+		enc, err = newEncryptWriter(f, cfg.Password)
+		if err != nil {
+			f.Close()
+			return err
+		}
+		dest = enc
+	}
+	err = writeZip(dest, entries)
+	var encErr error
+	if enc != nil {
+		encErr = enc.Close()
+	}
+	closeErr := f.Close()
+	if err != nil {
+		return err
+	}
+	if encErr != nil {
+		return encErr
+	}
+	return closeErr
 }
 
 func collect(cfg CreateConfig) ([]zipEntry, error) {
@@ -69,7 +85,7 @@ func collect(cfg CreateConfig) ([]zipEntry, error) {
 		}
 		for _, e := range more {
 			if _, ok := seen[e.zipName]; ok {
-				continue
+				return nil, fmt.Errorf("duplicate archive path %s", e.zipName)
 			}
 			seen[e.zipName] = struct{}{}
 			entries = append(entries, e)
@@ -84,14 +100,14 @@ func collectArg(arg, wrapper, outAbs string, include, exclude []*regexp.Regexp) 
 		return nil, err
 	}
 	if info.Mode()&os.ModeSymlink != 0 {
-		return nil, nil
+		return nil, fmt.Errorf("%s is a symlink", arg)
 	}
 	absArg, err := filepath.Abs(arg)
 	if err != nil {
 		return nil, err
 	}
 	if absArg == outAbs {
-		return nil, nil
+		return nil, fmt.Errorf("%s is the output file", arg)
 	}
 	prefix := argumentPrefix(arg)
 	var entries []zipEntry
@@ -210,11 +226,11 @@ func argumentPrefix(arg string) string {
 	if clean == "." {
 		return ""
 	}
-	slash := filepath.ToSlash(clean)
-	if filepath.IsAbs(clean) || slash == ".." || strings.HasPrefix(slash, "../") {
-		return filepath.ToSlash(filepath.Base(clean))
+	base := filepath.Base(clean)
+	if base == "." || base == ".." {
+		return ""
 	}
-	return slash
+	return filepath.ToSlash(base)
 }
 
 func baseName(path string) string {

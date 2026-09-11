@@ -2,6 +2,7 @@ package sshCmd
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 
 	"github.com/spf13/cobra"
@@ -28,6 +29,10 @@ var execCmd = &cobra.Command{
 		if err != nil {
 			if errors.Is(err, exec.ErrNotFound) {
 				u.PrintFatal("ssh not found in PATH", err)
+			}
+			if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
+				u.PrintError("remote command failed", err)
+				os.Exit(exitErr.ExitCode())
 			}
 			u.PrintFatal("failed to exec session", err)
 		}
