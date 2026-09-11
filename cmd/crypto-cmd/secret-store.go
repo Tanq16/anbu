@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
+	"slices"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	anbuCrypto "github.com/tanq16/anbu/internal/crypto"
@@ -11,7 +14,7 @@ import (
 )
 
 var SecretsCmd = &cobra.Command{
-	Use:     "pass",
+	Use:     "secrets",
 	Aliases: []string{"p"},
 	Short:   "Manage secrets with AES-GCM encryption with support for single and multiline inputs and custom password",
 }
@@ -22,6 +25,7 @@ var secretsFlags struct {
 	password    string
 	value       string
 	valueFile   string
+	filter      string
 	initialized bool
 }
 
@@ -46,18 +50,23 @@ var secretsListCmd = &cobra.Command{
 		if err != nil {
 			u.PrintFatal("failed to list secrets", err)
 		}
+		if secretsFlags.filter != "" {
+			re, err := regexp.Compile(secretsFlags.filter)
+			if err != nil {
+				u.PrintFatal("invalid --filter regex", err)
+			}
+			secrets = slices.DeleteFunc(secrets, func(name string) bool {
+				return !re.MatchString(name)
+			})
+		}
 		if len(secrets) == 0 {
 			u.PrintInfo("No secrets found")
 			return
 		}
-		table := u.NewTable([]string{"#", "Name"})
-		for i, id := range secrets {
-			table.Rows = append(table.Rows, []string{
-				fmt.Sprintf("%d", i+1),
-				id,
-			})
+		width := len(strconv.Itoa(len(secrets)))
+		for i, name := range secrets {
+			u.PrintGeneric(fmt.Sprintf(" %*d. %s", width, i+1, name))
 		}
-		table.PrintTable()
 	},
 }
 
@@ -161,6 +170,7 @@ var secretsExportCmd = &cobra.Command{
 
 func init() {
 	SecretsCmd.PersistentFlags().StringVar(&secretsFlags.password, "password", "p455w0rd", "Password for encryption/decryption (default: p455w0rd)")
+	secretsListCmd.Flags().StringVarP(&secretsFlags.filter, "filter", "f", "", "Regex; keep names that match")
 	secretsSetCmd.Flags().StringVar(&secretsFlags.value, "value", "", "Secret value, or - to read it from stdin")
 	secretsSetCmd.Flags().StringVar(&secretsFlags.valueFile, "value-file", "", "File containing the secret value, or - for stdin")
 	secretsSetCmd.Flags().BoolVar(&secretsFlags.multiline, "multiline", false, "Prompt with a multi-line editor when no value flag is set")

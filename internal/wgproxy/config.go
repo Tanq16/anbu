@@ -13,6 +13,7 @@ import (
 type Config struct {
 	PrivateKey    string
 	PeerPublicKey string
+	PresharedKey  string
 	Endpoint      string
 	Address       string
 	DNS           string
@@ -63,7 +64,7 @@ func (c *Config) applyDefaults() {
 		c.MTU = 1420
 	}
 	if c.ListenAddr == "" {
-		c.ListenAddr = "127.0.0.1:1080"
+		c.ListenAddr = "127.0.0.1:8888"
 	}
 }
 

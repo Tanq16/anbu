@@ -6,55 +6,19 @@ import (
 	"strings"
 	"time"
 
-	anbuNetwork "github.com/tanq16/anbu/internal/network"
 	u "github.com/tanq16/anbu/utils"
 )
-
-type timeFormat struct {
-	Format string
-	Value  string
-}
 
 func printTimeTable(concern time.Time) {
 	utcTime := concern.UTC()
 	localTime := concern.Local()
 	table := u.NewTable([]string{"Format", "Value"})
-	timeFormats := []timeFormat{
-		{"ISO8601 UTC", utcTime.Format(time.RFC3339)},
+	table.Rows = [][]string{
+		{"Epoch", strconv.FormatInt(concern.Unix(), 10)},
+		{"RFC 822 human local", localTime.Format(time.RFC822)},
+		{"ISO 8601 local", localTime.Format(time.RFC3339)},
+		{"ISO 8601 UTC", utcTime.Format(time.RFC3339)},
 		{"Human UTC", utcTime.Format("Mon Jan 2 15:04:05 MST 2006")},
-		{"ISO8601 Local", localTime.Format(time.RFC3339)},
-		{"Human Local", localTime.Format("Mon Jan 2 15:04:05 MST 2006")},
-		{"RFC822", localTime.Format(time.RFC822)},
-		{"Epoch", fmt.Sprintf("%d", concern.Unix())},
-		{"Epoch Nano", fmt.Sprintf("%d", concern.UnixNano())},
-		{"Date Only", localTime.Format("2006-01-02")},
-		{"Time Only", localTime.Format("15:04:05")},
-		{"Database", localTime.Format("2006-01-02 15:04:05")},
-	}
-	for _, format := range timeFormats {
-		table.Rows = append(table.Rows, []string{format.Format, format.Value})
-	}
-	table.PrintTable()
-}
-
-func printTimeTablePurple(concern time.Time) {
-	utcTime := concern.UTC()
-	table := u.NewTable([]string{"Item", "Value"})
-	formats := []timeFormat{
-		{"ISO8601 UTC", utcTime.Format(time.RFC3339)},
-		{"Human UTC", utcTime.Format("Mon Jan 2 15:04:05 MST 2006")},
-		{"RFC822", concern.Format(time.RFC822)},
-		{"Epoch", fmt.Sprintf("%d", concern.Unix())},
-	}
-	for _, format := range formats {
-		table.Rows = append(table.Rows, []string{format.Format, format.Value})
-	}
-	ipAddr, err := anbuNetwork.GetPublicIP()
-	if err != nil {
-		u.PrintWarn("could not get public IP address", err)
-	} else {
-		ipAddress := ipAddr.UnwindString("ip")
-		table.Rows = append(table.Rows, []string{"Public IP", ipAddress})
 	}
 	table.PrintTable()
 }
@@ -118,7 +82,7 @@ func timeFormatDuration(d time.Duration) string {
 	return strings.Join(parts, ", ")
 }
 
-func TimeParse(timeStr string, printType string) {
+func parseTime(timeStr string) (time.Time, error) {
 	formats := []string{
 		time.RFC3339,
 		time.RFC822,
@@ -133,55 +97,46 @@ func TimeParse(timeStr string, printType string) {
 		"02-Jan-2006",
 		"2006-01-02T15:04:05Z07:00",
 	}
-	var parsedTime time.Time
 	for _, format := range formats {
 		if t, err := time.Parse(format, timeStr); err == nil {
-			parsedTime = t
-			break
+			return t, nil
 		}
 	}
-	if parsedTime.IsZero() {
-		checkEpock, err := strconv.ParseInt(timeStr, 10, 64)
-		if err == nil {
-			parsedTime = time.Unix(checkEpock, 0)
-		} else {
-			u.PrintError("could not parse time string with any known format", err)
-			return
-		}
+	epoch, err := strconv.ParseInt(timeStr, 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("could not parse time string with any known format: %w", err)
 	}
-	switch printType {
-	case "normal":
-		printTimeTable(parsedTime)
-	case "purple":
-		printTimeTablePurple(parsedTime)
-	case "diff":
-		printTimeDifferenceFromNow(parsedTime)
-	default:
-		printTimeTable(parsedTime)
+	return time.Unix(epoch, 0), nil
+}
+
+func TimeParse(timeStr string) error {
+	parsedTime, err := parseTime(timeStr)
+	if err != nil {
+		return err
 	}
+	printTimeTable(parsedTime)
+	return nil
+}
+
+func TimeUntil(timeStr string) error {
+	parsedTime, err := parseTime(timeStr)
+	if err != nil {
+		return err
+	}
+	printTimeDifferenceFromNow(parsedTime)
+	return nil
 }
 
 func TimeCurrent() {
-	currentTime := time.Now()
-	printTimeTable(currentTime)
+	printTimeTable(time.Now())
 }
 
-func TimePurple() {
-	currentTime := time.Now()
-	printTimeTablePurple(currentTime)
-}
-
-func TimeISO() {
-	currentTime := time.Now().UTC()
-	u.PrintGeneric(currentTime.Format(time.RFC3339))
-}
-
-func TimeEpochDiff(epochs []int64) {
-	var epoch1, epoch2 int64
+func TimeEpochDiff(epochs []int64) error {
 	if len(epochs) == 0 {
-		u.PrintError("No epochs provided", nil)
-		return
-	} else if len(epochs) == 1 {
+		return fmt.Errorf("no epochs provided")
+	}
+	var epoch1, epoch2 int64
+	if len(epochs) == 1 {
 		epoch1, epoch2 = epochs[0], time.Now().Unix()
 	} else {
 		epoch1, epoch2 = epochs[0], epochs[1]
@@ -199,4 +154,5 @@ func TimeEpochDiff(epochs []int64) {
 	} else {
 		u.PrintGeneric(fmt.Sprintf("\n%s is %s before %s", u.FInfo("Time 2"), u.FSuccess(timeFormatDuration(-diff)), u.FInfo("Time 1")))
 	}
+	return nil
 }

@@ -1,70 +1,62 @@
 package genericsCmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
+	u "github.com/tanq16/anbu/utils"
 )
 
-type parseAction string
-
-func (p *parseAction) String() string { return string(*p) }
-func (p *parseAction) Type() string   { return "normal|purple|diff" }
-
-func (p *parseAction) Set(v string) error {
-	switch v {
-	case "normal", "purple", "diff":
-		*p = parseAction(v)
-		return nil
-	}
-	return fmt.Errorf("must be one of normal, purple, diff")
-}
-
-var timeCmdFlags struct {
-	epochs      []int64
-	parseAction parseAction
-	timeStr     string
+var timeDiffFlags struct {
+	epochs []int64
 }
 
 var TimeCmd = &cobra.Command{
-	Use:     "time [now|purple|iso|diff|parse|until]",
+	Use:     "time",
 	Aliases: []string{"t"},
-	Short:   "Display and analyze time in various formats and perform epoch diffs, time parsing, and time remaining calculations",
-	Args:    cobra.MatchAll(cobra.MaximumNArgs(1), cobra.OnlyValidArgs),
-	ValidArgs: []string{
-		"now",
-		"purple",
-		"iso",
-		"diff",
-		"parse",
-		"until",
-	},
+	Short:   "Show times in common formats, parse a string, or diff epochs",
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			anbuGenerics.TimeCurrent()
-			return
+		anbuGenerics.TimeCurrent()
+	},
+}
+
+var timeParseCmd = &cobra.Command{
+	Use:   "parse <time-str>",
+	Short: "Parse a time string and print it in common formats",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := anbuGenerics.TimeParse(args[0]); err != nil {
+			u.PrintFatal("could not parse time", err)
 		}
-		switch args[0] {
-		case "now":
-			anbuGenerics.TimeCurrent()
-		case "purple":
-			anbuGenerics.TimePurple()
-		case "iso":
-			anbuGenerics.TimeISO()
-		case "diff":
-			anbuGenerics.TimeEpochDiff(timeCmdFlags.epochs)
-		case "parse":
-			anbuGenerics.TimeParse(timeCmdFlags.timeStr, string(timeCmdFlags.parseAction))
-		case "until":
-			anbuGenerics.TimeParse(timeCmdFlags.timeStr, "diff")
+	},
+}
+
+var timeUntilCmd = &cobra.Command{
+	Use:   "until <time-str>",
+	Short: "Print how far a time is from now",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := anbuGenerics.TimeUntil(args[0]); err != nil {
+			u.PrintFatal("could not parse time", err)
+		}
+	},
+}
+
+var timeDiffCmd = &cobra.Command{
+	Use:   "diff",
+	Short: "Print the difference between Unix epochs",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := anbuGenerics.TimeEpochDiff(timeDiffFlags.epochs); err != nil {
+			u.PrintFatal("no epochs provided", err)
 		}
 	},
 }
 
 func init() {
-	timeCmdFlags.parseAction = "normal"
-	TimeCmd.Flags().Int64SliceVarP(&timeCmdFlags.epochs, "epochs", "e", []int64{}, "Epochs to calculate difference between")
-	TimeCmd.Flags().VarP(&timeCmdFlags.parseAction, "parse-action", "p", "Parse action")
-	TimeCmd.Flags().StringVarP(&timeCmdFlags.timeStr, "time-str", "t", "", "Time string to parse")
+	TimeCmd.AddCommand(timeParseCmd)
+	TimeCmd.AddCommand(timeUntilCmd)
+	TimeCmd.AddCommand(timeDiffCmd)
+
+	timeDiffCmd.Flags().Int64SliceVarP(&timeDiffFlags.epochs, "epochs", "e", []int64{}, "Unix epochs (repeatable)")
 }

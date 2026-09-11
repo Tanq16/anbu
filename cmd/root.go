@@ -8,10 +8,10 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	cloudCmd "github.com/tanq16/anbu/cmd/cloud-cmd"
 	cryptoCmd "github.com/tanq16/anbu/cmd/crypto-cmd"
 	genericsCmd "github.com/tanq16/anbu/cmd/generics-cmd"
 	networkCmd "github.com/tanq16/anbu/cmd/network-cmd"
+	sshCmd "github.com/tanq16/anbu/cmd/ssh-cmd"
 	"github.com/tanq16/anbu/utils"
 )
 
@@ -57,19 +57,18 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Enable debug logging")
 	cobra.OnInitialize(setupLogs)
 
-	rootCmd.AddCommand(genericsCmd.StringCmd)
+	rootCmd.AddCommand(genericsCmd.ArchiveCmd)
+	rootCmd.AddCommand(genericsCmd.PassphraseCmd)
+	rootCmd.AddCommand(genericsCmd.UUIDCmd)
+	rootCmd.AddCommand(genericsCmd.RandomCmd)
 	rootCmd.AddCommand(genericsCmd.TimeCmd)
 	rootCmd.AddCommand(genericsCmd.BulkRenameCmd)
-	rootCmd.AddCommand(genericsCmd.StashCmd)
 	rootCmd.AddCommand(genericsCmd.DuplicatesCmd)
 
 	rootCmd.AddCommand(cryptoCmd.SecretsCmd)
-	rootCmd.AddCommand(cryptoCmd.KeyPairCmd)
+	rootCmd.AddCommand(sshCmd.SSHCmd)
 
-	rootCmd.AddCommand(networkCmd.TunnelCmd)
 	rootCmd.AddCommand(networkCmd.HTTPServerCmd)
 	rootCmd.AddCommand(networkCmd.IPInfoCmd)
 	rootCmd.AddCommand(networkCmd.WgProxyCmd)
-
-	rootCmd.AddCommand(cloudCmd.AwsCmd)
 }
