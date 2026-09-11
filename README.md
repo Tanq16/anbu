@@ -17,7 +17,7 @@ A summary of everything that **Anbu** can perform:
 
 | Operation | Details |
 | --- | --- |
-| **Time** | Current time, parse a timestamp, and epoch diffs, in one table of epoch, RFC 822 local, ISO 8601 local, ISO 8601 UTC, and human UTC |
+| **Time** | Current time via `now`, parse a timestamp, and epoch diffs, in one table of epoch, RFC 822 local, ISO 8601 local, ISO 8601 UTC, and human UTC |
 | **Secrets** | Encrypted store for named secrets, with list, get, add, delete, import, and export |
 | **SSH Sessions** | Named Ed25519 sessions under `~/.config/anbu/ssh/`, with list, setup, exec, and delete |
 | **WireGuard Proxy** | Userspace WireGuard SOCKS5 proxy, with no root, TUN device, or host routing changes |
@@ -27,8 +27,8 @@ A summary of everything that **Anbu** can perform:
 | **Bulk Rename** | Batch rename files or directories with regular expressions and capture groups |
 | **Find Duplicates** | Duplicate files by size and SHA256, with optional recursive search |
 | **Passphrase** | Diceware-style hyphenated phrase, with one capital letter and one digit by default |
-| **UUID** | UUID v4, or a short 18-character form |
-| **Random String** | Cryptographic random alphanumeric string |
+| **UUID** | UUID v7 by default, v4 with `--v4`, and a short 18-character form that keeps only random bits |
+| **Random String** | Cryptographic random string; alphanumeric by default, or hex, digits, letters, or all printable ASCII |
 
 ## Installation
 
@@ -49,7 +49,7 @@ The specific details of each are:
 - ***Time*** (alias: `t`)
 
   ```bash
-  anbu time                                 # table for now
+  anbu time now                             # table for now
   anbu t parse "13 Apr 25 16:30 EDT"        # parse a timestamp into the same table
   anbu t until "13 Apr 25 16:30 EDT"        # how far that time is from now
   anbu t diff 1744192475 1744497775         # difference between two epochs
@@ -94,7 +94,6 @@ The specific details of each are:
   Keys may be standard WireGuard Base64 or 64-character hex. A wg-quick `.conf` supplies them as a file; flags override file values.
 
   ```bash
-  anbu wg-proxy ./wg.conf
   anbu wgp --config-file ./wg.conf
   anbu wg-proxy -k "$WG_PRIVATE" -p "$WG_PEER" -e vpn.example.com:51820 -a 10.0.0.2
 
@@ -122,13 +121,13 @@ The specific details of each are:
   Default create wraps entries in a folder named after the output file. Default extract writes those stored paths into the current directory. `--bare` on create skips the wrapper. `--bare` on extract strips the first path component. `--encrypt` wraps the zip in AES-GCM and writes a `.enc` file; that is not `zip -e`.
 
   ```bash
-  anbu archive ./src ./docs
-  anbu archive ./src -o backup.zip
-  anbu archive ./src --include '\.go$' --exclude '_test\.go$'
-  anbu archive ./src --bare
-  echo pw | anbu archive ./src --encrypt -
+  anbu archive create ./src ./docs
+  anbu archive c ./src -o backup.zip
+  anbu archive create ./src --include '\.go$' --exclude '_test\.go$'
+  anbu archive create ./src --bare
+  echo pw | anbu archive create ./src --encrypt -
   anbu archive extract archive.zip.enc --password pw
-  anbu archive extract backup.zip
+  anbu archive e backup.zip
   anbu archive extract backup.zip --bare
   ```
 
@@ -165,15 +164,20 @@ The specific details of each are:
 
   ```bash
   anbu uuid
-  anbu uuid --short   # 18-character form
+  anbu uuid --v4
+  anbu uuid --short      # 18-character form from v7 random bits
+  anbu uuid --v4 --short # 18-character form from v4 random bits
   ```
 
 - ***Random String***
 
   ```bash
-  anbu random
-  anbu random string
+  anbu random-string
   anbu random -l 32
+  anbu random --hex
+  anbu random --digits
+  anbu random --alpha
+  anbu random --all
   ```
 
 ## Tips and Notes
