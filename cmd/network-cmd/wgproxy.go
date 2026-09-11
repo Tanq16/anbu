@@ -28,23 +28,15 @@ var wgProxyFlags struct {
 }
 
 var WgProxyCmd = &cobra.Command{
-	Use:     "wg-proxy [config-file]",
+	Use:     "wg-proxy",
 	Aliases: []string{"wgp"},
 	Short:   "Start a userspace WireGuard SOCKS5 proxy",
-	Args:    cobra.RangeArgs(0, 1),
+	Args:    cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer cancel()
 
-		path := wgProxyFlags.configFile
-		if len(args) == 1 {
-			if path != "" {
-				return fmt.Errorf("give the config file as an argument or as --config-file, not both")
-			}
-			path = args[0]
-		}
-
-		cfg, err := wgproxy.Load(path, wgproxy.Config{
+		cfg, err := wgproxy.Load(wgProxyFlags.configFile, wgproxy.Config{
 			PrivateKey:    wgProxyFlags.privateKey,
 			PeerPublicKey: wgProxyFlags.peerKey,
 			PresharedKey:  wgProxyFlags.presharedKey,

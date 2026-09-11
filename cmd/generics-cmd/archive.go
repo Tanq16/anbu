@@ -24,9 +24,15 @@ var archiveExtractFlags struct {
 }
 
 var ArchiveCmd = &cobra.Command{
-	Use:   "archive <path> [path...]",
-	Short: "Create a zip archive from files and directories",
-	Args:  cobra.MinimumNArgs(1),
+	Use:   "archive",
+	Short: "Create or extract zip archives",
+}
+
+var archiveCreateCmd = &cobra.Command{
+	Use:     "create <path> [path...]",
+	Aliases: []string{"c"},
+	Short:   "Create a zip archive from files and directories",
+	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		include := compileRegexes(archiveFlags.include, "include")
 		exclude := compileRegexes(archiveFlags.exclude, "exclude")
@@ -35,7 +41,7 @@ var ArchiveCmd = &cobra.Command{
 		if encrypt && password == "" {
 			entered, err := u.PromptPassword("Password:")
 			if errors.Is(err, u.ErrNoTerminal) {
-				u.PrintFatal("archive needs --encrypt, or --encrypt -", nil)
+				u.PrintFatal("archive create needs --encrypt, or --encrypt -", nil)
 			}
 			if err != nil {
 				u.PrintFatal("TUI error", err)
@@ -60,9 +66,10 @@ var ArchiveCmd = &cobra.Command{
 }
 
 var archiveExtractCmd = &cobra.Command{
-	Use:   "extract <file>",
-	Short: "Extract a zip archive",
-	Args:  cobra.ExactArgs(1),
+	Use:     "extract <file>",
+	Aliases: []string{"e"},
+	Short:   "Extract a zip archive",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		encrypted, err := archive.IsEncrypted(args[0])
 		if err != nil {
@@ -105,16 +112,17 @@ func compileRegexes(pats []string, flagName string) []*regexp.Regexp {
 }
 
 func init() {
-	ArchiveCmd.Flags().StringVarP(&archiveFlags.output, "output", "o", "archive.zip", "Output zip path")
-	ArchiveCmd.Flags().StringSliceVar(&archiveFlags.include, "include", nil, "Include only zip paths matching regex (repeatable)")
-	ArchiveCmd.Flags().StringSliceVar(&archiveFlags.exclude, "exclude", nil, "Exclude zip paths matching regex (repeatable)")
-	ArchiveCmd.Flags().BoolVar(&archiveFlags.bare, "bare", false, "Store given paths at zip root with no wrapper directory")
-	ArchiveCmd.Flags().StringVar(&archiveFlags.encrypt, "encrypt", "", "Password to encrypt the zip, or - to read it from stdin")
-	_ = u.MarkStdinLine(ArchiveCmd, "encrypt")
+	archiveCreateCmd.Flags().StringVarP(&archiveFlags.output, "output", "o", "archive.zip", "Output zip path")
+	archiveCreateCmd.Flags().StringSliceVar(&archiveFlags.include, "include", nil, "Include only zip paths matching regex (repeatable)")
+	archiveCreateCmd.Flags().StringSliceVar(&archiveFlags.exclude, "exclude", nil, "Exclude zip paths matching regex (repeatable)")
+	archiveCreateCmd.Flags().BoolVar(&archiveFlags.bare, "bare", false, "Store given paths at zip root with no wrapper directory")
+	archiveCreateCmd.Flags().StringVar(&archiveFlags.encrypt, "encrypt", "", "Password to encrypt the zip, or - to read it from stdin")
+	_ = u.MarkStdinLine(archiveCreateCmd, "encrypt")
 
 	archiveExtractCmd.Flags().BoolVar(&archiveExtractFlags.bare, "bare", false, "Strip the first path component when extracting")
 	archiveExtractCmd.Flags().StringVar(&archiveExtractFlags.password, "password", "", "Password for an encrypted archive, or - to read it from stdin")
 	_ = u.MarkStdinLine(archiveExtractCmd, "password")
 
+	ArchiveCmd.AddCommand(archiveCreateCmd)
 	ArchiveCmd.AddCommand(archiveExtractCmd)
 }

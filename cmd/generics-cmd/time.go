@@ -12,7 +12,12 @@ var TimeCmd = &cobra.Command{
 	Use:     "time",
 	Aliases: []string{"t"},
 	Short:   "Show times in common formats, parse a string, or diff epochs",
-	Args:    cobra.NoArgs,
+}
+
+var timeNowCmd = &cobra.Command{
+	Use:   "now",
+	Short: "Print the current time in common formats",
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		anbuGenerics.TimeCurrent()
 	},
@@ -58,6 +63,7 @@ var timeDiffCmd = &cobra.Command{
 }
 
 func init() {
+	TimeCmd.AddCommand(timeNowCmd)
 	TimeCmd.AddCommand(timeParseCmd)
 	TimeCmd.AddCommand(timeUntilCmd)
 	TimeCmd.AddCommand(timeDiffCmd)
