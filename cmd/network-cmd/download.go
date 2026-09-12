@@ -2,7 +2,6 @@ package networkCmd
 
 import (
 	"context"
-	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
@@ -29,7 +28,7 @@ var DownloadCmd = &cobra.Command{
 }
 
 func runDownload(cmd *cobra.Command, args []string) {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
 	defer cancel()
 
 	cfg := download.Config{

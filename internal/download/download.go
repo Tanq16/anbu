@@ -127,13 +127,12 @@ func (e errAlreadyComplete) Error() string {
 }
 
 func AlreadyComplete(err error) bool {
-	var c errAlreadyComplete
-	return errors.As(err, &c)
+	_, ok := errors.AsType[errAlreadyComplete](err)
+	return ok
 }
 
 func AlreadyCompletePath(err error) string {
-	var c errAlreadyComplete
-	if errors.As(err, &c) {
+	if c, ok := errors.AsType[errAlreadyComplete](err); ok {
 		return c.path
 	}
 	return ""

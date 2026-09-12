@@ -19,13 +19,20 @@ type Unit string
 const UnitBytes Unit = ""
 
 const (
-	minBarWidth    = 8
-	maxBarWidth    = 30
-	minWidth       = 24
-	defaultWidth   = 80
-	rateWindowSpan = 800 * time.Millisecond
-	rateFloor      = 200 * time.Millisecond
-	maxETA         = 100 * time.Hour
+	minBarWidth        = 8
+	maxBarWidth        = 30
+	minWidth           = 24
+	defaultWidth       = 80
+	meterIndent        = 2
+	fieldGap           = 2
+	reservePercent     = 4
+	reserveTransferred = 14
+	reserveRate        = 11
+	reserveETA         = 11
+	reserveAvg         = 15
+	rateWindowSpan     = 800 * time.Millisecond
+	rateFloor          = 200 * time.Millisecond
+	maxETA             = 100 * time.Hour
 )
 
 var (
@@ -289,29 +296,51 @@ func (m *Meter) meterLine(width int) string {
 	etaStr := formatETA(m.total, m.current, rate)
 	avgStr := "avg " + formatRate(avg, m.unit)
 
-	required := make([]string, 0, 2)
+	fixed := make([]meterField, 0, 2)
 	if pct != "" {
-		required = append(required, pct)
+		fixed = append(fixed, meterField{pct, reservePercent})
 	}
-	required = append(required, transferred)
-	optionals := []string{rateStr, etaStr, avgStr}
+	fixed = append(fixed, meterField{transferred, reserveTransferred})
+	optionals := []meterField{
+		{rateStr, reserveRate},
+		{etaStr, reserveETA},
+		{avgStr, reserveAvg},
+	}
 
-	indent := 2
 	for drop := 0; drop <= len(optionals); drop++ {
-		opts := optionals[:len(optionals)-drop]
-		for bar := maxBarWidth; bar >= minBarWidth; bar-- {
-			if line, ok := fitMeter(width, indent, bar, m.bar(bar), required, opts); ok {
-				return line
+		fields := append(append([]meterField{}, fixed...), optionals[:len(optionals)-drop]...)
+		reserved := 0
+		for _, f := range fields {
+			reserved += f.reserved
+		}
+		barBudget := width - meterIndent - reserved - fieldGap*len(fields)
+		if barBudget >= minBarWidth {
+			barW := min(maxBarWidth, barBudget)
+			parts := make([]string, 0, 1+len(fields))
+			parts = append(parts, m.bar(barW))
+			for _, f := range fields {
+				parts = append(parts, f.text)
 			}
+			return strings.Repeat(" ", meterIndent) + strings.Join(parts, "  ")
 		}
 	}
 	for drop := 0; drop <= len(optionals); drop++ {
-		opts := optionals[:len(optionals)-drop]
-		if line, ok := fitMeter(width, indent, 0, "", required, opts); ok {
+		fields := append(append([]meterField{}, fixed...), optionals[:len(optionals)-drop]...)
+		parts := make([]string, 0, len(fields))
+		for _, f := range fields {
+			parts = append(parts, f.text)
+		}
+		line := strings.Repeat(" ", meterIndent) + strings.Join(parts, "  ")
+		if displayLen(line) <= width {
 			return line
 		}
 	}
-	return strings.Repeat(" ", indent) + transferred
+	return strings.Repeat(" ", meterIndent) + transferred
+}
+
+type meterField struct {
+	text     string
+	reserved int
 }
 
 func (m *Meter) bar(width int) string {
@@ -378,22 +407,6 @@ func (m *Meter) average(elapsed time.Duration, live bool) float64 {
 		return 0
 	}
 	return float64(m.current) / elapsed.Seconds()
-}
-
-func fitMeter(width, indent, barWidth int, bar string, required, optionals []string) (string, bool) {
-	fields := append(append([]string{}, required...), optionals...)
-	if barWidth > 0 {
-		fields = append([]string{bar}, fields...)
-	}
-	if len(fields) == 0 {
-		return "", false
-	}
-	joined := strings.Join(fields, "  ")
-	line := strings.Repeat(" ", indent) + joined
-	if displayLen(line) > width {
-		return "", false
-	}
-	return line, true
 }
 
 func settledLine(name string, amount int64, elapsed time.Duration, unit Unit) string {

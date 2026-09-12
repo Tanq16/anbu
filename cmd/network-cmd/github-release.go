@@ -35,7 +35,7 @@ var GitHubReleaseCmd = &cobra.Command{
 }
 
 func runGitHubRelease(cmd *cobra.Command, args []string) {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
 	defer cancel()
 
 	owner, repo, err := ghrelease.ParseRepo(args[0])
@@ -67,6 +67,9 @@ func runGitHubRelease(cmd *cobra.Command, args []string) {
 	}
 
 	asset, ok, err := pickAsset(release)
+	if errors.Is(err, u.ErrNoTerminal) {
+		u.PrintFatal("github-release --manual needs a terminal, or pass --asset", nil)
+	}
 	if err != nil {
 		u.PrintFatal("failed to select asset", err)
 	}
@@ -125,9 +128,6 @@ func pickAsset(release ghrelease.Release) (ghrelease.Asset, bool, error) {
 		options[i] = fmt.Sprintf("%s (%s)", asset.Name, formatAssetSize(asset.Size))
 	}
 	idx, err := u.PromptSelect(fmt.Sprintf("Release %s", release.Tag), options)
-	if errors.Is(err, u.ErrNoTerminal) {
-		return ghrelease.Asset{}, false, fmt.Errorf("github-release --manual needs a terminal, or pass --asset")
-	}
 	if err != nil {
 		return ghrelease.Asset{}, false, err
 	}
