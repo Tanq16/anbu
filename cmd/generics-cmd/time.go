@@ -1,7 +1,10 @@
 package genericsCmd
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	anbuGenerics "github.com/tanq16/anbu/internal/generics"
@@ -19,7 +22,7 @@ var timeNowCmd = &cobra.Command{
 	Short: "Print the current time in common formats",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		anbuGenerics.TimeCurrent()
+		printTimeTable(time.Now())
 	},
 }
 
@@ -28,9 +31,11 @@ var timeParseCmd = &cobra.Command{
 	Short: "Parse a time string and print it in common formats",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuGenerics.TimeParse(args[0]); err != nil {
+		parsed, err := anbuGenerics.ParseTime(args[0])
+		if err != nil {
 			u.PrintFatal("could not parse time", err)
 		}
+		printTimeTable(parsed)
 	},
 }
 
@@ -39,9 +44,11 @@ var timeUntilCmd = &cobra.Command{
 	Short: "Print how far a time is from now",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuGenerics.TimeUntil(args[0]); err != nil {
+		target, now, err := anbuGenerics.TimeUntil(args[0])
+		if err != nil {
 			u.PrintFatal("could not parse time", err)
 		}
+		printTimeUntil(target, now)
 	},
 }
 
@@ -58,8 +65,91 @@ var timeDiffCmd = &cobra.Command{
 			}
 			epochs[i] = epoch
 		}
-		anbuGenerics.TimeEpochDiff(epochs)
+		printEpochDiff(anbuGenerics.TimeEpochDiff(epochs))
 	},
+}
+
+func printTimeTable(concern time.Time) {
+	utcTime := concern.UTC()
+	localTime := concern.Local()
+	table := u.NewTable([]string{"Format", "Value"})
+	table.Rows = [][]string{
+		{"Epoch", strconv.FormatInt(concern.Unix(), 10)},
+		{"RFC 822 human local", localTime.Format(time.RFC822)},
+		{"ISO 8601 local", localTime.Format(time.RFC3339)},
+		{"ISO 8601 UTC", utcTime.Format(time.RFC3339)},
+		{"Human UTC", utcTime.Format("Mon Jan 2 15:04:05 MST 2006")},
+	}
+	table.PrintTable()
+}
+
+func printTimeUntil(targetTime, now time.Time) {
+	var diff time.Duration
+	future := targetTime.After(now)
+	if future {
+		diff = targetTime.Sub(now)
+	} else {
+		diff = now.Sub(targetTime)
+	}
+	u.LineBreak()
+	u.PrintGeneric(fmt.Sprintf("Target time: %s", u.FDebug(targetTime.Format("Mon Jan 2 15:04:05 MST 2006"))))
+	u.PrintGeneric(fmt.Sprintf("Current time: %s", u.FDebug(now.Format("Mon Jan 2 15:04:05 MST 2006"))))
+	u.LineBreak()
+	if future {
+		u.PrintGeneric(fmt.Sprintf("Target time is %s from now", u.FInfo(formatDuration(diff))))
+		return
+	}
+	u.PrintGeneric(fmt.Sprintf("Target time was %s ago", u.FInfo(formatDuration(diff))))
+}
+
+func printEpochDiff(diff time.Duration) {
+	u.PrintGeneric("Time difference:")
+	u.PrintGeneric(fmt.Sprintf("  %s  %d", u.FSuccess("Seconds:"), int64(diff.Seconds())))
+	u.PrintGeneric(fmt.Sprintf("  %s  %.1f", u.FSuccess("Minutes:"), diff.Minutes()))
+	u.PrintGeneric(fmt.Sprintf("  %s  %.1f", u.FSuccess("Hours:"), diff.Hours()))
+	u.PrintGeneric(fmt.Sprintf("  %s  %.1f", u.FSuccess("Days:"), diff.Hours()/24))
+	if diff > 0 {
+		u.PrintGeneric(fmt.Sprintf("\n%s is %s after %s", u.FInfo("Time 2"), u.FSuccess(formatDuration(diff)), u.FInfo("Time 1")))
+		return
+	}
+	u.PrintGeneric(fmt.Sprintf("\n%s is %s before %s", u.FInfo("Time 2"), u.FSuccess(formatDuration(-diff)), u.FInfo("Time 1")))
+}
+
+func formatDuration(d time.Duration) string {
+	days := int(d.Hours() / 24)
+	hours := int(d.Hours()) % 24
+	minutes := int(d.Minutes()) % 60
+	seconds := int(d.Seconds()) % 60
+	var parts []string
+	if days > 0 {
+		if days == 1 {
+			parts = append(parts, "1 day")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d days", days))
+		}
+	}
+	if hours > 0 {
+		if hours == 1 {
+			parts = append(parts, "1 hour")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d hours", hours))
+		}
+	}
+	if minutes > 0 {
+		if minutes == 1 {
+			parts = append(parts, "1 minute")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d minutes", minutes))
+		}
+	}
+	if seconds > 0 || len(parts) == 0 {
+		if seconds == 1 {
+			parts = append(parts, "1 second")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d seconds", seconds))
+		}
+	}
+	return strings.Join(parts, ", ")
 }
 
 func init() {

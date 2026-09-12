@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	u "github.com/tanq16/anbu/utils"
 )
 
 type HTTPServerOptions struct {
 	ListenAddress string
 	EnableUpload  bool
+	OnRequest     func(remote, method, path string)
+	OnInfo        func(msg string)
+	OnError       func(msg string, err error)
 }
 
 type HTTPServer struct {
@@ -37,13 +38,12 @@ func (s *HTTPServer) Setup() error {
 	}
 	s.Server = &http.Server{
 		Addr:    s.Options.ListenAddress,
-		Handler: withHTTPLogging(handler),
+		Handler: s.withHTTPLogging(handler),
 	}
 	return nil
 }
 
 func (s *HTTPServer) Run() error {
-	u.PrintInfo(fmt.Sprintf("HTTP server started on http://%s/", s.Options.ListenAddress))
 	return s.Server.ListenAndServe()
 }
 
@@ -54,9 +54,11 @@ func (s *HTTPServer) Stop() error {
 	return nil
 }
 
-func withHTTPLogging(next http.Handler) http.HandlerFunc {
+func (s *HTTPServer) withHTTPLogging(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		u.PrintStream(fmt.Sprintf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path))
+		if s.Options.OnRequest != nil {
+			s.Options.OnRequest(r.RemoteAddr, r.Method, r.URL.Path)
+		}
 		next.ServeHTTP(w, r)
 	}
 }
@@ -156,7 +158,7 @@ form.addEventListener('submit', function(e) {
 	if r.Method == http.MethodPost {
 		reader, err := r.MultipartReader()
 		if err != nil {
-			u.PrintError("failed to get multipart reader", err)
+			s.reportError("failed to get multipart reader", err)
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
@@ -167,7 +169,7 @@ form.addEventListener('submit', function(e) {
 				break
 			}
 			if err != nil {
-				u.PrintError("failed to read multipart part", err)
+				s.reportError("failed to read multipart part", err)
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
@@ -177,14 +179,14 @@ form.addEventListener('submit', function(e) {
 				filename := fmt.Sprintf("text-%d.txt", time.Now().Unix())
 				path, n, err := streamPartToUniqueFile(filename, part)
 				if err != nil {
-					u.PrintError("failed to write text file", err)
+					s.reportError("failed to write text file", err)
 					continue
 				}
 				if n == 0 {
 					os.Remove(path)
 					continue
 				}
-				u.PrintInfo(fmt.Sprintf("Text saved to %s", path))
+				s.info(fmt.Sprintf("Text saved to %s", path))
 			case "files":
 				filename := part.FileName()
 				if filename == "" {
@@ -192,10 +194,10 @@ form.addEventListener('submit', function(e) {
 				}
 				path, _, err := streamPartToUniqueFile(filename, part)
 				if err != nil {
-					u.PrintError("failed to write file", err)
+					s.reportError("failed to write file", err)
 					continue
 				}
-				u.PrintInfo(fmt.Sprintf("File uploaded to %s", path))
+				s.info(fmt.Sprintf("File uploaded to %s", path))
 			}
 		}
 
@@ -215,6 +217,18 @@ body { background-color: #2a2a2a; color: #fff; font-family: sans-serif; padding:
 		return
 	}
 	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+}
+
+func (s *HTTPServer) info(msg string) {
+	if s.Options != nil && s.Options.OnInfo != nil {
+		s.Options.OnInfo(msg)
+	}
+}
+
+func (s *HTTPServer) reportError(msg string, err error) {
+	if s.Options != nil && s.Options.OnError != nil {
+		s.Options.OnError(msg, err)
+	}
 }
 
 func sanitizeUploadFilename(filename string) string {

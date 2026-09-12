@@ -335,7 +335,11 @@ func (m *Meter) meterLine(width int) string {
 			return line
 		}
 	}
-	return strings.Repeat(" ", meterIndent) + transferred
+	parts := make([]string, 0, len(fixed))
+	for _, f := range fixed {
+		parts = append(parts, f.text)
+	}
+	return strings.Repeat(" ", meterIndent) + strings.Join(parts, "  ")
 }
 
 type meterField struct {

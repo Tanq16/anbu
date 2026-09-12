@@ -41,12 +41,16 @@ func (s *Server) Serve(ctx context.Context) error {
 	})
 	defer stop()
 
+	ctx, cancel := context.WithCancel(ctx)
 	var wg sync.WaitGroup
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			if ctx.Err() != nil || errors.Is(err, net.ErrClosed) {
-				wg.Wait()
 				return nil
 			}
 			return err
