@@ -21,6 +21,8 @@ A summary of everything that **Anbu** can perform:
 | **Secrets** | Encrypted store for named secrets, with list, get, add, delete, import, and export |
 | **SSH Sessions** | Named Ed25519 sessions under `~/.config/anbu/ssh/`, with list, setup, exec, and delete |
 | **WireGuard Proxy** | Userspace WireGuard SOCKS5 proxy, with no root, TUN device, or host routing changes |
+| **HTTP Download** | Multi-connection HTTP download with automatic fallback to a single connection |
+| **GitHub Release** | Latest-release asset download, with platform auto-select or an explicit asset name |
 | **HTTP Server** | Serve the current directory, or an upload page for text and files |
 | **IP Information** | Local and public IP details, including geolocation |
 | **Archive** | Zip files with include/exclude regex, optional AES-GCM encryption, and a wrap vs bare extract |
@@ -45,6 +47,30 @@ A summary of everything that **Anbu** can perform:
 Anbu supports a large number of operations across the board. All commands support the `--debug` flag to enable debug logging.
 
 The specific details of each are:
+
+- ***HTTP Download*** (alias: `dl`)
+
+  Uses multiple connections when the server supports byte ranges and the file is large enough. Otherwise it falls back to a single connection. A partial `.anbu-temp` file is resumed automatically.
+
+  ```bash
+  anbu download https://example.com/file.tar.gz
+  anbu dl https://example.com/file.tar.gz -o package.tar.gz
+  anbu dl https://example.com/file.tar.gz -c 16
+  anbu dl https://example.com/file.tar.gz -H "Authorization: Bearer token"
+  anbu dl https://example.com/file.tar.gz --proxy http://127.0.0.1:8080
+  ```
+
+- ***GitHub Release*** (alias: `ghr`)
+
+  Resolves `owner/repo`, a `github.com` URL, or `github.com/owner/repo`. Auto-selects the asset for this OS and architecture. `--manual` picks from a list; `--asset` names one for scripts. `GITHUB_TOKEN` is used when set.
+
+  ```bash
+  anbu github-release tanq16/anbu
+  anbu ghr https://github.com/tanq16/anbu
+  anbu ghr tanq16/anbu --asset anbu-linux-amd64
+  anbu ghr tanq16/anbu --manual
+  anbu ghr tanq16/anbu -o anbu.bin
+  ```
 
 - ***Time*** (alias: `t`)
 
