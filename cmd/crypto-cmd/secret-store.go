@@ -108,14 +108,14 @@ var secretsSetCmd = &cobra.Command{
 				value, err = u.PromptInput(fmt.Sprintf("Enter value for secret '%s':", secretID), "")
 			}
 			if errors.Is(err, u.ErrNoTerminal) {
-				u.PrintFatal("add needs --value, --value -, --value-file, or --value-file -", nil)
+				u.PrintFatal("add needs --value, --value-file, or --value-file -", nil)
 			}
 			if err != nil {
 				u.PrintFatal("failed to read secret value", err)
 			}
 		}
 		if value == "" {
-			u.PrintFatal("add needs --value, --value -, --value-file, or --value-file -", nil)
+			u.PrintFatal("add needs --value, --value-file, or --value-file -", nil)
 		}
 		password := secretsFlags.password
 		if err := anbuCrypto.SetSecret(secretsFlags.secretsFile, secretID, value, password); err != nil {
@@ -175,11 +175,10 @@ func init() {
 	secretsImportCmd.Flags().StringVar(&secretsFlags.password, "password", "p455w0rd", passwordHelp)
 	secretsExportCmd.Flags().StringVar(&secretsFlags.password, "password", "p455w0rd", passwordHelp)
 	secretsListCmd.Flags().StringVarP(&secretsFlags.filter, "filter", "f", "", "Regex; keep names that match")
-	secretsSetCmd.Flags().StringVar(&secretsFlags.value, "value", "", "Secret value, or - to read it from stdin")
+	secretsSetCmd.Flags().StringVar(&secretsFlags.value, "value", "", "Secret value")
 	secretsSetCmd.Flags().StringVar(&secretsFlags.valueFile, "value-file", "", "File containing the secret value, or - for stdin")
 	secretsSetCmd.Flags().BoolVar(&secretsFlags.multiline, "multiline", false, "Prompt with a multi-line editor when no value flag is set")
 	secretsSetCmd.MarkFlagsMutuallyExclusive("value", "value-file")
-	_ = u.MarkStdinLine(secretsSetCmd, "value")
 	_ = u.MarkStdinStream(secretsSetCmd, "value-file")
 	SecretsCmd.AddCommand(secretsListCmd)
 	SecretsCmd.AddCommand(secretsGetCmd)

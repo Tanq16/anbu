@@ -101,7 +101,13 @@ func downloadChunk(ctx context.Context, url, outputPath string, ch *chunk, clien
 	var lastErr error
 	for retry := range maxRetries {
 		if retry > 0 {
-			time.Sleep(time.Duration(retry+1) * 500 * time.Millisecond)
+			timer := time.NewTimer(time.Duration(retry+1) * 500 * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return ctx.Err()
+			case <-timer.C:
+			}
 			resumeOffset = reconcile()
 		}
 		if err := writeChunk(ctx, url, ch, client, tempFileName, progress, resumeOffset); err != nil {

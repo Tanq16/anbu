@@ -1,8 +1,11 @@
 package networkCmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	anbuNetwork "github.com/tanq16/anbu/internal/network"
+	u "github.com/tanq16/anbu/utils"
 )
 
 var httpServerFlags struct {
@@ -18,11 +21,17 @@ var HTTPServerCmd = &cobra.Command{
 		server := anbuNetwork.NewHTTPServer(&anbuNetwork.HTTPServerOptions{
 			ListenAddress: httpServerFlags.listenAddress,
 			EnableUpload:  httpServerFlags.enableUpload,
+			OnRequest: func(remote, method, path string) {
+				u.PrintStream(fmt.Sprintf("%s %s %s", remote, method, path))
+			},
+			OnInfo:  u.PrintInfo,
+			OnError: u.PrintError,
 		})
 		if err := server.Setup(); err != nil {
 			return err
 		}
 		defer server.Stop()
+		u.PrintInfo(fmt.Sprintf("HTTP server started on http://%s/", httpServerFlags.listenAddress))
 		return server.Run()
 	},
 }

@@ -6,26 +6,29 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"uuid"
-
-	u "github.com/tanq16/anbu/utils"
 )
 
-func BulkRename(pattern string, replacement string, renameDirectories bool, dryRun bool) error {
+type RenameResult struct {
+	Old string
+	New string
+	Err error
+}
+
+func BulkRename(pattern string, replacement string, renameDirectories bool, dryRun bool) ([]RenameResult, error) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return fmt.Errorf("invalid regex pattern: %w", err)
+		return nil, fmt.Errorf("invalid regex pattern: %w", err)
 	}
 	currentDir, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
+		return nil, fmt.Errorf("failed to get current directory: %w", err)
 	}
 	entries, err := os.ReadDir(currentDir)
 	if err != nil {
-		return fmt.Errorf("failed to read directory: %w", err)
+		return nil, fmt.Errorf("failed to read directory: %w", err)
 	}
 
-	renameCount := 0
+	var results []RenameResult
 	for _, entry := range entries {
 		if renameDirectories && !entry.IsDir() {
 			continue
@@ -47,47 +50,29 @@ func BulkRename(pattern string, replacement string, renameDirectories bool, dryR
 			newName = strings.ReplaceAll(newName, placeholder, match)
 		}
 		if strings.Contains(newName, "\\uuid") {
-			uuidStr := generateUUIDString()
+			uuidStr, err := GenerateUUIDString(true)
+			if err != nil {
+				return results, err
+			}
 			newName = strings.ReplaceAll(newName, "\\uuid", uuidStr)
 		}
 		if strings.Contains(newName, "\\suid") {
-			suidStr := generateRUIDString(18)
+			suidStr, err := GenerateRUIDString(18)
+			if err != nil {
+				return results, err
+			}
 			newName = strings.ReplaceAll(newName, "\\suid", suidStr)
 		}
 		if oldName == newName {
 			continue
 		}
-		if dryRun {
-			u.PrintGeneric(fmt.Sprintf("Dry Run: Renaming %s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName)))
-		} else {
-			err := os.Rename(filepath.Join(currentDir, oldName), filepath.Join(currentDir, newName))
-			if err != nil {
-				u.PrintError(fmt.Sprintf("Failed to rename %s to %s", oldName, newName), err)
-				continue
+		result := RenameResult{Old: oldName, New: newName}
+		if !dryRun {
+			if err := os.Rename(filepath.Join(currentDir, oldName), filepath.Join(currentDir, newName)); err != nil {
+				result.Err = err
 			}
-			u.PrintGeneric(fmt.Sprintf("Renamed: %s %s %s", u.FDebug(oldName), u.FInfo(u.StyleSymbols["arrow"]), u.FSuccess(newName)))
 		}
-		renameCount++
+		results = append(results, result)
 	}
-	u.LineBreak()
-	if renameCount == 0 {
-		u.PrintWarn("no items were renamed", nil)
-	} else {
-		u.PrintGeneric(fmt.Sprintf("%s %s", u.FDebug("Operation completed:"), u.FSuccess(fmt.Sprintf("%d %s", renameCount, map[bool]string{true: "directories", false: "files"}[renameDirectories]))))
-	}
-	return nil
-}
-
-func generateUUIDString() string {
-	return uuid.New().String()
-}
-
-func generateRUIDString(length int) string {
-	if length <= 0 || length > 30 {
-		u.PrintWarn("length must be between 1 and 30; using 18", nil)
-		length = 18
-	}
-	id := uuid.New().String()
-	shortUUID := id[0:8] + id[9:13] + id[15:18] + id[20:23] + id[24:]
-	return shortUUID[:length]
+	return results, nil
 }

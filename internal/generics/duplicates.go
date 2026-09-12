@@ -10,10 +10,27 @@ import (
 
 const sizeThreshold = 100 * 1024 * 1024
 
-func FindDuplicates(recursive bool, delete bool) error {
+type DuplicateSet struct {
+	Files []string
+}
+
+type DeleteFailure struct {
+	Path string
+	Err  error
+}
+
+type DuplicateResult struct {
+	Hashed     []DuplicateSet
+	Unhashed   []DuplicateSet
+	Deleted    []string
+	DeleteErrs []DeleteFailure
+}
+
+func FindDuplicates(recursive bool, delete bool) (DuplicateResult, error) {
+	var result DuplicateResult
 	currentDir, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
+		return result, fmt.Errorf("failed to get current directory: %w", err)
 	}
 	var files []string
 	if recursive {
@@ -27,12 +44,12 @@ func FindDuplicates(recursive bool, delete bool) error {
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("failed to walk directory: %w", err)
+			return result, fmt.Errorf("failed to walk directory: %w", err)
 		}
 	} else {
 		entries, err := os.ReadDir(currentDir)
 		if err != nil {
-			return fmt.Errorf("failed to read directory: %w", err)
+			return result, fmt.Errorf("failed to read directory: %w", err)
 		}
 		for _, entry := range entries {
 			if !entry.IsDir() {
@@ -47,18 +64,15 @@ func FindDuplicates(recursive bool, delete bool) error {
 		if err != nil {
 			continue
 		}
-		size := info.Size()
-		sizeMap[size] = append(sizeMap[size], file)
+		sizeMap[info.Size()] = append(sizeMap[info.Size()], file)
 	}
 
-	var hashedDuplicates [][]string
-	var unhashedDuplicates [][]string
 	for size, fileList := range sizeMap {
 		if len(fileList) < 2 {
 			continue
 		}
 		if size >= sizeThreshold {
-			unhashedDuplicates = append(unhashedDuplicates, fileList)
+			result.Unhashed = append(result.Unhashed, DuplicateSet{Files: relPaths(currentDir, fileList)})
 			continue
 		}
 		hashMap := make(map[string][]string)
@@ -69,82 +83,52 @@ func FindDuplicates(recursive bool, delete bool) error {
 			}
 			hashMap[hash] = append(hashMap[hash], file)
 		}
-		for _, fileList := range hashMap {
-			if len(fileList) >= 2 {
-				hashedDuplicates = append(hashedDuplicates, fileList)
+		for _, hashed := range hashMap {
+			if len(hashed) >= 2 {
+				result.Hashed = append(result.Hashed, DuplicateSet{Files: relPaths(currentDir, hashed)})
 			}
 		}
 	}
 
-	if len(hashedDuplicates) == 0 && len(unhashedDuplicates) == 0 {
-		u.PrintInfo("No duplicate files found")
-		return nil
+	if !delete {
+		return result, nil
 	}
-	if len(hashedDuplicates) > 0 {
-		table := u.NewTable([]string{"Set ID", "Files"})
-		for i, fileList := range hashedDuplicates {
-			filesStr := ""
-			for j, file := range fileList {
-				relPath, err := filepath.Rel(currentDir, file)
-				if err != nil {
-					relPath = file
-				}
-				if j > 0 {
-					filesStr += ", "
-				}
-				filesStr += relPath
-			}
-			table.Rows = append(table.Rows, []string{fmt.Sprintf("%d", i+1), filesStr})
-		}
-		table.PrintTable()
-		if delete {
-			for _, fileList := range hashedDuplicates {
-				for i := 1; i < len(fileList); i++ {
-					if err := os.Remove(fileList[i]); err != nil {
-						relPath, _ := filepath.Rel(currentDir, fileList[i])
-						u.PrintError(fmt.Sprintf("Failed to delete %s", relPath), err)
-					} else {
-						relPath, _ := filepath.Rel(currentDir, fileList[i])
-						u.PrintGeneric(fmt.Sprintf("Deleted: %s", u.FSuccess(relPath)))
-					}
-				}
-			}
-		}
-	}
+	result.Deleted, result.DeleteErrs = deleteExtras(currentDir, result.Hashed)
+	unhashedDeleted, unhashedErrs := deleteExtras(currentDir, result.Unhashed)
+	result.Deleted = append(result.Deleted, unhashedDeleted...)
+	result.DeleteErrs = append(result.DeleteErrs, unhashedErrs...)
+	return result, nil
+}
 
-	if len(unhashedDuplicates) > 0 {
-		u.LineBreak()
-		u.PrintWarn("Unhashed duplicates due to huge size:", nil)
-		table := u.NewTable([]string{"Set ID", "Files"})
-		startID := len(hashedDuplicates) + 1
-		for i, fileList := range unhashedDuplicates {
-			filesStr := ""
-			for j, file := range fileList {
-				relPath, err := filepath.Rel(currentDir, file)
-				if err != nil {
-					relPath = file
-				}
-				if j > 0 {
-					filesStr += ", "
-				}
-				filesStr += relPath
-			}
-			table.Rows = append(table.Rows, []string{fmt.Sprintf("%d", startID+i), filesStr})
+func relPaths(base string, files []string) []string {
+	out := make([]string, len(files))
+	for i, file := range files {
+		relPath, err := filepath.Rel(base, file)
+		if err != nil {
+			out[i] = file
+			continue
 		}
-		table.PrintTable()
-		if delete {
-			for _, fileList := range unhashedDuplicates {
-				for i := 1; i < len(fileList); i++ {
-					if err := os.Remove(fileList[i]); err != nil {
-						relPath, _ := filepath.Rel(currentDir, fileList[i])
-						u.PrintError(fmt.Sprintf("Failed to delete %s", relPath), err)
-					} else {
-						relPath, _ := filepath.Rel(currentDir, fileList[i])
-						u.PrintGeneric(fmt.Sprintf("Deleted: %s", u.FSuccess(relPath)))
-					}
-				}
+		out[i] = relPath
+	}
+	return out
+}
+
+func deleteExtras(base string, sets []DuplicateSet) ([]string, []DeleteFailure) {
+	var deleted []string
+	var failures []DeleteFailure
+	for _, set := range sets {
+		for i := 1; i < len(set.Files); i++ {
+			path := set.Files[i]
+			abs := path
+			if !filepath.IsAbs(path) {
+				abs = filepath.Join(base, path)
 			}
+			if err := os.Remove(abs); err != nil {
+				failures = append(failures, DeleteFailure{Path: path, Err: err})
+				continue
+			}
+			deleted = append(deleted, path)
 		}
 	}
-	return nil
+	return deleted, failures
 }

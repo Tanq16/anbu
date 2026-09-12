@@ -16,9 +16,27 @@ var IPInfoCmd = &cobra.Command{
 	Short:   "Display local network interface and public IP information",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := anbuNetwork.GetLocalIPInfo(ipInfoFlags.ipv6); err != nil {
+		info, err := anbuNetwork.GetLocalIPInfo()
+		if err != nil {
 			u.PrintFatal("failed to get network interfaces", err)
 		}
+		u.LineBreak()
+		ipv4 := u.NewTable([]string{"Interface", "IP Address", "Subnet Mask", "MAC Address", "Status"})
+		ipv4.Rows = info.IPv4
+		ipv4.PrintTable()
+		if ipInfoFlags.ipv6 {
+			ipv6 := u.NewTable([]string{"Interface", "IPv6 Address", "MAC Address", "Status"})
+			ipv6.Rows = info.IPv6
+			ipv6.PrintTable()
+		}
+		u.LineBreak()
+		if info.PublicErr != nil {
+			u.PrintWarn("Could not retrieve public IP", info.PublicErr)
+			return
+		}
+		pub := u.NewTable([]string{"Field", "Value"})
+		pub.Rows = info.Public
+		pub.PrintTable()
 	},
 }
 

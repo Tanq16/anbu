@@ -91,7 +91,7 @@ The specific details of each are:
   anbu secrets add API_KEY
   anbu secrets add API_KEY --multiline
   anbu secrets add API_KEY --value sk-1234
-  echo "sk-1234" | anbu secrets add API_KEY --value -
+  echo "sk-1234" | anbu secrets add API_KEY --value-file -
   anbu secrets add API_KEY --value-file ./key.pem
   anbu secrets get API_KEY
   anbu secrets delete API_KEY
