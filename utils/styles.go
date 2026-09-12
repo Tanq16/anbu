@@ -18,6 +18,7 @@ var StyleSymbols = map[string]string{
 	"pending": "◉",
 	"info":    "ℹ",
 	"arrow":   "→",
+	"running": "↻",
 	"bullet":  "•",
 	"dot":     "·",
 	"hline":   "━",

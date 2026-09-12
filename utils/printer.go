@@ -52,6 +52,54 @@ func PrintInfo(text string) {
 	lipgloss.Println(infoStyle.Render(StyleSymbols["arrow"] + " " + text))
 }
 
+func PrintRunning(text string) {
+	if GlobalDebugFlag {
+		log.Info().Msg(text)
+		return
+	}
+	lipgloss.Println(infoStyle.Render(StyleSymbols["running"] + " " + text))
+}
+
+func PrintIndentedSuccess(text string) {
+	if GlobalDebugFlag {
+		log.Info().Msg(text)
+		return
+	}
+	lipgloss.Println(successStyle.Render("  " + StyleSymbols["pass"] + " " + text))
+}
+
+func PrintIndentedError(text string, err error) {
+	if GlobalDebugFlag {
+		if err != nil {
+			log.Error().Err(err).Msg(text)
+		} else {
+			log.Error().Msg(text)
+		}
+		return
+	}
+	lipgloss.Println(errorStyle.Render("  " + StyleSymbols["fail"] + " " + text))
+}
+
+func PrintIndentedWarn(text string, err error) {
+	if GlobalDebugFlag {
+		if err != nil {
+			log.Warn().Err(err).Msg(text)
+		} else {
+			log.Warn().Msg(text)
+		}
+		return
+	}
+	lipgloss.Println(warningStyle.Render("  " + StyleSymbols["warning"] + " " + text))
+}
+
+func PrintIndentedRunning(text string) {
+	if GlobalDebugFlag {
+		log.Info().Msg(text)
+		return
+	}
+	lipgloss.Println(infoStyle.Render("  " + StyleSymbols["running"] + " " + text))
+}
+
 func PrintDebug(text string) {
 	if GlobalDebugFlag {
 		log.Debug().Msg(text)

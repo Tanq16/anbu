@@ -71,4 +71,6 @@ func init() {
 	rootCmd.AddCommand(networkCmd.HTTPServerCmd)
 	rootCmd.AddCommand(networkCmd.IPInfoCmd)
 	rootCmd.AddCommand(networkCmd.WgProxyCmd)
+	rootCmd.AddCommand(networkCmd.DownloadCmd)
+	rootCmd.AddCommand(networkCmd.GitHubReleaseCmd)
 }
