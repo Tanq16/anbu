@@ -36,10 +36,10 @@ export function highlightJSON(value) {
   return e.replace(
     /("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
     (m) => {
-      let cls = 'json-number';
-      if (m.startsWith('"')) cls = m.endsWith(':') ? 'json-key' : 'json-string';
-      else if (m === 'true' || m === 'false') cls = 'json-bool';
-      else if (m === 'null') cls = 'json-null';
+      let cls = 'text-peach';
+      if (m.startsWith('"')) cls = m.endsWith(':') ? 'text-blue' : 'text-green';
+      else if (m === 'true' || m === 'false') cls = 'text-mauve';
+      else if (m === 'null') cls = 'text-overlay1';
       return `<span class="${cls}">${m}</span>`;
     },
   );
@@ -94,8 +94,8 @@ const enc = encodeURIComponent;
 const segEnc = (s) => enc(s).replace(/%3A/gi, ':').replace(/%40/g, '@');
 const profileQ = (ref) => `profile=${enc(ref)}`;
 
-const field = 'w-full bg-surface0 rounded-lg px-3 py-2 text-text text-sm outline-none focus:ring-2 focus:ring-mauve pointer-coarse:text-[16px]';
-const pillInput = 'w-full bg-surface0 rounded-full px-4 py-2 text-text text-sm outline-none focus:ring-2 focus:ring-mauve pointer-coarse:text-[16px]';
+const field = 'w-full bg-surface0 rounded-lg px-3 py-2 text-text text-sm placeholder:text-overlay0 outline-none focus:ring-2 focus:ring-mauve pointer-coarse:text-[16px]';
+const pillInput = 'w-full bg-surface0 rounded-full px-4 py-2 text-text text-sm placeholder:text-overlay0 outline-none focus:ring-2 focus:ring-mauve pointer-coarse:text-[16px]';
 const primary = 'inline-flex items-center gap-2 rounded-full bg-mauve text-crust font-medium text-sm px-4 py-2 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed';
 const ghost = 'inline-flex items-center gap-2 rounded-full bg-surface0 text-subtext1 text-sm px-4 py-2 hover:bg-surface1 hover:text-text disabled:opacity-40 disabled:cursor-not-allowed';
 const danger = 'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-red hover:bg-red/10';
@@ -554,8 +554,8 @@ function tasksDetail() {
     const list = all.filter(filters[sel] ?? filters.open);
     return article(`<h2 class="${h2} mb-6 capitalize">${titles[sel] ?? sel}</h2>
       <form data-addtask class="flex flex-wrap items-center gap-2 bg-surface0 rounded-3xl md:rounded-full p-1.5 mb-6">
-        <input name="text" autocomplete="off" class="flex-1 min-w-48 bg-transparent px-3 py-1.5 text-sm text-text outline-none pointer-coarse:text-[16px]" placeholder="Add a task and press Enter">
-        <span class="inline-flex rounded-full bg-crust/40 p-0.5">${priorities.slice().reverse().map((p) => `<button type="button" data-prio="${p}" class="rounded-full px-3 py-1 text-xs text-overlay1">${p}</button>`).join('')}</span>
+        <input name="text" autocomplete="off" class="flex-1 min-w-48 bg-transparent px-3 py-1.5 text-sm text-text placeholder:text-overlay0 outline-none pointer-coarse:text-[16px]" placeholder="Add a task and press Enter">
+        <span class="inline-flex rounded-full p-0.5">${priorities.slice().reverse().map((p) => `<button type="button" data-prio="${p}" class="rounded-full px-3 py-1 text-xs text-overlay1">${p}</button>`).join('')}</span>
         ${datePicker({ attrs: 'name="due"', cls: 'rounded-full px-3 py-1.5 text-xs text-subtext0 hover:bg-surface1 outline-none focus:ring-2 focus:ring-mauve', placeholder: 'Due date', align: 'right' })}
         <button class="grid place-items-center size-8 rounded-full bg-mauve text-crust" title="Add task"><i data-lucide="arrow-up" class="size-4"></i></button></form>
       <ul class="flex flex-col gap-1">${list.map(taskRow).join('') || `<li class="px-4 py-10 text-center ${lbl}">Nothing here</li>`}</ul>`);

@@ -106,8 +106,9 @@ export const tools = [
 
 export const charsets = ['alphanumeric', 'alpha', 'digits', 'hex', 'all'];
 
-const field = 'w-full bg-surface0 rounded-lg px-3 py-2 text-text text-sm font-mono outline-none focus:ring-2 focus:ring-mauve pointer-coarse:text-[16px]';
+const field = 'w-full bg-surface0 rounded-lg px-3 py-2 text-text text-sm font-mono placeholder:text-overlay0 outline-none focus:ring-2 focus:ring-mauve pointer-coarse:text-[16px]';
 const area = `${field} min-h-32 resize-y`;
+const pill = 'w-full bg-surface0 rounded-full px-4 py-2 text-text text-sm font-mono placeholder:text-overlay0 outline-none focus:ring-2 focus:ring-mauve pointer-coarse:text-[16px]';
 const well = 'bg-base rounded-lg p-3 font-mono text-sm text-text whitespace-pre-wrap break-all overflow-auto';
 const btn = 'inline-flex items-center gap-2 rounded-full bg-mauve text-crust font-medium text-sm px-4 py-2 hover:opacity-90';
 const lbl = 'text-xs text-overlay1';
@@ -125,7 +126,7 @@ const views = {
   base64: () => `<div class="flex flex-wrap gap-3 mb-3">${seg('mode', [['enc', 'Encode'], ['dec', 'Decode']], 'enc')}${seg('urlsafe', [['false', 'Standard'], ['true', 'URL-safe']], 'false')}</div><div class="grid gap-4 lg:grid-cols-2"><textarea data-in class="${area}" placeholder="Text to encode or decode"></textarea>${codeBlock(`${well} min-h-32`, '', 'data-out')}</div>`,
   url: () => `<div class="mb-3">${seg('mode', [['enc', 'Encode'], ['dec', 'Decode']], 'enc')}</div><div class="grid gap-4 lg:grid-cols-2"><textarea data-in class="${area}" placeholder="Text to encode or decode"></textarea>${codeBlock(`${well} min-h-32`, '', 'data-out')}</div>`,
   yaml: () => `<div class="mb-3">${seg('to', [['json', 'YAML → JSON'], ['yaml', 'JSON → YAML']], 'json')}</div><div class="grid gap-4 lg:grid-cols-2"><textarea data-in class="${area} min-h-64" placeholder="YAML or JSON"></textarea>${codeBlock(`${well} min-h-64`, '', 'data-out')}</div>`,
-  case: () => `<input data-in class="${field}" placeholder="Text to convert"><ul data-out class="mt-4 grid gap-1 xl:grid-cols-2"></ul>`,
+  case: () => `<input data-in class="${pill}" placeholder="Text to convert"><ul data-out class="mt-4 grid gap-1 xl:grid-cols-2"></ul>`,
   stats: () => `<textarea data-in class="${area} min-h-48" placeholder="Text to measure"></textarea><dl data-out class="mt-4 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3"></dl>`,
   time: () => `<div class="flex flex-wrap items-center gap-3"><input data-in class="${field} flex-1 min-w-60" placeholder="Epoch, RFC 3339, date, or blank for now">${gen('clock', 'Now')}</div><ul data-out class="mt-4 flex flex-col gap-1"></ul><p class="mt-6 mb-2 ${lbl}">Difference between two epochs</p><div class="flex flex-wrap gap-3"><input data-a class="${field} flex-1 min-w-40" placeholder="first epoch"><input data-b class="${field} flex-1 min-w-40" placeholder="blank for now"></div><p data-diff class="mt-3 text-sm text-text"></p>`,
   eta: () => `<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><label class="flex flex-col gap-1 ${lbl}">Total items${numInput('data-total min="1" value="1200"')}</label><label class="flex flex-col gap-1 ${lbl}">Items per step${numInput('data-per min="1" value="3"')}</label><label class="flex flex-col gap-1 ${lbl}">Step every (seconds)${numInput('data-ms min="1" value="5"')}</label><div class="flex flex-col gap-1 ${lbl}">Started at<div class="flex gap-2">${datePicker({ attrs: 'data-start', value: ymd(new Date()) })}<input data-start-time type="time" value="${new Date().toTimeString().slice(0, 5)}" class="${field} w-28"></div></div></div><ul data-out class="mt-4 flex flex-col gap-1"></ul>`,

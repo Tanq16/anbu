@@ -1,11 +1,15 @@
-const theme = {
-  background: '#1e1e2e', foreground: '#cdd6f4', cursor: '#f5e0dc', selectionBackground: '#585b7080',
-  black: '#45475a', red: '#f38ba8', green: '#a6e3a1', yellow: '#f9e2af', blue: '#89b4fa', magenta: '#f5c2e7', cyan: '#94e2d5', white: '#bac2de',
-  brightBlack: '#585b70', brightRed: '#f38ba8', brightGreen: '#a6e3a1', brightYellow: '#f9e2af', brightBlue: '#89b4fa', brightMagenta: '#f5c2e7', brightCyan: '#94e2d5', brightWhite: '#a6adc8',
-};
+function theme() {
+  const css = getComputedStyle(document.documentElement);
+  const c = (name) => css.getPropertyValue(`--ctp-${name}`).trim();
+  return {
+    background: c('base'), foreground: c('text'), cursor: c('rosewater'), selectionBackground: `${c('surface2')}80`,
+    black: c('surface1'), red: c('red'), green: c('green'), yellow: c('yellow'), blue: c('blue'), magenta: c('pink'), cyan: c('teal'), white: c('subtext1'),
+    brightBlack: c('surface2'), brightRed: c('red'), brightGreen: c('green'), brightYellow: c('yellow'), brightBlue: c('blue'), brightMagenta: c('pink'), brightCyan: c('teal'), brightWhite: c('subtext0'),
+  };
+}
 
 export function openTerminal(el, target) {
-  const term = new Terminal({ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, cursorBlink: false, theme });
+  const term = new Terminal({ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, cursorBlink: false, theme: theme() });
   const fit = new FitAddon.FitAddon();
   term.loadAddon(fit);
   term.open(el);
