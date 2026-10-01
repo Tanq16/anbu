@@ -98,6 +98,10 @@ func (s *Server) Setup() error {
 		return err
 	}
 	s.mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
+	s.mux.HandleFunc("GET /sw.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		http.ServeFileFS(w, r, staticFS, "sw.js")
+	})
 
 	s.mux.HandleFunc("GET /api/health", s.handleHealth)
 	s.routeVault()
