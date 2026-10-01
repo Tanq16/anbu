@@ -1,4 +1,4 @@
-const field = 'w-full bg-surface0 rounded-lg px-3 py-2 text-text text-sm font-mono outline-none focus:ring-2 focus:ring-mauve pointer-coarse:text-[16px]';
+const field = 'w-full bg-surface0 rounded-lg px-3 py-2 text-text text-sm font-mono placeholder:text-overlay0 outline-none focus:ring-2 focus:ring-mauve pointer-coarse:text-[16px]';
 const pill = 'rounded-full px-3 py-1.5 text-sm';
 const lbl = 'text-xs text-overlay1';
 

@@ -26,7 +26,7 @@ const (
 
 type Config struct {
 	URL     string            `json:"url"`
-	Headers map[string]string `json:"headers,omitempty"`
+	Headers map[string]string `json:"headers,omitzero"`
 }
 
 func configDir() (string, error) {
@@ -118,11 +118,7 @@ func newClient() *http.Client {
 	}
 }
 
-func Do(method, path string, body any) (*http.Response, error) {
-	cfg, err := Load()
-	if err != nil {
-		return nil, err
-	}
+func Do(cfg Config, method, path string, body any) (*http.Response, error) {
 	if err := validURL(cfg.URL); err != nil {
 		return nil, err
 	}

@@ -152,13 +152,13 @@ type priceListEntry struct {
 func parseEntry(raw string) (entry, error) {
 	var parsed priceListEntry
 	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
-		return entry{}, fmt.Errorf("decoding price list entry: %w", err)
+		return entry{}, err
 	}
 	for _, term := range parsed.Terms.OnDemand {
 		for _, dim := range term.PriceDimensions {
 			usd, err := strconv.ParseFloat(dim.PricePerUnit.USD, 64)
 			if err != nil {
-				return entry{}, fmt.Errorf("parsing usd rate %q: %w", dim.PricePerUnit.USD, err)
+				return entry{}, err
 			}
 			return entry{instanceType: parsed.Product.Attributes.InstanceType, usd: usd}, nil
 		}

@@ -16,7 +16,7 @@ type Export struct {
 	Version     int          `json:"version"`
 	ExportedAt  time.Time    `json:"exported_at"`
 	Secrets     []Secret     `json:"secrets"`
-	MachineKeys []MachineKey `json:"machine_keys,omitempty"`
+	MachineKeys []MachineKey `json:"machine_keys,omitzero"`
 }
 
 func (s *Store) Export() Export {
