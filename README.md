@@ -1,239 +1,126 @@
 <div align="center">
-  <img src=".github/assets/logo.svg" alt="ANBU Logo" width="250"/>
-
+  <img src=".github/assets/logo.svg" alt="Anbu Logo" width="200">
   <h1>Anbu</h1>
 
-  <a href="https://github.com/tanq16/anbu/actions/workflows/release.yaml"><img src="https://github.com/tanq16/anbu/actions/workflows/release.yaml/badge.svg" alt="Release Build"></a>&nbsp;<a href="https://github.com/tanq16/anbu/releases/latest"><img src="https://img.shields.io/github/v/release/tanq16/anbu" alt="Latest Release"></a><br>
-
-<p><b>Anbu</b> is a CLI tool that helps perform everyday tasks in an expert way. Just like the Anbu Black Ops division in Naruto, this tool helps carry out all the shadow-operations in your daily workflow.</p><br>
-
-<a href="#capabilities">Capabilities</a> &bull; <a href="#installation">Installation</a> &bull; <a href="#usage">Usage</a> &bull; <a href="#tips-and-notes">Tips & Notes</a><br>
-
+  <a href="https://github.com/tanq16/anbu/actions/workflows/release.yaml"><img alt="Build Workflow" src="https://github.com/tanq16/anbu/actions/workflows/release.yaml/badge.svg"></a>&nbsp;<a href="https://github.com/tanq16/anbu/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/tanq16/anbu"></a>&nbsp;<a href="https://hub.docker.com/r/tanq16/anbu"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/tanq16/anbu"></a><br><br>
+  <a href="#features">Features</a> &bull; <a href="#install">Install</a> &bull; <a href="#usage">Usage</a> &bull; <a href="#notes">Notes</a>
 </div>
 
-## Capabilities
+---
 
-A summary of everything that **Anbu** can perform:
+Anbu is a self-hosted IT hub: an encrypted secrets vault, a task list, a web SSH terminal, AWS access, and EC2 workstation management behind one web UI and one REST API.
 
-| Operation | Details |
-| --- | --- |
-| **Time** | Current time via `now`, parse a timestamp, and epoch diffs, in one table of epoch, RFC 822 local, ISO 8601 local, ISO 8601 UTC, and human UTC |
-| **Secrets** | Encrypted store for named secrets, with list, get, add, delete, import, and export |
-| **SSH Sessions** | Named Ed25519 sessions under `~/.config/anbu/ssh/`, with list, setup, exec, and delete |
-| **WireGuard Proxy** | Userspace WireGuard SOCKS5 proxy, with no root, TUN device, or host routing changes |
-| **HTTP Download** | Multi-connection HTTP download with automatic fallback to a single connection |
-| **GitHub Release** | Latest-release asset download, with platform auto-select or an explicit asset name |
-| **HTTP Server** | Serve the current directory, or an upload page for text and files |
-| **IP Information** | Local and public IP details, including geolocation |
-| **Archive** | Zip files with include/exclude regex, optional AES-GCM encryption, and a wrap vs bare extract |
-| **Bulk Rename** | Batch rename files or directories with regular expressions and capture groups |
-| **Find Duplicates** | Duplicate files by size and SHA256, with optional recursive search |
-| **Passphrase** | Diceware-style hyphenated phrase, with one capital letter and one digit by default |
-| **UUID** | UUID v7 by default, v4 with `--v4`, and a short 18-character form that keeps only random bits |
-| **Random String** | Cryptographic random string; alphanumeric by default, or hex, digits, letters, or all printable ASCII |
+It runs as a single binary for one person or a small team behind a forward-auth proxy. It has no login of its own and is not a multi-tenant password manager.
 
-## Installation
+## Features
 
-- Download directly from [RELEASES](https://github.com/Tanq16/anbu/releases). Anbu is available for AMD64 and ARM64 for Linux and MacOS.
-- To clone and build locally for development (requires Go 1.27 or newer), use:
-  ```bash
-  git clone https://github.com/tanq16/anbu.git && \
-  cd anbu && \
-  go build .
-  ```
+| Area | What it does |
+|---|---|
+| Vault | Typed secrets (login, SSH key, AWS static keys, AWS SSO, GitHub PAT, generic) with TOTP codes, custom fields, Ed25519 key generation, and plaintext export and import |
+| Tasks | Single-line tasks with priority, due date, and overdue tracking |
+| SSH | Stored hosts and EC2 machines in a browser terminal, with trust-on-first-use host keys |
+| AWS | Static keys, ad-hoc keys, and SSO profiles through the device flow, plus an `aws` CLI runner |
+| Machines | EC2 workstations on a per-account scaffold, with create, start, stop, resize, remove, live pricing, and a bootstrap probe |
+| Tools | Hashes, YAML and JSON conversion, time parsing, UUIDs, passphrases, random strings, JWT, Base64, URL, case, and text stats |
+
+## Install
+
+### Docker
+
+```bash
+mkdir -p $HOME/.anbu && sudo chown 10001:10001 $HOME/.anbu
+```
+```bash
+docker run -d --name anbu \
+  -p 8080:8080 \
+  -v $HOME/.anbu:/data \
+  tanq16/anbu:latest
+```
+
+Available at `http://localhost:8080`. The same setup as a compose file:
+
+```yaml
+services:
+  anbu:
+    image: tanq16/anbu:latest
+    container_name: anbu
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data # change as needed
+```
+
+The container runs as UID and GID `10001`, so the mounted directory must be writable by that user. The image includes the AWS CLI v2 for the command runner.
+
+### Binary
+
+Download a binary from [releases](https://github.com/tanq16/anbu/releases) for Linux or macOS on AMD64 or ARM64, then run `anbu serve`. The command runner needs the `aws` CLI on the server's `PATH`.
+
+### From source
+
+Requires Go 1.27 or newer, `curl`, and `uv` (for the Nerd Font asset).
+
+```bash
+git clone https://github.com/tanq16/anbu.git && cd anbu && make build
+```
 
 ## Usage
 
-Anbu supports a large number of operations across the board. All commands support the `--debug` flag to enable debug logging.
-
-The specific details of each are:
-
-- ***HTTP Download*** (alias: `dl`)
-
-  Uses multiple connections when the server supports byte ranges and the file is large enough. Otherwise it falls back to a single connection. A partial `.anbu-temp` file is resumed automatically.
-
-  ```bash
-  anbu download https://example.com/file.tar.gz
-  anbu dl https://example.com/file.tar.gz -o package.tar.gz
-  anbu dl https://example.com/file.tar.gz -c 16
-  anbu dl https://example.com/file.tar.gz -H "Authorization: Bearer token"
-  anbu dl https://example.com/file.tar.gz --proxy http://127.0.0.1:8080
-  ```
-
-- ***GitHub Release*** (alias: `ghr`)
-
-  Resolves `owner/repo`, a `github.com` URL, or `github.com/owner/repo`. Auto-selects the asset for this OS and architecture. `--manual` picks from a list; `--asset` names one for scripts. `GITHUB_TOKEN` is used when set.
-
-  ```bash
-  anbu github-release tanq16/anbu
-  anbu ghr https://github.com/tanq16/anbu
-  anbu ghr tanq16/anbu --asset anbu-linux-amd64
-  anbu ghr tanq16/anbu --manual
-  anbu ghr tanq16/anbu -o anbu.bin
-  ```
-
-- ***Time*** (alias: `t`)
-
-  ```bash
-  anbu time now                             # table for now
-  anbu t parse "13 Apr 25 16:30 EDT"        # parse a timestamp into the same table
-  anbu t until "13 Apr 25 16:30 EDT"        # how far that time is from now
-  anbu t diff 1744192475 1744497775         # difference between two epochs
-  anbu t diff 1744192475                    # difference between that epoch and now
-  ```
-
-- ***Secrets*** (alias: `p`)
-
-  ```bash
-  anbu secrets list
-  anbu secrets list -f 'api'   # names matching the regex
-
-  anbu secrets add API_KEY
-  anbu secrets add API_KEY --multiline
-  anbu secrets add API_KEY --value sk-1234
-  echo "sk-1234" | anbu secrets add API_KEY --value-file -
-  anbu secrets add API_KEY --value-file ./key.pem
-  anbu secrets get API_KEY
-  anbu secrets delete API_KEY
-
-  anbu secrets export backup.json
-  anbu secrets import backup.json
-  ```
-
-- ***SSH Sessions***
-
-  Sessions and keys live under `~/.config/anbu/ssh/`. Exec uses the system `ssh` binary with a private known_hosts file and `StrictHostKeyChecking=accept-new`. A host already verified in `~/.ssh/known_hosts` is trust-on-first-use again here. Remote stderr is forwarded, and a remote command's exit code is preserved.
-
-  ```bash
-  anbu ssh setup prod --host 203.0.113.10 -u ubuntu
-  anbu ssh setup lab --host lab.internal -u bob -p 2222
-  anbu ssh list
-  anbu ssh exec prod
-  anbu ssh exec prod -c "uname -a"
-  anbu ssh delete lab
-  ```
-
-- ***WireGuard Proxy*** (alias: `wgp`)
-
-  Runs entirely in userspace. It does not create a `utun`/`wg0` interface and does not change host routes or DNS. Only clients that use the local proxy are sent through the tunnel.
-
-  Keys may be standard WireGuard Base64 or 64-character hex. A wg-quick `.conf` supplies them as a file; flags override file values.
-
-  ```bash
-  anbu wgp --config-file ./wg.conf
-  anbu wg-proxy -k "$WG_PRIVATE" -p "$WG_PEER" -e vpn.example.com:51820 -a 10.0.0.2
-
-  curl -x socks5h://127.0.0.1:8888 https://icanhazip.com
-  yt-dlp --proxy socks5://127.0.0.1:8888 "https://www.youtube.com/watch?v=..."
-  ```
-
-- ***HTTP Server***
-
-  ```bash
-  anbu http-server                  # current directory on http://0.0.0.0:8080
-  anbu http-server -l 0.0.0.0:8080
-  anbu http-server --upload         # upload page for text and files
-  ```
-
-- ***IP Information*** (alias: `ip`)
-
-  ```bash
-  anbu ip-info         # local and public IP information
-  anbu ip-info --ipv6  # include IPv6
-  ```
-
-- ***Archive***
-
-  Default create wraps entries in a folder named after the output file. Default extract writes those stored paths into the current directory. `--bare` on create skips the wrapper. `--bare` on extract strips the first path component. `--encrypt` wraps the zip in AES-GCM and writes a `.enc` file; that is not `zip -e`.
-
-  ```bash
-  anbu archive create ./src ./docs
-  anbu archive c ./src -o backup.zip
-  anbu archive create ./src --include '\.go$' --exclude '_test\.go$'
-  anbu archive create ./src --bare
-  echo pw | anbu archive create ./src --encrypt -
-  anbu archive extract archive.zip.enc --password pw
-  anbu archive e backup.zip
-  anbu archive extract backup.zip --bare
-  ```
-
-- ***Bulk Rename***
-
-  ```bash
-  anbu rename 'prefix_(.*)' 'new_\1'
-  anbu rename --directories 'old_(.*)' 'new_\1'
-  anbu rename '(.*)\.(.*)' '\1_backup.\2'
-  anbu rename 'image-(\d+).jpg' 'IMG_\1.jpeg' --dry-run
-  anbu rename '(.*)' '\1_\uuid'
-  anbu rename '(.*)\.(.*)' '\1_\suid.\2'
-  ```
-
-- ***Find Duplicates*** (alias: `dup`)
-
-  ```bash
-  anbu duplicates
-  anbu dup --recursive
-  anbu dup --delete
-  ```
-
-- ***Passphrase***
-
-  Default is three hyphenated words, then one of those words is capitalized and one (possibly the same) gets a trailing digit. `--simple` is words and hyphens only.
-
-  ```bash
-  anbu passphrase
-  anbu passphrase -l 5
-  anbu passphrase --simple
-  ```
-
-- ***UUID***
-
-  ```bash
-  anbu uuid
-  anbu uuid --v4
-  anbu uuid --short      # 18-character form from v7 random bits
-  anbu uuid --v4 --short # 18-character form from v4 random bits
-  ```
-
-- ***Random String***
-
-  ```bash
-  anbu random-string
-  anbu random -l 32
-  anbu random --hex
-  anbu random --digits
-  anbu random --alpha
-  anbu random --all
-  ```
-
-## Tips and Notes
-
-<details>
-<summary><b>Use Anbu within Shell Commands</b></summary>
-
-A command that takes a username and password leaves those values in shell history:
-
 ```bash
-hypothetical --username admin --password sensitive
+anbu serve                 # http://0.0.0.0:8080, data in ~/.config/anbu/data
+anbu serve -p 9000 -d /srv/anbu
 ```
 
-Pull them from the secrets store instead:
+### Data directory
+
+`-d` names the data directory. It is created at `0700`, and every file in it is `0600`.
+
+| Path | Holds |
+|---|---|
+| `password` | the vault password in plaintext, generated on first start |
+| `vault.json` | every secret, AES-256-GCM encrypted under a PBKDF2 key from the password |
+| `tasks.json`, `settings.json`, `hosts.json` | tasks, settings, and stored SSH hosts in plaintext |
+| `known_hosts` | host keys for every SSH target |
+| `aws/` | empty AWS config files and the `HOME` of the `aws` CLI |
+
+Back up the whole directory. The vault cannot be read without the `password` file next to it. Rotate the password under Settings in the UI.
+
+### Authentication
+
+Anbu has no users, sessions, or tokens. Put it behind a forward-auth proxy that also passes WebSocket upgrades through for `/ws/terminal`. The UI needs HTTPS or `localhost` for its copy buttons to work.
+
+### `anbu api`
+
+The `api` command group calls the REST API and prints the raw JSON response.
 
 ```bash
-hypothetical --username $(anbu secrets get myuser) --password $(anbu secrets get mypw)
+anbu api setup https://anbu.example.com -H "X-Proxy-Token: <token>"
+anbu api secrets list
+anbu api secrets get github
+anbu api secrets totp google-work
+anbu api ssh targets
+anbu api machines list corp:admin
 ```
 
-An alias of `anbu` as `a` keeps generators short:
+- `setup` writes `~/.config/anbu/api.json`, and its headers ride on every call so the proxy admits the CLI.
+- Without `api.json`, calls go to `http://localhost:8080`. `ANBU_URL` overrides the URL for one invocation.
+- An HTTP error or a connection failure is logged and exits 1.
 
-```bash
-hypothetical_command --uuid $(a uuid)
+### AWS SSO in a local profile
+
+An SSO profile is referenced as `<secret>:<profile>`. Once the SSO session is logged in through the UI, `anbu api secrets get` prints temporary credentials in the `credential_process` format:
+
+```ini
+[profile corp-admin]
+credential_process = anbu api secrets get corp:admin
+region = us-west-2
 ```
 
-</details>
+## Notes
 
-<details>
-<summary><b>Copy an SSH session public key</b></summary>
-
-`anbu ssh setup` prints the public key. That line is what goes into the server's `authorized_keys`. Exec then uses the matching private key from `~/.config/anbu/ssh/keys/`.
-
-</details>
+- **SSO sessions** live in memory only. A restart needs a new device login, and an expired session returns `401` with `sso login required`.
+- **EC2 jobs** run one at a time in a queue held in memory. A restart drops queued jobs and job history.
+- **Scaffold keys** are vault secrets named `sharingan-<account>-<region>`. Only scaffold teardown deletes one. A sharingan-created scaffold is adopted by importing `~/.config/sharingan/id_ed25519` under that name.
+- **Pricing** for machine options and the machine list is cached per account and region for an hour, so the first request in an hour is slow.
+- **Host key changes** fail the connection. Clear the old key with Forget host key in the SSH view.
