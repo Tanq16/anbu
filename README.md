@@ -3,7 +3,7 @@
   <h1>Anbu</h1>
 
   <a href="https://github.com/tanq16/anbu/actions/workflows/release.yaml"><img alt="Build Workflow" src="https://github.com/tanq16/anbu/actions/workflows/release.yaml/badge.svg"></a>&nbsp;<a href="https://github.com/tanq16/anbu/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/tanq16/anbu"></a>&nbsp;<a href="https://hub.docker.com/r/tanq16/anbu"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/tanq16/anbu"></a><br><br>
-  <a href="#features">Features</a> &bull; <a href="#install">Install</a> &bull; <a href="#usage">Usage</a> &bull; <a href="#notes">Notes</a>
+  <a href="#features">Features</a> &bull; <a href="#screenshots">Screenshots</a> &bull; <a href="#install">Install</a> &bull; <a href="#usage">Usage</a> &bull; <a href="#notes">Notes</a>
 </div>
 
 ---
@@ -23,6 +23,37 @@ It runs as a single binary for one person or a small team behind a forward-auth 
 | Machines | EC2 workstations on a per-account scaffold, with create, start, stop, resize, remove, live pricing, and a bootstrap probe |
 | Tools | Hashes, YAML and JSON conversion, time parsing, UUIDs, passphrases, random strings, JWT, Base64, URL, case, and text stats |
 
+## Screenshots
+
+<details>
+<summary>Click to expand</summary>
+
+### Vault
+
+| Desktop | Mobile |
+| :---: | :---: |
+| <img src=".github/assets/vault-desktop.png" alt="Vault desktop" width="100%" /> | <img src=".github/assets/vault-mobile.png" alt="Vault mobile" width="100%" /> |
+
+### Tasks
+
+| Desktop | Mobile |
+| :---: | :---: |
+| <img src=".github/assets/tasks-desktop.png" alt="Tasks desktop" width="100%" /> | <img src=".github/assets/tasks-mobile.png" alt="Tasks mobile" width="100%" /> |
+
+### SSH
+
+| Desktop | Mobile |
+| :---: | :---: |
+| <img src=".github/assets/ssh-desktop.png" alt="SSH desktop" width="100%" /> | <img src=".github/assets/ssh-mobile.png" alt="SSH mobile" width="100%" /> |
+
+### Tools
+
+| Desktop | Mobile |
+| :---: | :---: |
+| <img src=".github/assets/tools-desktop.png" alt="Tools desktop" width="100%" /> | <img src=".github/assets/tools-mobile.png" alt="Tools mobile" width="100%" /> |
+
+</details>
+
 ## Install
 
 ### Docker
@@ -32,12 +63,12 @@ mkdir -p $HOME/.anbu && sudo chown 10001:10001 $HOME/.anbu
 ```
 ```bash
 docker run -d --name anbu \
-  -p 8080:8080 \
+  -p 127.0.0.1:8080:8080 \
   -v $HOME/.anbu:/data \
   tanq16/anbu:latest
 ```
 
-Available at `http://localhost:8080`. The same setup as a compose file:
+Available at `http://localhost:8080`, and only on the host's loopback interface, since anbu has no login of its own. The same setup as a compose file:
 
 ```yaml
 services:
@@ -46,7 +77,7 @@ services:
     container_name: anbu
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./data:/data # change as needed
 ```
@@ -88,7 +119,7 @@ Back up the whole directory. The vault cannot be read without the `password` fil
 
 ### Authentication
 
-Anbu has no users, sessions, or tokens. Put it behind a forward-auth proxy that also passes WebSocket upgrades through for `/ws/terminal`. The UI needs HTTPS or `localhost` for its copy buttons to work.
+Anbu has no users, sessions, or tokens. Put it behind a forward-auth proxy that also passes WebSocket upgrades through for `/ws/terminal`. The proxy must forward the original `Host` header, because the terminal and the API reject a request whose `Origin` does not match it. The UI needs HTTPS or `localhost` for its copy buttons to work.
 
 ### `anbu api`
 
