@@ -21,3 +21,9 @@ go.work.sum
 
 # env file
 .env
+
+internal/server/static/css/
+internal/server/static/js/
+internal/server/static/fonts/
+internal/server/static/fontawesome/
+internal/server/static/.assets-stamp
