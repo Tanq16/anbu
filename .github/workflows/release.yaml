@@ -18,6 +18,11 @@ jobs:
         with:
           go-version: '1.27'
 
+      - uses: astral-sh/setup-uv@v10
+
+      - name: Download assets
+        run: make assets
+
       - name: Run tests
         run: go test ./...
 
@@ -42,11 +47,37 @@ jobs:
           gh release create "${{ steps.version.outputs.version }}" \
             --title "Release ${{ steps.version.outputs.version }}" \
             --draft \
-            --notes "Anbu ${{ steps.version.outputs.version }}" \
+            --notes "anbu ${{ steps.version.outputs.version }}" \
             --target ${{ github.sha }}
           echo "release_created=true" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
+
+  docker:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-qemu-action@v4
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          username: tanq16
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            VERSION=${{ needs.create-release.outputs.version }}
+          tags: |
+            tanq16/anbu:latest
+            tanq16/anbu:${{ needs.create-release.outputs.version }}
 
   binaries:
     needs: create-release
@@ -62,6 +93,11 @@ jobs:
         with:
           go-version: '1.27'
 
+      - uses: astral-sh/setup-uv@v10
+
+      - name: Download assets
+        run: make assets
+
       - name: Build binary
         run: make build-for GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} VERSION=${{ needs.create-release.outputs.version }}
 
@@ -73,7 +109,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
   publish:
-    needs: [create-release, binaries]
+    needs: [create-release, docker, binaries]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -84,8 +120,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
   cleanup-on-failure:
-    needs: [create-release, binaries, publish]
-    if: always() && (needs.binaries.result == 'failure' || needs.publish.result == 'failure') && needs.create-release.outputs.release_created == 'true'
+    needs: [create-release, docker, binaries, publish]
+    if: always() && (needs.docker.result == 'failure' || needs.binaries.result == 'failure' || needs.publish.result == 'failure') && needs.create-release.outputs.release_created == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Delete draft release
