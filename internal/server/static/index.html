@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>anbu</title>
+<link rel="stylesheet" href="/static/css/inter.css">
+<link rel="stylesheet" href="/static/css/google-sans.css">
+<link rel="stylesheet" href="/static/css/jetbrains-mono.css">
+<link rel="stylesheet" href="/static/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="/static/css/xterm.css">
+<script src="/static/js/lucide.min.js"></script>
+<script src="/static/js/xterm.js"></script>
+<script src="/static/js/addon-fit.js"></script>
+<script src="/static/js/addon-webgl.js"></script>
+<script src="/static/js/tailwind.js"></script>
+<style>
+  :root {
+    --ctp-rosewater: #f5e0dc; --ctp-flamingo: #f2cdcd; --ctp-pink: #f5c2e7;
+    --ctp-mauve: #cba6f7;     --ctp-red: #f38ba8;      --ctp-maroon: #eba0ac;
+    --ctp-peach: #fab387;     --ctp-yellow: #f9e2af;   --ctp-green: #a6e3a1;
+    --ctp-teal: #94e2d5;      --ctp-sky: #89dceb;      --ctp-sapphire: #74c7ec;
+    --ctp-blue: #89b4fa;      --ctp-lavender: #b4befe; --ctp-text: #cdd6f4;
+    --ctp-subtext1: #bac2de;  --ctp-subtext0: #a6adc8; --ctp-overlay2: #9399b2;
+    --ctp-overlay1: #7f849c;  --ctp-overlay0: #6c7086; --ctp-surface2: #585b70;
+    --ctp-surface1: #45475a;  --ctp-surface0: #313244; --ctp-base: #1e1e2e;
+    --ctp-mantle: #181825;    --ctp-crust: #11111b;
+  }
+  .json-key { color: var(--ctp-blue); } .json-string { color: var(--ctp-green); } .json-number { color: var(--ctp-peach); }
+  .json-bool { color: var(--ctp-mauve); } .json-null { color: var(--ctp-overlay1); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background-color: transparent; border: 2px solid transparent; border-radius: 10px; background-clip: padding-box; }
+  .scrolling::-webkit-scrollbar-thumb { background-color: var(--ctp-surface1); }
+  ::-webkit-scrollbar-thumb:hover { background-color: var(--ctp-surface2); }
+  textarea.scrolling::-webkit-scrollbar-thumb { background-color: var(--ctp-surface2); }
+  textarea::-webkit-scrollbar-thumb:hover { background-color: var(--ctp-overlay0); }
+  input[type=number] { appearance: textfield; }
+  input[type=time]::-webkit-calendar-picker-indicator { display: none; }
+  ::placeholder { color: var(--ctp-overlay0); opacity: 1; }
+  ::selection { background: color-mix(in oklab, var(--ctp-mauve) 35%, transparent); color: var(--ctp-text); }
+  input:-webkit-autofill { -webkit-text-fill-color: var(--ctp-text); box-shadow: 0 0 0 100px var(--ctp-surface0) inset; caret-color: var(--ctp-text); }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+  ::-webkit-resizer { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M7 1 1 7M7 4 4 7' stroke='%237f849c' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 2px bottom 2px / 8px 8px; }
+  .xterm { padding: 12px; height: 100%; } .xterm-viewport { background: transparent !important; }
+</style>
+<style type="text/tailwindcss">
+  @theme {
+    --color-rosewater: var(--ctp-rosewater); --color-flamingo: var(--ctp-flamingo);
+    --color-pink: var(--ctp-pink);           --color-mauve: var(--ctp-mauve);
+    --color-red: var(--ctp-red);             --color-maroon: var(--ctp-maroon);
+    --color-peach: var(--ctp-peach);         --color-yellow: var(--ctp-yellow);
+    --color-green: var(--ctp-green);         --color-teal: var(--ctp-teal);
+    --color-sky: var(--ctp-sky);             --color-sapphire: var(--ctp-sapphire);
+    --color-blue: var(--ctp-blue);           --color-lavender: var(--ctp-lavender);
+    --color-text: var(--ctp-text);           --color-subtext1: var(--ctp-subtext1);
+    --color-subtext0: var(--ctp-subtext0);   --color-overlay2: var(--ctp-overlay2);
+    --color-overlay1: var(--ctp-overlay1);   --color-overlay0: var(--ctp-overlay0);
+    --color-surface2: var(--ctp-surface2);   --color-surface1: var(--ctp-surface1);
+    --color-surface0: var(--ctp-surface0);   --color-base: var(--ctp-base);
+    --color-mantle: var(--ctp-mantle);       --color-crust: var(--ctp-crust);
+    --font-sans: 'Inter', sans-serif;
+    --font-display: 'Google Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body class="scheme-dark bg-crust text-subtext0 font-sans h-dvh overflow-hidden flex flex-col md:flex-row">
+<nav id="rail" class="order-last md:order-first shrink-0 flex md:flex-col items-stretch gap-0.5 md:gap-1 px-1 md:px-2 py-1.5 md:py-4 md:w-(--rail-w) bg-mantle overflow-x-auto md:overflow-x-hidden"></nav>
+<div data-resize="rail" title="Drag to resize, double-click to toggle labels" class="group hidden md:flex w-2 shrink-0 items-center justify-center cursor-col-resize select-none touch-none"><span class="h-12 w-1 rounded-full group-hover:bg-surface1 group-active:bg-mauve"></span></div>
+<section id="list" class="md:w-(--list-w) shrink-0 flex flex-col min-h-0 flex-1 md:flex-none"></section>
+<div data-resize="list" title="Drag to resize, double-click to collapse" class="group hidden md:flex w-2 shrink-0 items-center justify-center cursor-col-resize select-none touch-none"><span class="h-12 w-1 rounded-full group-hover:bg-surface1 group-active:bg-mauve"></span></div>
+<main id="detail" class="flex-1 min-w-0 min-h-0 bg-mantle md:my-2 md:mr-2 md:rounded-2xl overflow-y-auto"></main>
+<div id="toast" class="fixed z-50 bottom-20 md:bottom-6 right-4 left-4 md:left-auto md:max-w-md flex flex-col gap-2 pointer-events-none"></div>
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>
