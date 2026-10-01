@@ -40,6 +40,7 @@ type Config struct {
 type Server struct {
 	cfg        Config
 	mux        *http.ServeMux
+	handler    http.Handler
 	vault      *vault.Store
 	tasks      *tasks.Store
 	settings   *settings.Store
@@ -117,13 +118,14 @@ func (s *Server) Setup() error {
 	s.mux.HandleFunc("/api/", s.handleAPINotFound)
 	s.mux.HandleFunc("/ws/", http.NotFound)
 	s.mux.HandleFunc("/", s.handleIndex)
+	s.handler = http.NewCrossOriginProtection().Handler(s.mux)
 	return nil
 }
 
 func (s *Server) Run() error {
 	addr := fmt.Sprintf("%s:%d", s.cfg.Host, s.cfg.Port)
 	log.Info().Str("addr", addr).Str("data", s.cfg.DataDir).Msg("starting")
-	return http.ListenAndServe(addr, http.NewCrossOriginProtection().Handler(s.mux))
+	return http.ListenAndServe(addr, s.handler)
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {

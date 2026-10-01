@@ -28,9 +28,9 @@ type Secret struct {
 	Name      string            `json:"name"`
 	Type      Type              `json:"type"`
 	Fields    map[string]string `json:"fields"`
-	Profiles  []AWSProfile      `json:"profiles,omitempty"`
+	Profiles  []AWSProfile      `json:"profiles,omitzero"`
 	TOTP      *TOTP             `json:"totp,omitempty"`
-	Custom    []CustomField     `json:"custom,omitempty"`
+	Custom    []CustomField     `json:"custom,omitzero"`
 	CreatedAt time.Time         `json:"created_at"`
 	UpdatedAt time.Time         `json:"updated_at"`
 }
@@ -46,7 +46,7 @@ type AWSProfile struct {
 	AccountID string        `json:"account_id"`
 	RoleName  string        `json:"role_name"`
 	Region    string        `json:"region"`
-	Custom    []CustomField `json:"custom,omitempty"`
+	Custom    []CustomField `json:"custom,omitzero"`
 }
 
 type Type string

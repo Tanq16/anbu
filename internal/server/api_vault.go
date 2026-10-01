@@ -27,7 +27,7 @@ type secretListItem struct {
 	HasTOTP   bool              `json:"has_totp"`
 	UpdatedAt time.Time         `json:"updated_at"`
 	Fields    map[string]string `json:"fields"`
-	Profiles  []profileListItem `json:"profiles,omitempty"`
+	Profiles  []profileListItem `json:"profiles,omitzero"`
 }
 
 type profileListItem struct {

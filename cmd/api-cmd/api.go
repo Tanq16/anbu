@@ -17,7 +17,11 @@ var ApiCmd = &cobra.Command{
 }
 
 func call(method, path string, body any) {
-	resp, err := apiclient.Do(method, path, body)
+	cfg, err := apiclient.Load()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to load api config")
+	}
+	resp, err := apiclient.Do(cfg, method, path, body)
 	if err != nil {
 		log.Fatal().Err(err).Msg("request failed")
 	}
