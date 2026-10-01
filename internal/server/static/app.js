@@ -313,7 +313,7 @@ function renderRail() {
   const label = open ? 'md:truncate' : 'md:hidden';
   const tool = (attrs, icon, title) => `<button type="button" ${attrs} title="${title}" class="hidden md:flex items-center gap-3 rounded-xl text-overlay1 hover:text-text hover:bg-surface0/60 ${shape}"><i data-lucide="${icon}" class="size-4 shrink-0"></i><span class="${label}">${title}</span></button>`;
   const html = `
-    <span class="hidden md:flex items-center gap-3 mb-4 ${open ? 'px-1.5' : 'self-center'}"><img src="/static/icons/logo.png" alt="anbu" class="size-11 shrink-0">${open ? '<span class="font-display text-lg text-text">anbu</span>' : ''}</span>
+    <span class="hidden md:flex items-center gap-3 mb-4 ${open ? 'px-1.5' : 'self-center'}"><img src="/static/icons/icon.svg" alt="anbu" class="size-11 shrink-0">${open ? '<span class="font-display text-lg text-text">anbu</span>' : ''}</span>
     ${modules.map(([id, name, icon]) => `<button type="button" data-mod="${id}" title="${id === 'machines' && js ? `${name} · ${js}` : name}" class="flex-1 md:flex-none min-w-11 flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] ${shape} ${st.mod === id ? 'bg-surface0 text-mauve' : 'text-overlay1 hover:text-text'}"><span class="relative shrink-0"><i data-lucide="${icon}" class="size-5"></i>${id === 'machines' && js ? '<span class="absolute -top-0.5 -right-1 size-2 rounded-full bg-yellow"></span>' : ''}</span><span class="${label}">${name}</span></button>`).join('')}
     <span class="hidden md:block flex-1"></span>
     ${tool('data-pane="list"', ui.list.open ? 'panel-left-close' : 'panel-left-open', ui.list.open ? 'Hide list' : 'Show list')}
