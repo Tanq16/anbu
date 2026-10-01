@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -110,6 +111,7 @@ func (s *Server) routeMachines() {
 	s.mux.HandleFunc("GET /api/aws/scaffold", s.handleScaffoldStatus)
 	s.mux.HandleFunc("POST /api/aws/scaffold", s.handleScaffoldJob("setup"))
 	s.mux.HandleFunc("DELETE /api/aws/scaffold", s.handleScaffoldJob("teardown"))
+	s.mux.HandleFunc("PUT /api/aws/scaffold/key", s.handleAdoptScaffoldKey)
 }
 
 func (s *Server) queryClients(w http.ResponseWriter, r *http.Request) (*awsx.Clients, bool) {
@@ -405,6 +407,41 @@ func (s *Server) handleMachineLifecycle(action string) http.HandlerFunc {
 	}
 }
 
+type adoptKeyRequest struct {
+	Source     awscred.Source `json:"source"`
+	PrivateKey string         `json:"private_key"`
+}
+
+func (s *Server) handleAdoptScaffoldKey(w http.ResponseWriter, r *http.Request) {
+	var in adoptKeyRequest
+	if err := readJSON(w, r, &in); err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	if in.Source.Profile == "" && in.Source.Inline == nil {
+		in.Source = querySource(r)
+	}
+	if err := s.creds.Validate(in.Source); err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	if strings.TrimSpace(in.PrivateKey) == "" {
+		s.fail(w, r, badRequest("private_key is required"))
+		return
+	}
+	c, err := s.clients(r.Context(), in.Source)
+	if err != nil {
+		s.failRemote(w, r, err)
+		return
+	}
+	status, err := scaffold.AdoptKey(r.Context(), c, s.vault, in.PrivateKey)
+	if err != nil {
+		s.failRemote(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
 func (s *Server) handleScaffoldStatus(w http.ResponseWriter, r *http.Request) {
 	c, ok := s.queryClients(w, r)
 	if !ok {
@@ -435,13 +472,6 @@ func (s *Server) handleScaffoldJob(action string) http.HandlerFunc {
 			c, err := s.clients(ctx, src)
 			if err != nil {
 				return nil, err
-			}
-			if action == "teardown" {
-				if sec, err := s.vault.Get(scaffold.KeyName(c.Account, c.Region)); err == nil {
-					if refs := s.hosts.Referencing(sec.ID); len(refs) > 0 {
-						return nil, &vault.ReferencedError{UsedBy: refs}
-					}
-				}
 			}
 			events, err := op(ctx, c, s.vault)
 			if len(events) == 0 {

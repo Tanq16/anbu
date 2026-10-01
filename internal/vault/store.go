@@ -17,12 +17,13 @@ import (
 )
 
 type Store struct {
-	mu      sync.RWMutex
-	root    string
-	key     []byte
-	salt    []byte
-	iter    int
-	secrets map[string]Secret
+	mu          sync.RWMutex
+	root        string
+	key         []byte
+	salt        []byte
+	iter        int
+	secrets     map[string]Secret
+	machineKeys map[string]MachineKey
 }
 
 func Open(root, password string) (*Store, error) {
@@ -37,17 +38,17 @@ func Open(root, password string) (*Store, error) {
 		if s.key, err = deriveKey(password, s.salt, s.iter); err != nil {
 			return nil, err
 		}
-		s.secrets = map[string]Secret{}
+		s.secrets, s.machineKeys = map[string]Secret{}, map[string]MachineKey{}
 		return s, s.persist()
 	}
 	if err != nil {
 		return nil, err
 	}
-	o, err := openSecrets(data, password)
+	o, err := openVault(data, password)
 	if err != nil {
 		return nil, err
 	}
-	s.secrets, s.key, s.salt, s.iter = o.secrets, o.key, o.salt, o.iter
+	s.secrets, s.machineKeys, s.key, s.salt, s.iter = o.Secrets, o.MachineKeys, o.key, o.salt, o.iter
 	return s, nil
 }
 
@@ -64,7 +65,7 @@ func recoverRotation(root, password string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := openSecrets(data, password); err == nil {
+	if _, err := openVault(data, password); err == nil {
 		return os.Rename(vaultNext, filepath.Join(root, datadir.VaultFile))
 	}
 	return os.Remove(vaultNext)
@@ -75,11 +76,15 @@ func (s *Store) path(name string) string {
 }
 
 func (s *Store) persist() error {
-	data, err := sealSecrets(s.secrets, s.key, s.salt, s.iter)
+	data, err := sealVault(s.contents(), s.key, s.salt, s.iter)
 	if err != nil {
 		return err
 	}
 	return datadir.WriteFile(s.path(datadir.VaultFile), data)
+}
+
+func (s *Store) contents() contents {
+	return contents{Secrets: s.secrets, MachineKeys: s.machineKeys}
 }
 
 func (s *Store) sorted() []Secret {
@@ -172,9 +177,6 @@ func (s *Store) Update(ref string, in Secret) (Secret, error) {
 	if in.Type != cur.Type {
 		return Secret{}, invalid("type cannot change from %s to %s", cur.Type, in.Type)
 	}
-	if in.Name != cur.Name && strings.HasPrefix(cur.Name, ScaffoldKeyPrefix) {
-		return Secret{}, conflict("%s is a scaffold key and cannot be renamed", cur.Name)
-	}
 	if s.nameTaken(in.Name, cur.ID) {
 		return Secret{}, conflict("a secret named %s already exists", in.Name)
 	}
@@ -198,21 +200,8 @@ func (s *Store) Delete(ref string, usedBy func(Secret) []string) error {
 	if usedBy != nil {
 		refs = usedBy(sec)
 	}
-	if len(refs) == 0 && strings.HasPrefix(sec.Name, ScaffoldKeyPrefix) {
-		refs = []string{"scaffold"}
-	}
 	if len(refs) > 0 {
 		return &ReferencedError{UsedBy: refs}
-	}
-	return s.remove(sec)
-}
-
-func (s *Store) DeleteScaffoldKey(name string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	sec, ok := s.find(name)
-	if !ok || !strings.HasPrefix(sec.Name, ScaffoldKeyPrefix) {
-		return ErrNotFound
 	}
 	return s.remove(sec)
 }
@@ -240,7 +229,7 @@ func (s *Store) Rotate(password string) error {
 	if err != nil {
 		return err
 	}
-	data, err := sealSecrets(s.secrets, key, salt, kdfIterations)
+	data, err := sealVault(s.contents(), key, salt, kdfIterations)
 	if err != nil {
 		return err
 	}

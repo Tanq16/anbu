@@ -20,27 +20,24 @@ const (
 	KeyDiffers KeyState = "differs"
 )
 
+var ErrKeyMismatch = errors.New("private key does not match the key pair")
+
 type KeyStatus struct {
-	Secret  string   `json:"secret"`
-	State   KeyState `json:"state"`
-	keyPair *awsx.KeyPair
-	stored  *vault.Secret
+	State       KeyState `json:"state"`
+	Fingerprint string   `json:"fingerprint,omitempty"`
+	keyPair     *awsx.KeyPair
+	stored      *vault.MachineKey
 }
 
 func CheckKey(ctx context.Context, c *awsx.Clients, keys *vault.Store) (KeyStatus, error) {
-	status := KeyStatus{Secret: KeyName(c.Account, c.Region)}
 	kp, err := c.FindKeyPair(ctx)
 	if err != nil {
 		return KeyStatus{}, err
 	}
-	status.keyPair = kp
-	sec, err := keys.Get(status.Secret)
-	switch {
-	case errors.Is(err, vault.ErrNotFound):
-	case err != nil:
-		return KeyStatus{}, err
-	default:
-		status.stored = &sec
+	status := KeyStatus{keyPair: kp}
+	if k, ok := keys.MachineKey(c.Account, c.Region); ok {
+		status.stored = &k
+		status.Fingerprint = k.Fingerprint()
 	}
 
 	switch {
@@ -48,7 +45,7 @@ func CheckKey(ctx context.Context, c *awsx.Clients, keys *vault.Store) (KeyStatu
 		status.State = KeyNone
 	case status.stored == nil:
 		status.State = KeyMissing
-	case samePublicKey(kp.PublicKey, status.stored.Fields["public_key"]):
+	case samePublicKey(kp.PublicKey, status.stored.PublicKey):
 		status.State = KeyMatch
 	default:
 		status.State = KeyDiffers
@@ -56,14 +53,32 @@ func CheckKey(ctx context.Context, c *awsx.Clients, keys *vault.Store) (KeyStatu
 	return status, nil
 }
 
+func AdoptKey(ctx context.Context, c *awsx.Clients, keys *vault.Store, privateKey string) (KeyStatus, error) {
+	kp, err := c.FindKeyPair(ctx)
+	if err != nil {
+		return KeyStatus{}, err
+	}
+	if kp != nil {
+		signer, err := ssh.ParsePrivateKey([]byte(privateKey))
+		if err != nil {
+			return KeyStatus{}, fmt.Errorf("%w: private key does not parse: %v", vault.ErrInvalid, err)
+		}
+		if !samePublicKey(kp.PublicKey, string(ssh.MarshalAuthorizedKey(signer.PublicKey()))) {
+			return KeyStatus{}, fmt.Errorf("%w %s in %s", ErrKeyMismatch, nameKeyPair, c.Region)
+		}
+	}
+	if _, err := keys.ImportMachineKey(c.Account, c.Region, privateKey); err != nil {
+		return KeyStatus{}, err
+	}
+	return CheckKey(ctx, c, keys)
+}
+
 func (k KeyStatus) Err(region string) error {
 	switch k.State {
 	case KeyMissing:
-		return fmt.Errorf("key pair %s exists in %s but the vault has no secret %s; import its private key as an ssh-key secret under that name",
-			nameKeyPair, region, k.Secret)
+		return fmt.Errorf("key pair %s exists in %s but anbu has no key for it; import its private key on the scaffold view", nameKeyPair, region)
 	case KeyDiffers:
-		return fmt.Errorf("key pair %s in %s does not match the secret %s; machines launched there authorize the other key",
-			nameKeyPair, region, k.Secret)
+		return fmt.Errorf("key pair %s in %s does not match the scaffold key; machines launched there authorize the other key", nameKeyPair, region)
 	}
 	return nil
 }

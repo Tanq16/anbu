@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/tanq16/anbu/internal/awsx"
-	"github.com/tanq16/anbu/internal/scaffold"
 	"github.com/tanq16/anbu/internal/sshx"
 	"github.com/tanq16/anbu/internal/vault"
 )
@@ -19,7 +18,10 @@ const (
 	probeTimeout = 60 * time.Second
 )
 
-var ErrSSH = errors.New("ssh failed")
+var (
+	ErrSSH   = errors.New("ssh failed")
+	ErrNoKey = errors.New("scaffold key missing")
+)
 
 func Endpoint(ctx context.Context, c *awsx.Clients, keys *vault.Store, name string) (sshx.Endpoint, error) {
 	inst, err := requireInstance(ctx, c, name)
@@ -29,11 +31,11 @@ func Endpoint(ctx context.Context, c *awsx.Clients, keys *vault.Store, name stri
 	if inst.PublicIP == "" {
 		return sshx.Endpoint{}, &NotRunningError{Name: name, State: inst.State}
 	}
-	sec, err := keys.Get(scaffold.KeyName(c.Account, c.Region))
-	if err != nil {
-		return sshx.Endpoint{}, fmt.Errorf("scaffold key %s: %w", scaffold.KeyName(c.Account, c.Region), err)
+	k, ok := keys.MachineKey(c.Account, c.Region)
+	if !ok {
+		return sshx.Endpoint{}, fmt.Errorf("%w: no scaffold key for %s/%s, run scaffold setup", ErrNoKey, c.Account, c.Region)
 	}
-	signer, err := vault.Signer(sec)
+	signer, err := k.Signer()
 	if err != nil {
 		return sshx.Endpoint{}, err
 	}

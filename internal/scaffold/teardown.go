@@ -2,7 +2,6 @@ package scaffold
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -44,14 +43,16 @@ func Teardown(ctx context.Context, c *awsx.Clients, keys *vault.Store) ([]Event,
 			return cfg.events, err
 		}
 	}
-	name := KeyName(c.Account, c.Region)
-	err = keys.DeleteScaffoldKey(name)
-	switch {
-	case errors.Is(err, vault.ErrNotFound):
-	case err != nil:
+	fingerprint := ""
+	if k, ok := keys.MachineKey(c.Account, c.Region); ok {
+		fingerprint = k.Fingerprint()
+	}
+	deleted, err := keys.DeleteMachineKey(c.Account, c.Region)
+	if err != nil {
 		return cfg.events, err
-	default:
-		cfg.notify(Deleted, resKeySecret, name)
+	}
+	if deleted {
+		cfg.notify(Deleted, resScaffoldKey, fingerprint)
 	}
 	return cfg.events, nil
 }

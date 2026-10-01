@@ -66,8 +66,13 @@ func seal(plain, key, salt []byte, iter int) (file, error) {
 	}, nil
 }
 
-func sealSecrets(secrets map[string]Secret, key, salt []byte, iter int) ([]byte, error) {
-	plain, err := json.Marshal(secrets, json.Deterministic(true))
+type contents struct {
+	Secrets     map[string]Secret     `json:"secrets"`
+	MachineKeys map[string]MachineKey `json:"machine_keys"`
+}
+
+func sealVault(c contents, key, salt []byte, iter int) ([]byte, error) {
+	plain, err := json.Marshal(c, json.Deterministic(true))
 	if err != nil {
 		return nil, err
 	}
@@ -79,13 +84,13 @@ func sealSecrets(secrets map[string]Secret, key, salt []byte, iter int) ([]byte,
 }
 
 type opened struct {
-	secrets map[string]Secret
-	key     []byte
-	salt    []byte
-	iter    int
+	contents
+	key  []byte
+	salt []byte
+	iter int
 }
 
-func openSecrets(data []byte, password string) (opened, error) {
+func openVault(data []byte, password string) (opened, error) {
 	var f file
 	if err := json.Unmarshal(data, &f); err != nil {
 		return opened{}, fmt.Errorf("vault file is corrupt: %w", err)
@@ -111,9 +116,9 @@ func openSecrets(data []byte, password string) (opened, error) {
 	if err != nil {
 		return opened{}, errors.New("vault does not decrypt with the current password")
 	}
-	secrets := map[string]Secret{}
-	if err := json.Unmarshal(plain, &secrets); err != nil {
+	c := contents{Secrets: map[string]Secret{}, MachineKeys: map[string]MachineKey{}}
+	if err := json.Unmarshal(plain, &c); err != nil {
 		return opened{}, fmt.Errorf("vault contents are corrupt: %w", err)
 	}
-	return opened{secrets: secrets, key: key, salt: f.KDF.Salt, iter: f.KDF.Iterations}, nil
+	return opened{contents: c, key: key, salt: f.KDF.Salt, iter: f.KDF.Iterations}, nil
 }

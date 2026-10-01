@@ -17,6 +17,7 @@ import (
 	"github.com/tanq16/anbu/internal/hosts"
 	"github.com/tanq16/anbu/internal/jobs"
 	"github.com/tanq16/anbu/internal/machine"
+	"github.com/tanq16/anbu/internal/scaffold"
 	"github.com/tanq16/anbu/internal/settings"
 	"github.com/tanq16/anbu/internal/sshx"
 	"github.com/tanq16/anbu/internal/tasks"
@@ -197,7 +198,7 @@ func statusOf(err error, fallback int) int {
 		return http.StatusBadRequest
 	case is(vault.ErrNotFound, tasks.ErrNotFound, hosts.ErrNotFound, jobs.ErrNotFound, awscred.ErrNotFound, machine.ErrNotFound):
 		return http.StatusNotFound
-	case is(vault.ErrConflict, hosts.ErrConflict):
+	case is(vault.ErrConflict, hosts.ErrConflict, scaffold.ErrKeyMismatch, machine.ErrNoKey):
 		return http.StatusConflict
 	case is(awsrun.ErrNotInstalled):
 		return http.StatusNotImplemented

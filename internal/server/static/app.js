@@ -401,7 +401,7 @@ const lists = {
     const js = jobSummary(jobs);
     const sc = get('scaffold', st.profile);
     const ms = get('machines', st.profile);
-    const scLine = 'data' in sc ? (sc.data.key.state === 'missing' ? '<span class="text-peach">key not in vault</span>' : sc.data.key.state === 'differs' ? '<span class="text-red">key differs from vault</span>' : sc.data.ready ? 'ready' : 'not set up') : sc.error ? '<span class="text-red">unavailable</span>' : 'checking';
+    const scLine = 'data' in sc ? (sc.data.key.state === 'missing' ? '<span class="text-peach">key not in anbu</span>' : sc.data.key.state === 'differs' ? '<span class="text-red">key differs</span>' : sc.data.ready ? 'ready' : 'not set up') : sc.error ? '<span class="text-red">unavailable</span>' : 'checking';
     const sub = `<div class="px-4 pb-3">${accountPicker()}</div>`;
     return listShell('Machines', addBtn('new-machine', 'New machine'),
       (js ? viewItem('machines', 'jobs', `<i data-lucide="loader-circle" class="size-4 text-yellow animate-spin"></i>${twoLine('Job pipeline', js)}`) : viewItem('machines', 'jobs', `<i data-lucide="list-ordered" class="size-4 text-overlay1"></i>${twoLine('Job pipeline', 'Idle')}`))
@@ -474,7 +474,7 @@ function secretDetail(name) {
     const confirm = st.confirm?.kind === 'delete-secret' ? st.confirm : null;
     let confirmPanel = '';
     if (confirm?.error) {
-      confirmPanel = `<section class="rounded-2xl bg-red/10 p-5 mb-8 text-sm">${s.name.startsWith('sharingan-') ? `<p class="text-red font-medium mb-1">409 · scaffold key</p><p>Machines in this scaffold authorize this key. Tearing the scaffold down removes it.</p>` : `<p class="text-red font-medium mb-1">409 · ${esc(confirm.error.message)}</p><p>Remove these references first: ${esc((confirm.error.data?.used_by ?? refs).join(', '))}</p>`}</section>`;
+      confirmPanel = `<section class="rounded-2xl bg-red/10 p-5 mb-8 text-sm"><p class="text-red font-medium mb-1">409 · ${esc(confirm.error.message)}</p><p>Remove these references first: ${esc((confirm.error.data?.used_by ?? refs).join(', '))}</p></section>`;
     } else if (confirm) {
       confirmPanel = `<section class="flex flex-wrap items-center gap-3 rounded-2xl bg-red/10 p-5 mb-8 text-sm"><p class="flex-1 min-w-48">Delete <span class="font-mono text-text">${esc(s.name)}</span>? This cannot be undone.</p><button type="button" data-act="cancel" class="${ghost}">Cancel</button><button type="button" data-act="confirm-delete-secret" class="inline-flex items-center gap-2 rounded-full bg-red text-crust font-medium text-sm px-4 py-2 hover:opacity-90"><i data-lucide="trash-2" class="size-4"></i>Delete</button></section>`;
     }
@@ -613,7 +613,7 @@ function sshDetail() {
     const termPane = live ? `<div id="term" data-ref="${esc(t.ref)}" data-target="${esc(JSON.stringify(t.target))}" class="${st.sshTab === 'info' ? 'hidden ' : ''}flex-1 min-h-80 bg-base rounded-2xl overflow-hidden"></div>` : '';
     let body = termPane;
     if (st.sshTab === 'info') {
-      body = `<dl class="grid xl:grid-cols-2 gap-x-4">${fieldRow('target', t.ref, 'text')}${fieldRow('address', t.addr || '-', 'text')}${fieldRow('user', t.user, 'text')}${fieldRow('key secret', t.key, 'text')}${fieldRow('known_hosts alias', t.alias, 'text')}</dl>
+      body = `<dl class="grid xl:grid-cols-2 gap-x-4">${fieldRow('target', t.ref, 'text')}${fieldRow('address', t.addr || '-', 'text')}${fieldRow('user', t.user, 'text')}${fieldRow('key', t.key, 'text')}${fieldRow('known_hosts alias', t.alias, 'text')}</dl>
         <div class="flex flex-wrap gap-2 mt-6 px-4">${t.kind === 'host' ? `<button type="button" data-act="edit-host" class="${ghost}"><i data-lucide="pencil" class="size-4"></i>Edit host</button>` : ''}<button type="button" data-act="forget-key" data-alias="${esc(t.alias)}" class="${ghost}"><i data-lucide="shield-off" class="size-4"></i>Forget host key</button></div>${termPane}`;
     } else if (!live) {
       body = `<div class="flex-1 grid place-items-center bg-base rounded-2xl p-10 text-center"><div><p class="text-text mb-1">${esc(t.name)} is ${esc(t.state)}</p><p class="${lbl} mb-4">409 · the machine has no public IP until it starts</p><button type="button" data-href="${esc(`/machines/${segEnc(t.profile)}/${segEnc(t.name)}`)}" class="${ghost}"><i data-lucide="play" class="size-4"></i>Open in Machines</button></div></div>`;
@@ -708,7 +708,7 @@ function shapeGrid(o, arch, cls, chosen, attr) {
 function scaffoldBlock(sc) {
   if (!sc.ready) return 'Set up the scaffold on this account and region first.';
   if (sc.key.state === 'missing') return 'Import the key for this scaffold first.';
-  if (sc.key.state === 'differs') return 'The scaffold key pair differs from the key in the vault.';
+  if (sc.key.state === 'differs') return 'The scaffold key pair differs from the key anbu holds.';
   return '';
 }
 
@@ -726,17 +726,17 @@ function scaffoldView() {
     const res = (icon, color, name, id) => `<li class="flex items-center gap-3 py-1 min-w-0"><i data-lucide="${icon}" class="size-4 shrink-0 text-${color}"></i><span class="font-mono text-sm text-text">${esc(name)}</span><span class="${lbl} font-mono truncate">${esc(id)}</span></li>`;
     const ks = sc.key.state;
     const keyRow = ks === 'match'
-      ? `<li class="flex items-center gap-3 py-1"><i data-lucide="circle-check" class="size-4 text-green"></i><span class="font-mono text-sm text-text">key secret</span><button type="button" data-href="/vault/${segEnc(sc.key.secret)}" class="${lbl} hover:text-text">key in vault</button></li>`
-      : ks === 'none' ? '' : `<li class="flex items-center gap-3 py-1"><i data-lucide="circle-alert" class="size-4 text-${ks === 'differs' ? 'red' : 'peach'}"></i><span class="font-mono text-sm text-text">key secret</span><span class="text-xs text-${ks === 'differs' ? 'red' : 'peach'}">${ks === 'differs' ? 'differs from the key pair' : 'no key in vault'}</span></li>`;
-    const missing = `<section class="rounded-2xl bg-peach/10 p-5 mb-8 text-sm"><p class="text-peach font-medium mb-1">Key pair has no key in the vault</p><p class="mb-4">This account and region was set up outside anbu, most likely by sharingan. Import its private key as an SSH key secret named <span class="font-mono text-text">${esc(sc.key.secret)}</span>, and setup and create will accept it. For sharingan, that key is <span class="font-mono text-text">~/.config/sharingan/id_ed25519</span>.</p><button type="button" data-act="import-scaffold-key" data-name="${esc(sc.key.secret)}" class="${ghost} !bg-surface1"><i data-lucide="upload" class="size-4"></i>Import key</button></section>`;
-    const differs = `<section class="rounded-2xl bg-red/10 p-5 mb-8 text-sm"><p class="text-red font-medium mb-1">Key pair differs from the vault key</p><p>The <span class="font-mono text-text">sharingan-key</span> key pair on this account and region does not match <span class="font-mono text-text">${esc(sc.key.secret)}</span>. Machines launched here authorize the other key, so setup and create refuse to run.</p></section>`;
+      ? `<li class="flex items-center gap-3 py-1 min-w-0"><i data-lucide="circle-check" class="size-4 shrink-0 text-green"></i><span class="font-mono text-sm text-text">scaffold key</span><span class="${lbl} font-mono truncate">${esc(sc.key.fingerprint ?? '')}</span></li>`
+      : ks === 'none' ? '' : `<li class="flex items-center gap-3 py-1"><i data-lucide="circle-alert" class="size-4 text-${ks === 'differs' ? 'red' : 'peach'}"></i><span class="font-mono text-sm text-text">scaffold key</span><span class="text-xs text-${ks === 'differs' ? 'red' : 'peach'}">${ks === 'differs' ? 'differs from the key pair' : 'not in anbu'}</span></li>`;
+    const missing = `<section class="rounded-2xl bg-peach/10 p-5 mb-8 text-sm"><p class="text-peach font-medium mb-1">Key pair has no key in anbu</p><p class="mb-4">This account and region was set up outside anbu, most likely by sharingan. Paste the private key its machines authorize, and setup and create will accept it. For sharingan, that key is <span class="font-mono text-text">~/.config/sharingan/id_ed25519</span>.</p><textarea data-keep="adoptKey" spellcheck="false" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----" class="${field} font-mono min-h-32 mb-3"></textarea><button type="button" data-act="adopt-key" class="${ghost} !bg-surface1"><i data-lucide="upload" class="size-4"></i>Import key</button></section>`;
+    const differs = `<section class="rounded-2xl bg-red/10 p-5 mb-8 text-sm"><p class="text-red font-medium mb-1">Key pair differs from the scaffold key</p><p>The <span class="font-mono text-text">sharingan-key</span> key pair on this account and region does not match the key anbu holds${sc.key.fingerprint ? ` (<span class="font-mono text-text">${esc(sc.key.fingerprint)}</span>)` : ''}. Machines launched here authorize the other key, so setup and create refuse to run.</p></section>`;
     const any = sc.resources.some((r) => r.id);
     const confirm = st.confirm?.kind === 'teardown';
     return article(`<h2 class="${h2} mb-1">Scaffold</h2><p class="text-sm font-mono mb-1">${esc(sc.account)} · ${esc(sc.region)}</p><p class="${lbl} mb-8">Shared by every profile on this account and region, and by every machine it launches</p>
       ${ks === 'missing' ? missing : ks === 'differs' ? differs : ''}
-      ${any ? `<ul class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-8">${sc.resources.map((r) => r.id ? res('circle-check', 'green', r.resource, r.id) : res('circle-dashed', 'overlay0', r.resource, 'missing')).join('')}${keyRow}</ul>` : `<p class="bg-base rounded-2xl p-6 mb-8 text-sm">Nothing is set up on this account and region yet. Setup creates the VPC, gateway, subnet, route table, and security group, plus a new SSH key saved to the vault as <span class="font-mono text-text">${esc(sc.key.secret)}</span> and imported as the sharingan-key key pair.</p>`}
+      ${any ? `<ul class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-8">${sc.resources.map((r) => r.id ? res('circle-check', 'green', r.resource, r.id) : res('circle-dashed', 'overlay0', r.resource, 'missing')).join('')}${keyRow}</ul>` : `<p class="bg-base rounded-2xl p-6 mb-8 text-sm">Nothing is set up on this account and region yet. Setup creates the VPC, gateway, subnet, route table, and security group, plus a new SSH key that anbu keeps for this scaffold and imports as the sharingan-key key pair.</p>`}
       <div class="flex flex-wrap gap-2">${ks !== 'missing' && ks !== 'differs' ? `<button type="button" data-act="setup-scaffold" class="${primary}"><i data-lucide="hammer" class="size-4"></i>${sc.ready ? 'Re-run setup' : 'Set up'}</button>` : ''}${any ? (confirm ? `<button type="button" data-act="cancel" class="${ghost}">Cancel</button><button type="button" data-act="confirm-teardown" class="inline-flex items-center gap-2 rounded-full bg-red text-crust font-medium text-sm px-4 py-2"><i data-lucide="trash-2" class="size-4"></i>Confirm tear down</button>` : `<button type="button" data-act="teardown" class="${danger}"><i data-lucide="trash-2" class="size-4"></i>Tear down</button>`) : ''}</div>
-      ${confirm ? `<p class="mt-3 text-sm">Tear down deletes every scaffold resource and the <span class="font-mono text-text">${esc(sc.key.secret)}</span> secret. It refuses while any machine exists.</p>` : ''}`);
+      ${confirm ? `<p class="mt-3 text-sm">Tear down deletes every scaffold resource and the scaffold key. It refuses while any machine exists.</p>` : ''}`);
   }, 'Checking scaffold');
 }
 
@@ -1019,7 +1019,15 @@ async function onAct(a, b) {
     case 'new-secret': return nav(() => { st.mod = 'vault'; st.view.vault = 'new'; st.detail = true; });
     case 'new-aws-secret': return nav(() => { st.mod = 'vault'; st.newType = 'aws-sso'; st.view.vault = 'new'; st.detail = true; });
     case 'new-ssh-key': return nav(() => { st.mod = 'vault'; st.newType = 'ssh-key'; st.view.vault = 'new'; st.detail = true; });
-    case 'import-scaffold-key': return nav(() => { st.mod = 'vault'; st.newType = 'ssh-key'; st.keep.newName = b.dataset.name; st.view.vault = 'new'; st.detail = true; });
+    case 'adopt-key': {
+      const key = document.querySelector('[data-keep="adoptKey"]')?.value ?? '';
+      const r = await act(() => api('PUT', `/api/aws/scaffold/key?${profileQ(st.profile)}`, { private_key: key }), 'Scaffold key imported');
+      if (r) {
+        st.keep.adoptKey = '';
+        invalidate('scaffold');
+      }
+      return render();
+    }
     case 'new-host': return nav(() => { st.mod = 'ssh'; st.view.ssh = 'new'; st.detail = true; });
     case 'new-machine': return nav(() => { st.view.machines = 'new'; st.detail = true; });
     case 'cancel': st.confirm = null; st.editing = false; st.modify = null; st.remove = false; return render();

@@ -110,7 +110,7 @@ anbu serve -p 9000 -d /srv/anbu
 | Path | Holds |
 |---|---|
 | `password` | the vault password in plaintext, generated on first start |
-| `vault.json` | every secret, AES-256-GCM encrypted under a PBKDF2 key from the password |
+| `vault.json` | every secret and scaffold key, AES-256-GCM encrypted under a PBKDF2 key from the password |
 | `tasks.json`, `settings.json`, `hosts.json` | tasks, settings, and stored SSH hosts in plaintext |
 | `known_hosts` | host keys for every SSH target |
 | `aws/` | empty AWS config files and the `HOME` of the `aws` CLI |
@@ -152,6 +152,7 @@ region = us-west-2
 
 - **SSO sessions** live in memory only. A restart needs a new device login, and an expired session returns `401` with `sso login required`.
 - **EC2 jobs** run one at a time in a queue held in memory. A restart drops queued jobs and job history.
-- **Scaffold keys** are vault secrets named `sharingan-<account>-<region>`. Only scaffold teardown deletes one. A sharingan-created scaffold is adopted by importing `~/.config/sharingan/id_ed25519` under that name.
+- **Scaffold keys:** each account and region gets its own SSH key, stored encrypted in `vault.json` beside the secrets. Keys are not listed in the Vault, are included in vault export, and are deleted by scaffold teardown.
+- **Adopting a sharingan scaffold:** paste `~/.config/sharingan/id_ed25519` into the scaffold view. Its existing machines stay reachable.
 - **Pricing** for machine options and the machine list is cached per account and region for an hour, so the first request in an hour is slow.
 - **Host key changes** fail the connection. Clear the old key with Forget host key in the SSH view.

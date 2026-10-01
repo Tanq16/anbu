@@ -113,8 +113,6 @@ var Schema = map[Type]TypeSpec{
 	}},
 }
 
-const ScaffoldKeyPrefix = "sharingan-"
-
 func (s Secret) VisibleFields() map[string]string {
 	out := map[string]string{}
 	for _, f := range Schema[s.Type].Fields {

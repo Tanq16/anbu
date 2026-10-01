@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/processcreds"
 	"github.com/rs/zerolog/log"
 	"github.com/tanq16/anbu/internal/awscred"
-	"github.com/tanq16/anbu/internal/scaffold"
 	"github.com/tanq16/anbu/internal/vault"
 )
 
@@ -60,9 +59,6 @@ func (s *Server) routeVault() {
 
 func (s *Server) usedBy(sec vault.Secret) []string {
 	refs := s.hosts.Referencing(sec.ID)
-	if account, region, ok := scaffold.ParseKeyName(sec.Name); ok {
-		refs = append(refs, "scaffold "+account+"/"+region)
-	}
 	if refs == nil {
 		refs = []string{}
 	}

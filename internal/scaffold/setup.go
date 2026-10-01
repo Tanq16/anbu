@@ -315,14 +315,14 @@ func authorizeIngress(ctx context.Context, c *awsx.Clients, groupID string, port
 func ensureKeyPair(ctx context.Context, cfg *recorder, c *awsx.Clients, keys *vault.Store, key KeyStatus) error {
 	stored := key.stored
 	if stored == nil {
-		sec, err := keys.GenerateSSHKey(key.Secret)
+		k, err := keys.GenerateMachineKey(c.Account, c.Region)
 		if err != nil {
 			return err
 		}
-		stored = &sec
-		cfg.notify(Created, resKeySecret, sec.Name)
+		stored = &k
+		cfg.notify(Created, resScaffoldKey, k.Fingerprint())
 	} else {
-		cfg.notify(Existing, resKeySecret, stored.Name)
+		cfg.notify(Existing, resScaffoldKey, stored.Fingerprint())
 	}
 	if key.keyPair != nil {
 		cfg.notify(Existing, resKeyPair, key.keyPair.Name)
@@ -331,7 +331,7 @@ func ensureKeyPair(ctx context.Context, cfg *recorder, c *awsx.Clients, keys *va
 
 	out, err := c.EC2.ImportKeyPair(ctx, &ec2.ImportKeyPairInput{
 		KeyName:           aws.String(nameKeyPair),
-		PublicKeyMaterial: []byte(stored.Fields["public_key"]),
+		PublicKeyMaterial: []byte(stored.PublicKey),
 		TagSpecifications: []ec2types.TagSpecification{awsx.TagSpecs(ec2types.ResourceTypeKeyPair, nameKeyPair)},
 	})
 	if err != nil {

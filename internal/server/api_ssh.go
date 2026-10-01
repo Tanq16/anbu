@@ -12,7 +12,6 @@ import (
 	"github.com/tanq16/anbu/internal/awsx"
 	"github.com/tanq16/anbu/internal/hosts"
 	"github.com/tanq16/anbu/internal/machine"
-	"github.com/tanq16/anbu/internal/scaffold"
 	"github.com/tanq16/anbu/internal/sshx"
 	"github.com/tanq16/anbu/internal/vault"
 	"golang.org/x/crypto/ssh"
@@ -208,7 +207,7 @@ func (s *Server) handleSSHTargets(w http.ResponseWriter, r *http.Request) {
 				Account:  c.Account,
 				Region:   c.Region,
 				User:     machine.SSHUser,
-				Key:      scaffold.KeyName(c.Account, c.Region),
+				Key:      "scaffold " + c.Account + "/" + c.Region,
 				Alias:    c.HostKeyAlias(inst.Name),
 				State:    inst.State,
 				Target:   sshx.TargetRef{Machine: &sshx.MachineRef{Profile: c.Profile, Name: inst.Name}},
