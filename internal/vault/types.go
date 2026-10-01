@@ -216,9 +216,6 @@ func (s *Secret) normalizeProfiles(spec TypeSpec) error {
 		s.Profiles = nil
 		return nil
 	}
-	if len(s.Profiles) == 0 {
-		return invalid("an %s secret needs at least one profile", TypeAWSSSO)
-	}
 	seen := map[string]bool{}
 	for i := range s.Profiles {
 		p := &s.Profiles[i]

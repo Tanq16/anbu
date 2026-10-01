@@ -394,7 +394,13 @@ func (s *Server) handleMachineLifecycle(action string) http.HandlerFunc {
 			if err != nil {
 				return nil, err
 			}
-			return op(ctx, c, name)
+			info, err := op(ctx, c, name)
+			if err == nil && action == "remove" {
+				if _, err := s.knownHosts.Remove(c.HostKeyAlias(name)); err != nil {
+					log.Warn().Err(err).Str("machine", name).Msg("failed to forget host key")
+				}
+			}
+			return info, err
 		})
 	}
 }
