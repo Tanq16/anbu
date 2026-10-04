@@ -17,6 +17,14 @@ var ApiCmd = &cobra.Command{
 }
 
 func call(method, path string, body any) {
+	data := fetch(method, path, body)
+	os.Stdout.Write(data)
+	if len(data) > 0 && data[len(data)-1] != '\n' {
+		os.Stdout.Write([]byte("\n"))
+	}
+}
+
+func fetch(method, path string, body any) []byte {
 	cfg, err := apiclient.Load()
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to load api config")
@@ -33,10 +41,7 @@ func call(method, path string, body any) {
 	if resp.StatusCode >= 400 {
 		log.Fatal().Int("status", resp.StatusCode).Str("body", strings.TrimSpace(string(data))).Msg("server returned an error")
 	}
-	os.Stdout.Write(data)
-	if len(data) > 0 && data[len(data)-1] != '\n' {
-		os.Stdout.Write([]byte("\n"))
-	}
+	return data
 }
 
 func segment(s string) string {
