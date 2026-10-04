@@ -111,6 +111,7 @@ const typeMeta = {
   'aws-sso': { icon: 'cloud-cog', color: 'yellow' },
   'github-pat': { icon: 'github', color: 'mauve' },
   generic: { icon: 'box', color: 'teal' },
+  file: { icon: 'file-text', color: 'sapphire' },
 };
 const meta = (t) => typeMeta[t] ?? { icon: 'key-round', color: 'overlay1' };
 

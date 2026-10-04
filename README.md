@@ -16,7 +16,7 @@ It runs as a single binary for one person or a small team behind a forward-auth 
 
 | Area | What it does |
 |---|---|
-| Vault | Typed secrets (login, SSH key, AWS static keys, AWS SSO, GitHub PAT, generic) with TOTP codes, custom fields, Ed25519 key generation, and plaintext export and import |
+| Vault | Typed secrets (login, SSH key, AWS static keys, AWS SSO, GitHub PAT, generic, file) with TOTP codes, custom fields, Ed25519 key generation, and plaintext export and import |
 | Tasks | Single-line tasks with priority, due date, and overdue tracking |
 | SSH | Stored hosts and EC2 machines in a browser terminal, with trust-on-first-use host keys |
 | AWS | Static keys, ad-hoc keys, and SSO profiles through the device flow, plus an `aws` CLI runner |
@@ -130,12 +130,14 @@ anbu api setup https://anbu.example.com -H "X-Proxy-Token: <token>"
 anbu api secrets list
 anbu api secrets get github
 anbu api secrets totp google-work
+anbu api secrets file kubeconfig > ~/.kube/config
 anbu api ssh targets
 anbu api machines list corp:admin
 ```
 
 - `setup` writes `~/.config/anbu/api.json`, and its headers ride on every call so the proxy admits the CLI.
 - Without `api.json`, calls go to `http://localhost:8080`. `ANBU_URL` overrides the URL for one invocation.
+- `secrets file` prints the content of a file secret byte for byte, so it can be redirected to a file.
 - An HTTP error or a connection failure is logged and exits 1.
 
 ### AWS SSO in a local profile
