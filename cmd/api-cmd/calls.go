@@ -3,6 +3,7 @@ package apiCmd
 import (
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -39,6 +40,15 @@ var secretsTOTPCmd = &cobra.Command{
 	},
 }
 
+var secretsFileCmd = &cobra.Command{
+	Use:   "file <ref>",
+	Short: "Print the content of a file secret exactly as stored",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		os.Stdout.Write(fetch(http.MethodGet, "/api/secrets/"+segment(args[0])+"/file", nil))
+	},
+}
+
 var sshCmd = &cobra.Command{
 	Use:   "ssh",
 	Short: "Read SSH targets",
@@ -68,7 +78,7 @@ var machinesListCmd = &cobra.Command{
 }
 
 func init() {
-	secretsCmd.AddCommand(secretsListCmd, secretsGetCmd, secretsTOTPCmd)
+	secretsCmd.AddCommand(secretsListCmd, secretsGetCmd, secretsTOTPCmd, secretsFileCmd)
 	sshCmd.AddCommand(sshTargetsCmd)
 	machinesCmd.AddCommand(machinesListCmd)
 	ApiCmd.AddCommand(secretsCmd, sshCmd, machinesCmd)

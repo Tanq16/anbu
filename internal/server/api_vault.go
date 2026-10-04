@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -53,6 +54,7 @@ func (s *Server) routeVault() {
 	s.mux.HandleFunc("PUT /api/secrets/{ref}", s.handleUpdateSecret)
 	s.mux.HandleFunc("DELETE /api/secrets/{ref}", s.handleDeleteSecret)
 	s.mux.HandleFunc("GET /api/secrets/{ref}/totp", s.handleTOTP)
+	s.mux.HandleFunc("GET /api/secrets/{ref}/file", s.handleFile)
 	s.mux.HandleFunc("GET /api/vault/export", s.handleExport)
 	s.mux.HandleFunc("POST /api/vault/import", s.handleImport)
 }
@@ -203,6 +205,21 @@ func (s *Server) handleTOTP(w http.ResponseWriter, r *http.Request) {
 	}
 	period := sec.TOTP.Period
 	writeJSON(w, http.StatusOK, totpView{Code: code, Period: period, Remaining: period - int(now.Unix()%int64(period))})
+}
+
+func (s *Server) handleFile(w http.ResponseWriter, r *http.Request) {
+	sec, err := s.vault.Get(r.PathValue("ref"))
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	if sec.Type != vault.TypeFile {
+		writeError(w, http.StatusNotFound, "secret "+sec.Name+" is not a file")
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	io.WriteString(w, sec.Fields["content"])
 }
 
 func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {

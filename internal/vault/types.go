@@ -58,6 +58,7 @@ const (
 	TypeAWSSSO    Type = "aws-sso"
 	TypeGitHubPAT Type = "github-pat"
 	TypeGeneric   Type = "generic"
+	TypeFile      Type = "file"
 )
 
 type Kind string
@@ -110,6 +111,9 @@ var Schema = map[Type]TypeSpec{
 	}},
 	TypeGeneric: {Label: "Generic", Fields: []FieldSpec{
 		{"value", KindMultiline, false},
+	}},
+	TypeFile: {Label: "File", Fields: []FieldSpec{
+		{"content", KindMultiline, true},
 	}},
 }
 
